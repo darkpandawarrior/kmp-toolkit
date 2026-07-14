@@ -47,7 +47,7 @@
 
 ## What this is
 
-`kmp-toolkit` is a monorepo consolidation of eight leaf libraries that started life as separate
+`kmp-toolkit` is a monorepo consolidation of eight leaf libraries (plus `location`, added after the merge) that started life as separate
 repos, each extracted from a production app the moment its logic was needed a second time —
 `mvi-core` out of Mileway's `core:ui`, `security` out of PaymentsLab's `core:security`, `network`
 and `designsystem` and `ai` out of HireSignal's `core:*` modules, `feedback` out of Kursi. None of
@@ -132,7 +132,7 @@ into an app never drags in a sibling.
 
 ## Install
 
-As a monorepo, `kmp-toolkit` collapses what used to be eight separate `includeBuild` composite
+As a monorepo, `kmp-toolkit` collapses what used to be many separate `includeBuild` composite
 builds (one `dependencySubstitution` block per leaf repo, each guarding against a `:lib` path
 collision) into **one** `includeBuild` with one substitution per module:
 
