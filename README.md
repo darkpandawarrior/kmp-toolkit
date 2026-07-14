@@ -38,6 +38,7 @@
 - [designsystem](#designsystem)
 - [ai](#ai)
 - [feedback](#feedback)
+- [location](#location)
 - [secrets](#secrets)
 - [Repository structure](#repository-structure)
 - [License](#license)
@@ -88,13 +89,14 @@ graph TD
     CMP["Compose Multiplatform<br/>(third-party)"]
 
     RESULT["result<br/>Result&lt;D,E&gt; + DataError"]
-    COMMON["common<br/>AppLog + DispatcherProvider"]
+    COMMON["common<br/>AppLog · DispatcherProvider · UiText"]
     MVI["mvi-core<br/>BaseViewModel · StateViewModel"]
     NETWORK["network<br/>createHttpClient · ConnectivityChecker"]
     SECURITY["security<br/>SecureStore · DeviceIntegrity"]
     DESIGNSYSTEM["designsystem<br/>DesignTokens · ThemeController"]
     AI["ai<br/>OnDeviceLlm"]
     FEEDBACK["feedback<br/>SoundPlayer · HapticManager"]
+    LOCATION["location<br/>KalmanSmoother · PathSimplifier"]
 
     NAPIER --> COMMON
     KTOR --> NETWORK
@@ -115,7 +117,7 @@ graph TD
     SECURITY --> PAYMENTSLAB
     MVI --> PAYMENTSLAB
 
-    MVI --> MILEWAY["Mileway"]
+    LOCATION --> MILEWAY["Mileway"]
 
     MVI --> KURSI["Kursi"]
     FEEDBACK --> KURSI
@@ -146,6 +148,7 @@ includeBuild("external/kmp-toolkit") {
         substitute(module("com.siddharth.kmp:designsystem")).using(project(":designsystem"))
         substitute(module("com.siddharth.kmp:ai")).using(project(":ai"))
         substitute(module("com.siddharth.kmp:feedback")).using(project(":feedback"))
+        substitute(module("com.siddharth.kmp:location")).using(project(":location"))
     }
 }
 ```
