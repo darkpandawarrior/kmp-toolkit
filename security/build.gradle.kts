@@ -5,9 +5,6 @@ plugins {
     `maven-publish`
 }
 
-group = "com.siddharth.kmp"
-version = "1.0.0"
-
 android {
     namespace = "com.siddharth.kmp.security"
     compileSdk = 37
@@ -52,25 +49,12 @@ dependencies {
     testImplementation(libs.koin.test.junit4)
 }
 
+// Declare the release publication; artifactId ("security") + the GitHub Packages repo come from the
+// shared publishing convention in the root build.gradle.kts.
 publishing {
     publications {
         register<MavenPublication>("release") {
             afterEvaluate { from(components["release"]) }
-            groupId = "com.siddharth.kmp"
-            artifactId = "security"
-            version = "1.0.0"
-        }
-    }
-    repositories {
-        // GitHub Packages. Credentials resolved from env (CI) or gradle properties
-        // (local ~/.gradle/gradle.properties, gitignored) — never committed.
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/darkpandawarrior/kmp-toolkit")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull
-                password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.key").orNull
-            }
         }
     }
 }
