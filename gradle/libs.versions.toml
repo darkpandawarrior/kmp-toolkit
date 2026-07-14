@@ -23,6 +23,9 @@ room = "2.8.4"
 sqlite-bundled = "2.7.0"
 stripe = "23.11.1"
 play-services-wallet = "20.0.0"
+razorpay = "1.6.41"
+cashfree = "2.5.0"
+robolectric = "4.16.1"
 
 [libraries]
 # — coroutines / serialization (all KMP modules) —
@@ -72,6 +75,12 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 # — provider:stripe (Android-only leaf, Stripe PaymentSheet) —
 stripe-paymentsheet = { module = "com.stripe:paymentsheet", version.ref = "stripe" }
 play-services-wallet = { module = "com.google.android.gms:play-services-wallet", version.ref = "play-services-wallet" }
+
+# — provider:razorpay / :cashfree / :googlepay (Android-only leaves, 5c) —
+razorpay-checkout = { module = "com.razorpay:checkout", version.ref = "razorpay" }
+cashfree-pg-api = { module = "com.cashfree.pg:api", version.ref = "cashfree" }
+cashfree-pg-ui = { module = "com.cashfree.pg:ui", version.ref = "cashfree" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 # — offline-outbox (Room KMP — first Room module in the monorepo, versions match Mileway's) —
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }

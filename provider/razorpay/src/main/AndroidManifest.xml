@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Razorpay Checkout needs network access; the SDK contributes its own components via its manifest. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

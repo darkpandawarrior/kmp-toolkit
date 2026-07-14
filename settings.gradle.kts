@@ -20,6 +20,21 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Cashfree nextgen SDK (com.cashfree.pg:api / :ui) is published only to Cashfree's own repo.
+        maven {
+            url = uri("https://maven.cashfree.com/release")
+            content { includeGroup("com.cashfree.pg") }
+        }
+        // Square In-App Payments SDK (com.squareup.sdk.in-app-payments:*) is published only here, not
+        // Maven Central. com.squareup.android:truststore/socket-factory are transitive deps also
+        // hosted only here (card-entry's own .pom omits them).
+        maven {
+            url = uri("https://sdk.squareup.com/public/android")
+            content {
+                includeGroup("com.squareup.sdk.in-app-payments")
+                includeGroup("com.squareup.android")
+            }
+        }
         // Node.js / Yarn / Binaryen distributions for the Kotlin/Wasm toolchain (wasmJs browser()).
         ivy {
             name = "Node.js Distributions"
@@ -63,3 +78,8 @@ include(":offline-outbox")
 include(":bots-policy")
 include(":provider:stripe")
 include(":provider:upi-intent")
+include(":provider:cashfree")
+include(":provider:googlepay")
+include(":provider:omise")
+include(":provider:razorpay")
+include(":provider:square")

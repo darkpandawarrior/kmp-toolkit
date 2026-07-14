@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- card-entry (sqip.cardentry), in-app-payments (sqip.internal), and nonce-api (sqip.nonceapi)
+         all declare minSdkVersion 28 (confirmed by the manifest-merger errors naming each package in
+         turn — a real SDK requirement, not a sample-app choice). This module's minSdk is 24;
+         overrideLibrary lets the merge proceed. Devices on API 24-27 will fail if they reach Square's
+         CardEntryActivity — acceptable for a lab app exploring one gateway among many, not for a real
+         integration. -->
+    <uses-sdk tools:overrideLibrary="sqip.cardentry,sqip.internal,sqip.nonceapi" />
+</manifest>
