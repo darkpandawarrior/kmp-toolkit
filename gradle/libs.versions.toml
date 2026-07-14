@@ -21,10 +21,13 @@ turbine = "1.2.1"
 ksp = "2.3.10"
 room = "2.8.4"
 sqlite-bundled = "2.7.0"
+stripe = "23.11.1"
+play-services-wallet = "20.0.0"
 
 [libraries]
 # — coroutines / serialization (all KMP modules) —
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
@@ -65,6 +68,10 @@ activity-compose = { module = "androidx.activity:activity-compose", version.ref 
 junit = { module = "junit:junit", version.ref = "junit" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+
+# — provider:stripe (Android-only leaf, Stripe PaymentSheet) —
+stripe-paymentsheet = { module = "com.stripe:paymentsheet", version.ref = "stripe" }
+play-services-wallet = { module = "com.google.android.gms:play-services-wallet", version.ref = "play-services-wallet" }
 
 # — offline-outbox (Room KMP — first Room module in the monorepo, versions match Mileway's) —
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }

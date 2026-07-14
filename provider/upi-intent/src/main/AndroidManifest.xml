@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Android 11+ (API 30) package-visibility: without this <queries> block, the system chooser
+        can appear EMPTY because the app can't "see" installed UPI apps to resolve the upi:// intent.
+        Declaring the intent we launch makes those apps visible for resolution.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="upi" />
+        </intent>
+    </queries>
+
+</manifest>
