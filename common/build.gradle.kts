@@ -26,6 +26,8 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             // Napier: KMP logging usable from commonMain (android.util.Log cannot go here).
             api(libs.napier)
+            // Formatters exposes LocalDate extensions — api so consumers get the datetime type.
+            api(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

@@ -68,7 +68,7 @@ monorepo.
 | Module | Coordinate | What it is | Platforms | Consumed by |
 |---|---|---|---|---|
 | [**result**](#result) | `com.siddharth.kmp:result` | `Result<D,E>` + `DataError` — typed, functional error handling | Android · JVM · iOS · Wasm | foundational — no consumers yet, Phase-4 adoption planned across the family |
-| [**common**](#common) | `com.siddharth.kmp:common` | `AppLog` (Napier facade) + `DispatcherProvider` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab (via `security`) |
+| [**common**](#common) | `com.siddharth.kmp:common` | `AppLog` (Napier facade) + `DispatcherProvider` + `UiText` + `Formatters` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab (via `security`) |
 | [**mvi-core**](#mvi-core) | `com.siddharth.kmp:mvi-core` | MVI ViewModel runtime — `BaseViewModel` / `StateViewModel` / `EffectEmitter` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab, Mileway, Kursi |
 | [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing — client factory, retry, 401 handling, connectivity | Android · JVM · iOS | HireSignal (`core:network`) |
 | [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening — Keystore, VAPT posture, `FLAG_SECURE` | Android only | PaymentsLab |
