@@ -9,7 +9,7 @@
 ![Ktor](https://img.shields.io/badge/Ktor-3.5.1-087CFA?logo=ktor&logoColor=white)
 ![Koin](https://img.shields.io/badge/Koin-4.2.2-2F855A)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20JVM%20%7C%20Wasm-4285F4)
-![Modules](https://img.shields.io/badge/modules-8-0EA5E9)
+![Modules](https://img.shields.io/badge/modules-9-0EA5E9)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 [**Portfolio**](https://cv-siddharth.vercel.app/) ·
@@ -75,6 +75,7 @@ monorepo.
 | [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives — tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | HireSignal (`core:designsystem`) |
 | [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction — ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | HireSignal (`core:ai`) |
 | [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit — synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Kursi |
+| [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math — Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Mileway (`feature:tracking`) |
 | [**secrets**](#secrets) | *(docs only, not a Gradle module)* | SOPS + age encrypted-secrets vault + alias manifest | — | reference pattern, no dependents |
 
 ## Family architecture
@@ -772,6 +773,45 @@ Every target genuinely produces sound or haptics — nothing is a silent stub by
 
 `feedback` has no dependency on another `kmp-toolkit` module — `commonMain` only reaches for
 `kotlinx-coroutines-core`. It's consumed by Kursi, the family's KMP card game.
+
+## location
+
+![location](docs/assets/location-banner.svg)
+
+Pure, allocation-light GPS-track math — the reusable core of a real offline-first tracking engine,
+with **zero** platform or coroutine dependencies (only `kotlin.math`), so it runs identically on
+Android, iOS, desktop and the browser. The location *service* (foreground service, sensors, GMS
+activity recognition) and the app's `LocationData` model stay in the app; this is just the math.
+
+- **`KalmanSmoother`** — a 2-D constant-velocity Kalman filter over lat/lng with per-fix measurement
+  noise derived from GPS accuracy; smooths a jittery fix stream toward the true path. `smooth(lat,
+  lng, accuracyMeters, timestampMs)` → smoothed `(lat, lng)`; `reset()` between journeys.
+- **`PathSimplifier`** — Douglas–Peucker simplification (`GeoPoint` list) for *rendering only*, with
+  named `Epsilon` presets. Never use the simplified path for distance — it drops 5–25% of length.
+- **`DynamicIntervalCalculator`** — picks the next GPS polling interval from speed/activity/harsh-accel
+  inputs (`IntervalInputs`), trading battery against fix density.
+- **`TrackingQualityScorer`** — a *live* fix-quality score (`QualityInputs`) for a tracking
+  notification / quality chip, scored as conditions happen rather than post-hoc.
+
+```kotlin
+import com.siddharth.kmp.location.KalmanSmoother
+
+val kalman = KalmanSmoother(processNoiseMetersPerSec = 1.0)
+locationUpdates.collect { fix ->
+    val (lat, lng) = kalman.smooth(fix.lat, fix.lng, fix.accuracyMeters, fix.timeMs)
+    // persist / render the smoothed point
+}
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `KalmanSmoother` | `class` | 2-D constant-velocity Kalman smoothing of a GPS fix stream |
+| `PathSimplifier` | `object` | Douglas–Peucker path simplification (render-only) over `GeoPoint` |
+| `DynamicIntervalCalculator` | `object` | Battery-vs-density GPS polling interval from `IntervalInputs` |
+| `TrackingQualityScorer` | `object` | Live fix-quality score from `QualityInputs` |
+
+`location` depends on no other `kmp-toolkit` module and no third-party library. Consumed by Mileway's
+`feature:tracking`.
 
 ## secrets
 
