@@ -26,6 +26,7 @@ play-services-wallet = "20.0.0"
 razorpay = "1.6.41"
 cashfree = "2.5.0"
 robolectric = "4.16.1"
+compose-webview-multiplatform = "2.0.3"
 
 [libraries]
 # — coroutines / serialization (all KMP modules) —
@@ -81,6 +82,9 @@ razorpay-checkout = { module = "com.razorpay:checkout", version.ref = "razorpay"
 cashfree-pg-api = { module = "com.cashfree.pg:api", version.ref = "cashfree" }
 cashfree-pg-ui = { module = "com.cashfree.pg:ui", version.ref = "cashfree" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+# — provider:hosted-webview (CMP leaf — archetype-C hosted checkout via a Compose WebView) —
+compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-multiplatform", version.ref = "compose-webview-multiplatform" }
 
 # — offline-outbox (Room KMP — first Room module in the monorepo, versions match Mileway's) —
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
