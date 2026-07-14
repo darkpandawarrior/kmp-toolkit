@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.kotlinSerialization)
     `maven-publish`
 }
 
@@ -20,6 +21,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
             // UiText (PaymentResult.Failure/PaymentStep.Errored/SimulatedPayment/StubGateway) is on
             // the public contract surface — api, not implementation, so consumers get the type.
             api(project(":common"))

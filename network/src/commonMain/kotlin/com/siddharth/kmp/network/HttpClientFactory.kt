@@ -7,7 +7,9 @@ import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -58,15 +60,23 @@ val networkJson: Json =
  * [onUnauthorized] fires once per 401 response on a NON-auth route — the auth endpoints under
  * `/api/auth/` are skipped so a bad-credentials login 401 doesn't trigger a token clear /
  * re-login loop. Wired lazily by networkModule to the bound [UnauthorizedHandler].
+ *
+ * [logger] routes Ktor's request/response log lines — defaults to [Logger.DEFAULT] (platform
+ * println/Logcat), same as before this parameter existed. Pass a consumer's own facade (e.g. an
+ * AppLog-backed `Logger`) to fold HTTP logging into the app's existing log pipeline instead.
  */
 fun createHttpClient(
     engine: HttpClientEngine = httpClientEngine(),
     onUnauthorized: suspend () -> Unit = {},
+    logger: Logger = Logger.DEFAULT,
 ): HttpClient =
     HttpClient(engine) {
         expectSuccess = true
         install(ContentNegotiation) { json(networkJson) }
-        install(Logging) { level = LogLevel.INFO }
+        install(Logging) {
+            this.logger = logger
+            level = LogLevel.INFO
+        }
         HttpResponseValidator {
             handleResponseExceptionWithRequest { cause, request ->
                 val status = (cause as? ResponseException)?.response?.status
