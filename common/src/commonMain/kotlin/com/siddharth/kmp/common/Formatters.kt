@@ -50,6 +50,31 @@ fun formatTime12h(
     return "$h12:${minute.pad2()} $period"
 }
 
+/**
+ * Renders minor currency units (e.g. paise, cents) to a `"<major>.<minor>"` decimal string with
+ * [fractionDigits] digits — the single canonical minorUnits->decimal formatter for `:common` and
+ * its consumers.
+ *
+ * Three call sites used to each roll their own: this file's [formatDecimal] used Double + HALF_UP,
+ * googlepay's provider used `java.math.BigDecimal` + HALF_EVEN, and upi-intent's provider used a
+ * raw Long divmod (`amountMinor / 100`, `amountMinor % 100`) that mis-formats negative amounts —
+ * e.g. -1050 minor units rendered as `"-10.-50"` instead of `"-10.50"`, because Kotlin's `%` keeps
+ * the dividend's sign. Since minor units are already an exact integer count of the smallest
+ * currency unit there's no fractional precision to round away (the split is always exact); the
+ * part that must be unified is sign handling, following the same abs+negative-flag convention as
+ * [formatDecimal] so there is exactly one leading `-` and a magnitude-only fraction.
+ */
+fun Long.minorToDecimalString(fractionDigits: Int = 2): String {
+    if (fractionDigits <= 0) return this.toString()
+    var factor = 1L
+    repeat(fractionDigits) { factor *= 10 }
+    val negative = this < 0
+    val magnitude = abs(this)
+    val intPart = magnitude / factor
+    val fracPart = (magnitude % factor).toString().padStart(fractionDigits, '0')
+    return (if (negative) "-" else "") + "$intPart.$fracPart"
+}
+
 private val shortMonthNames =
     listOf(
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",

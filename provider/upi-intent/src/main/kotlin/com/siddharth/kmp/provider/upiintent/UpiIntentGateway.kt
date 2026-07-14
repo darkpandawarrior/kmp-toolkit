@@ -6,6 +6,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.siddharth.kmp.common.AppLog
 import com.siddharth.kmp.common.UiText
+import com.siddharth.kmp.common.minorToDecimalString
 import com.siddharth.kmp.paymentsapi.AndroidPaymentHost
 import com.siddharth.kmp.paymentsapi.Capability
 import com.siddharth.kmp.paymentsapi.CreatedOrder
@@ -86,7 +87,7 @@ class UpiIntentGateway : PaymentGateway {
                 "pa" to pa,
                 "pn" to pn,
                 "tr" to created.order.orderId, // transaction reference = our order id
-                "am" to amount.toUpiAmountString(),
+                "am" to amount.amountMinor.minorToDecimalString(),
                 "cu" to "INR",
                 "mc" to mc,
             )
@@ -250,14 +251,4 @@ class UpiIntentGateway : PaymentGateway {
         const val TAG = "UpiIntentGateway"
         const val RAW_LABEL = "upi_intent_response"
     }
-}
-
-/**
- * Render minor units to UPI's canonical two-decimal string, e.g. 1050 paise → "10.50".
- * Presentation concern — kept at the provider edge, never in the [com.siddharth.kmp.paymentsapi.Money] type.
- */
-private fun com.siddharth.kmp.paymentsapi.Money.toUpiAmountString(): String {
-    val rupees = amountMinor / 100
-    val paise = amountMinor % 100
-    return "%d.%02d".format(rupees, paise)
 }

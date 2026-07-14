@@ -1,9 +1,8 @@
 package com.siddharth.kmp.provider.googlepay
 
+import com.siddharth.kmp.common.minorToDecimalString
 import org.json.JSONArray
 import org.json.JSONObject
-import java.math.BigDecimal
-import java.math.RoundingMode
 
 /**
  * Builds the Google Pay API's `IsReadyToPayRequest`/`PaymentDataRequest` JSON. This shape is
@@ -63,7 +62,7 @@ class GooglePayRequestBuilder(
             put(
                 "transactionInfo",
                 JSONObject().apply {
-                    put("totalPrice", amountMinor.centsToMajorString())
+                    put("totalPrice", amountMinor.minorToDecimalString())
                     put("totalPriceStatus", "FINAL")
                     put("countryCode", config.countryCode)
                     put("currencyCode", config.currencyCode)
@@ -71,11 +70,4 @@ class GooglePayRequestBuilder(
             )
             put("merchantInfo", JSONObject().put("merchantName", config.merchantName))
         }
-
-    private fun Long.centsToMajorString(): String =
-        BigDecimal(this).divide(HUNDRED).setScale(2, RoundingMode.HALF_EVEN).toString()
-
-    private companion object {
-        val HUNDRED: BigDecimal = BigDecimal(100)
-    }
 }
