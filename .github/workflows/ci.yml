@@ -21,5 +21,21 @@ jobs:
           distribution: zulu
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+      # :offline-outbox is the one Room module. Room's @ConstructedBy KSP output generates the actual
+      # RoomDatabaseConstructor into commonMain, so the common metadata-klib compile
+      # (compileCommonMainKotlinMetadata, pulled by that module's aggregate `assemble`) fails with
+      # "expect and actual declared in the same module". This is a Kotlin metadata-compile limitation,
+      # NOT a KSP1-vs-KSP2 issue — verified identical under `-Pksp.useKSP2=true` (KSP itself succeeds;
+      # the downstream Kotlin compile is what rejects it). Mileway lives with it the same way, by never
+      # running that task. Everything real still builds: we exclude only :offline-outbox:assemble and
+      # instead build its per-target artifacts explicitly (android AAR + ios/watchos klibs + jvm jar),
+      # while jvmTest/testAndroidHostTest/iosSimulatorArm64Test cover its tests.
       - name: Build + test all modules
-        run: ./gradlew assemble jvmTest testAndroidHostTest testDebugUnitTest --stacktrace
+        run: >
+          ./gradlew assemble jvmTest testAndroidHostTest testDebugUnitTest
+          :offline-outbox:assembleAndroidMain
+          :offline-outbox:iosArm64MainKlibrary :offline-outbox:iosSimulatorArm64MainKlibrary
+          :offline-outbox:watchosArm64MainKlibrary :offline-outbox:jvmJar
+          :offline-outbox:iosSimulatorArm64Test
+          -x :offline-outbox:assemble
+          --stacktrace
