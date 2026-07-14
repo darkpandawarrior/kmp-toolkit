@@ -1,0 +1,53 @@
+<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kmp-security — Android app-hardening and VAPT posture toolkit">
+  <defs>
+    <linearGradient id="ks-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+
+  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="url(#ks-grad)">
+    kmp-security
+    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
+  </text>
+
+  <!-- shield: pulses steadily, center stage -->
+  <g transform="translate(450,120)">
+    <g>
+      <animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.8s" repeatCount="indefinite"/>
+      <path d="M 0,-20 L 16,-13 L 16,4 C 16,16 9,25 0,29 C -9,25 -16,16 -16,4 L -16,-13 Z"
+            fill="none" stroke="url(#ks-grad)" stroke-width="2.5"/>
+      <path d="M -7,3 L -2,10 L 9,-7" fill="none" stroke="url(#ks-grad)" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+    </g>
+  </g>
+
+  <!-- lock: closes shut just left of the shield -->
+  <g transform="translate(300,118)">
+    <rect x="-11" y="-2" width="22" height="18" rx="3" fill="none" stroke="#0D9488" stroke-width="2.5"/>
+    <path d="M -6,-2 L -6,-9 C -6,-16 6,-16 6,-9 L 6,-2" fill="none" stroke="#0D9488" stroke-width="2.5" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="rotate" values="-22 0 -2;0 0 -2;0 0 -2;-22 0 -2" keyTimes="0;0.25;0.85;1" dur="2.4s" repeatCount="indefinite"/>
+    </path>
+    <circle cx="0" cy="7" r="2" fill="#0D9488"/>
+  </g>
+
+  <!-- threat probe: approaches from the right, gets deflected before reaching the shield -->
+  <circle r="4.5" fill="#EF4444">
+    <animateMotion dur="2.4s" repeatCount="indefinite"
+      path="M 640 118 L 500 118 L 470 100 L 470 100"/>
+    <animate attributeName="opacity" values="1;1;1;0" keyTimes="0;0.55;0.62;0.7" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="4.5" fill="#EF4444" opacity="0">
+    <animateMotion dur="2.4s" repeatCount="indefinite" begin="0s"
+      path="M 640 118 L 500 118 L 470 100 L 470 100"/>
+    <animate attributeName="opacity" values="0" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+  <!-- deflection flash at the point of contact -->
+  <path d="M 494,112 L 506,112 M 500,106 L 500,118" stroke="#EF4444" stroke-width="2" opacity="0" stroke-linecap="round">
+    <animate attributeName="opacity" values="0;0;1;0" keyTimes="0;0.52;0.58;0.68" dur="2.4s" repeatCount="indefinite"/>
+  </path>
+
+  <text x="450" y="156" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="2" fill="#94a3b8">
+    HEURISTICS RAISE THE COST — THE KEYSTORE HOLDS THE LINE
+  </text>
+</svg>

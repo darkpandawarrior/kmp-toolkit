@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+/build
+
+# Kotlin
+.kotlin/
+
+# Local config
+local.properties
+/local.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+
+# Logs
+*.log

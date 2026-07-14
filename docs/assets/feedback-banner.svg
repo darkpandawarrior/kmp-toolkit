@@ -1,0 +1,42 @@
+<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kmp-feedback — multiplatform sound and haptic feedback primitives">
+  <defs>
+    <linearGradient id="kf-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+
+  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="url(#kf-grad)">
+    kmp-feedback
+    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
+  </text>
+
+  <!-- a stamp slams down at center; sound rings and a haptic pulse fire on impact -->
+  <g transform="translate(450,122)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0,-10;0,-10;0,2;0,-10" keyTimes="0;0.55;0.62;1" dur="2.2s" repeatCount="indefinite"/>
+      <rect x="-14" y="-22" width="28" height="14" rx="2" fill="none" stroke="url(#kf-grad)" stroke-width="2.5"/>
+      <rect x="-5" y="-8" width="10" height="10" fill="none" stroke="url(#kf-grad)" stroke-width="2.5"/>
+    </g>
+  </g>
+
+  <!-- concentric sound rings, expanding outward from the impact point -->
+  <circle cx="450" cy="128" r="6" fill="none" stroke="#F59E0B" stroke-width="2" opacity="0">
+    <animate attributeName="r" values="6;46" keyTimes="0;1" dur="1.1s" begin="1.3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.9;0" keyTimes="0;1" dur="1.1s" begin="1.3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="450" cy="128" r="6" fill="none" stroke="#EC4899" stroke-width="2" opacity="0">
+    <animate attributeName="r" values="6;46" keyTimes="0;1" dur="1.1s" begin="1.55s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.7;0" keyTimes="0;1" dur="1.1s" begin="1.55s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- haptic pulse: a small zigzag squiggle blips beside the impact -->
+  <path d="M 500,120 L 508,112 L 516,128 L 524,116 L 530,120" fill="none" stroke="url(#kf-grad)"
+        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.62;0.78;0.85" dur="2.2s" repeatCount="indefinite"/>
+  </path>
+
+  <text x="450" y="156" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="2" fill="#94a3b8">
+    ONE TAP · SOUND ON FOUR PLATFORMS · HAPTICS WHERE THERE'S A MOTOR
+  </text>
+</svg>
