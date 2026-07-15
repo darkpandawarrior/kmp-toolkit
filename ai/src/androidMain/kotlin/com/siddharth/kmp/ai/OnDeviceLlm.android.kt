@@ -17,7 +17,9 @@ actual fun onDeviceLlmModule(): Module =
             CompositeOnDeviceLlm(
                 listOf(
                     MlKitGenAiOnDeviceLlm(androidContext()),
-                    MediaPipeOnDeviceLlm(androidContext(), get()),
+                    // getOrNull(): the app opts into sampler/accelerator tuning by defining a
+                    // single<GenerationConfig>; absent one, MediaPipe keeps its built-in defaults.
+                    MediaPipeOnDeviceLlm(androidContext(), get(), getOrNull<GenerationConfig>()),
                 ),
             )
         }
