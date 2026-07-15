@@ -64,10 +64,10 @@ private class JvmSoundPlayer : SoundPlayer {
     // Pre-rendered PCM, one buffer per key.
     private val samples: Map<SoundKey, ByteArray> =
         mapOf(
-            SoundKey.Stamp to renderTone(196.0, 120, 26.0, 0.5), // low woody slam
-            SoundKey.Coin to renderClink(), // bright clink
+            SoundKey.Confirm to renderTone(196.0, 120, 26.0, 0.5), // low woody slam
+            SoundKey.Reward to renderClink(), // bright clink
             SoundKey.Thud to renderTone(110.0, 160, 14.0, 0.55), // deep thud
-            SoundKey.Win to renderWinSting(), // rising fanfare
+            SoundKey.Success to renderWinSting(), // rising fanfare
         )
 
     @Volatile private var released = false

@@ -98,10 +98,10 @@ private fun ByteArray.toNSData(): NSData =
 private class IosSoundPlayer : SoundPlayer {
     private val wavs: Map<SoundKey, ByteArray> =
         mapOf(
-            SoundKey.Stamp to renderWav(tone(196.0, 26.0, 0.5), 120),
-            SoundKey.Coin to renderWav(tone(1320.0, 28.0, 0.35), 90),
+            SoundKey.Confirm to renderWav(tone(196.0, 26.0, 0.5), 120),
+            SoundKey.Reward to renderWav(tone(1320.0, 28.0, 0.35), 90),
             SoundKey.Thud to renderWav(tone(110.0, 14.0, 0.55), 160),
-            SoundKey.Win to renderWav(tone(659.25, 8.0, 0.45), 320),
+            SoundKey.Success to renderWav(tone(659.25, 8.0, 0.45), 320),
         )
 
     // Retain players so they are not GC'd mid-playback.

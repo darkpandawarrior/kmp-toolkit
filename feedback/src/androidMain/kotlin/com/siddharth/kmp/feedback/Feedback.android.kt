@@ -80,10 +80,10 @@ private fun renderWinSting(): ShortArray {
 private class AndroidSoundPlayer : SoundPlayer {
     private val samples: Map<SoundKey, ShortArray> =
         mapOf(
-            SoundKey.Stamp to renderTone(196.0, 120, 26.0, 0.5),
-            SoundKey.Coin to renderTone(1320.0, 90, 28.0, 0.35),
+            SoundKey.Confirm to renderTone(196.0, 120, 26.0, 0.5),
+            SoundKey.Reward to renderTone(1320.0, 90, 28.0, 0.35),
             SoundKey.Thud to renderTone(110.0, 160, 14.0, 0.55),
-            SoundKey.Win to renderWinSting(),
+            SoundKey.Success to renderWinSting(),
         )
 
     @Volatile private var released = false

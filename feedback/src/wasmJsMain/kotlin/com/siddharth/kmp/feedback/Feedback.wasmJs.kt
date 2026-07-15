@@ -59,10 +59,10 @@ private fun jsVibrate(ms: Int): Unit =
 private class WasmSoundPlayer : SoundPlayer {
     override fun playSound(key: SoundKey) {
         when (key) {
-            SoundKey.Stamp -> jsBeep(196.0, 120.0, 0.4)
-            SoundKey.Coin -> jsBeep(1320.0, 90.0, 0.3)
+            SoundKey.Confirm -> jsBeep(196.0, 120.0, 0.4)
+            SoundKey.Reward -> jsBeep(1320.0, 90.0, 0.3)
             SoundKey.Thud -> jsBeep(110.0, 160.0, 0.45)
-            SoundKey.Win -> {
+            SoundKey.Success -> {
                 // Rising three-note sting (best-effort; staggered by the browser clock).
                 jsBeep(523.25, 110.0, 0.35)
                 jsBeep(659.25, 110.0, 0.35)

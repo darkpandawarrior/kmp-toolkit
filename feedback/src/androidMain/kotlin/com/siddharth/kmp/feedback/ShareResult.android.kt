@@ -2,7 +2,7 @@ package com.siddharth.kmp.feedback
 
 import android.content.Intent
 
-actual fun shareGameResult(text: String) {
+actual fun shareText(text: String) {
     val ctx = FeedbackAndroid.appContext ?: return
     val chooser =
         Intent

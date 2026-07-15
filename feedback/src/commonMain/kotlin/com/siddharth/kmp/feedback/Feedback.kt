@@ -3,59 +3,58 @@ package com.siddharth.kmp.feedback
 // ═══════════════════════════════════════════════════════════════════════════════
 // Feedback.kt — the platform-agnostic feedback contract (M3).
 //
-// A tiny expect/actual layer so every moment in the stamp-theatre can fire a short
-// SFX + a haptic pulse, gated by the master sound toggle (AppPrefs.soundFlow).
+// A tiny expect/actual layer so any app moment can fire a short SFX + a haptic pulse,
+// gated by the caller's own master sound toggle.
 //
-//  - SoundKey:      WHAT to play (stamp thud, coin clink, win sting, bark/win, …).
-//  - HapticPattern: HOW the device should buzz (maps 1:1 onto the moment HapticBeat).
+//  - SoundKey:      WHAT to play (a small vocabulary of feel-based cues).
+//  - HapticPattern: HOW the device should buzz.
 //  - SoundPlayer:   expect interface — actuals: jvm (javax.sound, real tone synth),
 //                   android (SoundPool + Vibrator), ios (AVAudioPlayer + Impact gen),
 //                   wasm (Web Audio / safe no-op).
-//  - rememberDefaultSoundPlayer / defaultSoundPlayer(): platform factory.
+//  - defaultSoundPlayer(): platform factory.
 //
-// The :core:designsystem moment overlay owns the mapping from KursiMoment → SoundKey
-// and HapticBeat → HapticPattern; this module stays free of any Compose / engine code.
+// The caller owns the mapping from its own domain moments → SoundKey / HapticPattern;
+// this module stays free of any Compose / domain code.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * The short SFX vocabulary used by the action-moment overlay.
+ * The short SFX vocabulary a caller draws on for UX feedback.
  *
  * Each key is synthesised (jvm/ios tone synth) or sampled (android SoundPool) into a
- * sub-second sound. Keys are intentionally coarse — one per *feel*, not per moment —
- * so the whole game ships with a handful of audibly distinct cues.
+ * sub-second sound. Keys are intentionally coarse — one per *feel*, not per event —
+ * so an app ships a handful of audibly distinct cues and maps its own moments onto them.
  */
 enum class SoundKey {
-    /** Rubber-stamp slam — claims/blocks/reveals press a glyph onto the felt. */
-    Stamp,
+    /** Firm press/slam — a committing action (confirm, claim, submit). */
+    Confirm,
 
-    /** Coin clink — economic actions (income / aid / tax) where khokhas travel. */
-    Coin,
+    /** Bright clink — a positive/rewarding action (income, credit, reward). */
+    Reward,
 
-    /** Heavy thud — steals, supari, influence loss; weightier than a stamp. */
+    /** Heavy thud — a weighty negative action (loss, removal, penalty). */
     Thud,
 
-    /** Triumphant sting / "bark" — the win fanfare. */
-    Win,
+    /** Triumphant sting — a success fanfare (win, completion, milestone). */
+    Success,
 }
 
 /**
- * Device haptic pattern. A 1:1 mirror of the moment-layer `HapticBeat` taxonomy so the
- * overlay can translate without this module importing :core:designsystem.
+ * Device haptic pattern. A coarse, feel-based taxonomy the caller maps its own moments onto.
  */
 enum class HapticPattern {
     /** No buzz. */
     None,
 
-    /** A single light tick — routine economic actions, turn handoffs. */
+    /** A single light tick — routine actions, handoffs. */
     Tick,
 
-    /** A single firm thud — steals, assassinations, influence loss. */
+    /** A single firm thud — weighty/negative actions. */
     Thud,
 
-    /** Two quick buzzes — "caught lying" reveal. */
+    /** Two quick buzzes — an alert/reveal. */
     DoubleBuzz,
 
-    /** One long heavy pulse — reserved for Coup, Elimination, Win. */
+    /** One long heavy pulse — reserved for the biggest moments. */
     HeavyLong,
 }
 
@@ -65,8 +64,8 @@ enum class HapticPattern {
  * Contract:
  *  - All methods are fire-and-forget and must never throw (a missing audio device,
  *    a denied haptic permission, or a headless CI box must degrade to a silent no-op).
- *  - [playSound] / [haptic] are only ever called by the overlay when the master sound
- *    toggle is ON; implementations need not re-check a preference.
+ *  - [playSound] / [haptic] are expected to be called by the caller only when its master
+ *    sound toggle is ON; implementations need not re-check a preference.
  *  - [release] frees native resources (SoundPool, audio lines). Idempotent.
  *
  * The jvm actual genuinely emits audio (a tiny javax.sound tone synth) so the desktop
