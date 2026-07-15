@@ -9,6 +9,11 @@ import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.ImagePart
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 // ponytail: EXPERIMENTAL — com.google.mlkit:genai-prompt:1.0.0-beta2 (ML Kit GenAI Prompt API,
 // Gemini Nano). Compile-verified only, NOT device-verified: no Gemini-Nano-class hardware
@@ -34,6 +39,21 @@ class MlKitGenAiOnDeviceLlm(
         if (!isAvailable()) return null
         return runCatching { runGeneration(parts) }.getOrNull()
     }
+
+    override fun generateStream(prompt: String): Flow<String> = generateStream(listOf(LlmPart.Text(prompt)))
+
+    // generateContentStream() is already Flow-native on this SDK (verified via javap on the
+    // resolved genai-prompt-1.0.0-beta2 API jar) — no callbackFlow bridge or explicit cancel call
+    // needed; Flow's structured cancellation is sufficient. Mirrors Mileway's pre-refactor
+    // MlKitLlmGateway.stream(), moved here so it lives behind the shared OnDeviceLlm seam.
+    override fun generateStream(parts: List<LlmPart>): Flow<String> =
+        flow {
+            if (!isAvailable() || model.checkStatus() != FeatureStatus.AVAILABLE) return@flow
+            val request = buildRequest(parts) ?: return@flow
+            emitAll(model.generateContentStream(request).map { it.candidates.firstOrNull()?.text.orEmpty() })
+        }.catch {
+            // On-device model hiccup mid-stream — degrade to whatever already emitted.
+        }
 
     private suspend fun runGeneration(parts: List<LlmPart>): String? {
         if (model.checkStatus() != FeatureStatus.AVAILABLE) return null
