@@ -22,7 +22,7 @@
   </defs>
 
   <text x="480" y="66" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="url(#wordmarkGradient)">kmp-mvi-core</text>
-  <text x="480" y="92" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#8b8b96">Kotlin Multiplatform &#183; unidirectional MVI ViewModel core</text>
+  <text x="480" y="97" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#8b8b96">Kotlin Multiplatform &#183; unidirectional MVI ViewModel core</text>
 
   <!-- MVI cycle: Action -> State -> View, looping. Node names match BaseViewModel's real
        generics: S = state, E = effect, A = action (see lib/src/commonMain .../BaseViewModel.kt). -->

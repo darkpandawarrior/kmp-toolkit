@@ -1,16 +1,19 @@
 <div align="center">
 
-# kmp-toolkit
+<img src="docs/assets/banner.svg" alt="kmp-toolkit" width="700"/>
 
 ### A Kotlin Multiplatform toolkit — a family of small, focused, production-grade libraries extracted from real apps.
 
+![CI](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/ci.yml/badge.svg)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20--Beta1-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20MP-1.12.0--beta01-4285F4?logo=jetpackcompose&logoColor=white)
 ![Ktor](https://img.shields.io/badge/Ktor-3.5.1-087CFA?logo=ktor&logoColor=white)
 ![Koin](https://img.shields.io/badge/Koin-4.2.2-2F855A)
-![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20JVM%20%7C%20Wasm-4285F4)
-![Modules](https://img.shields.io/badge/modules-9-0EA5E9)
+![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20JVM%20%7C%20Wasm%20%7C%20watchOS-4285F4)
+![Modules](https://img.shields.io/badge/modules-32-0EA5E9)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+
+**[Why](#why-kmp-toolkit)** · **[Highlights](#highlights)** · **[Modules](#modules)** · **[Architecture](#family-architecture)** · **[Tech stack](#tech-stack)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)**
 
 [**Portfolio**](https://cv-siddharth.vercel.app/) ·
 [HireSignal](https://github.com/darkpandawarrior/HireSignal) ·
@@ -26,9 +29,12 @@
 <details>
 <summary><b>Contents</b></summary>
 
-- [What this is](#what-this-is)
+- [Why kmp-toolkit](#why-kmp-toolkit)
+- [Highlights](#highlights)
 - [Modules](#modules)
 - [Family architecture](#family-architecture)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
 - [Install](#install)
 - [result](#result)
 - [common](#common)
@@ -37,32 +43,66 @@
 - [security](#security)
 - [designsystem](#designsystem)
 - [ai](#ai)
+- [llm-chat](#llm-chat)
 - [feedback](#feedback)
 - [location](#location)
+- [payments-api](#payments-api)
+- [provider:* (18 payment-gateway leaves)](#provider--18-payment-gateway-leaves)
+- [offline-outbox](#offline-outbox)
+- [bots-policy](#bots-policy)
 - [secrets](#secrets)
 - [Repository structure](#repository-structure)
+- [Roadmap](#roadmap)
 - [License](#license)
 
 </details>
 
-## What this is
+## Why kmp-toolkit
 
-`kmp-toolkit` is a monorepo consolidation of eight leaf libraries (plus `location`, added after the merge) that started life as separate
-repos, each extracted from a production app the moment its logic was needed a second time —
+`kmp-toolkit` started as a monorepo consolidation of eight leaf libraries that had begun life as
+separate repos, each extracted from a production app the moment its logic was needed a second time —
 `mvi-core` out of Mileway's `core:ui`, `security` out of PaymentsLab's `core:security`, `network`
 and `designsystem` and `ai` out of HireSignal's `core:*` modules, `feedback` out of Kursi. None of
 them were designed up front as a "platform" — each is the smallest reusable slice of a real screen,
-published once the second consumer showed up.
+published once the second consumer showed up. `location` joined right after the merge, and the
+monorepo has since grown to **32 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
+18-provider payment-gateway family, `offline-outbox` (the first Room module here), and `bots-policy`
+(a generic ISMCTS search shell) — see [Roadmap](#roadmap) for what shipped when.
 
 Every module targets exactly the platforms its own consumers need — no module claims iOS support
-it can't back up, no module ships a `wasmJs` target nobody asked for. The one inter-module
-dependency in the whole family (`security` → `common`, for `AppLog`) is deliberate: everything else
-is standalone by design, so adopting one leaf never drags in the rest.
+it can't back up, no module ships a `wasmJs` target nobody asked for. Two deliberate inter-module
+spines exist — `security → common` (for `AppLog`) and the `payments-api` ↔ `provider:*` gateway
+contract — everything else is standalone by design, so adopting one leaf never drags in the rest.
 
 Gradle convention plugins (the `androidKmpLibrary`, `composeCompiler` etc. plugins every
 `build.gradle.kts` here applies) live in a separate repo,
 [**kmp-build-logic**](https://github.com/darkpandawarrior/kmp-build-logic) — not part of this
 monorepo.
+
+## Highlights
+
+- 🧩 **32 Gradle modules, one dependency graph.** 9 original leaves, `llm-chat` / `payments-api` /
+  `offline-outbox` / `bots-policy`, and 18 `provider:*` payment-gateway leaves — every one published
+  independently under `com.siddharth.kmp:<name>`, and a consumer only pulls in the modules it needs.
+- 💳 **`payments-api` + 18 providers is a real gateway-abstraction exercise, not a toy.** One
+  `PaymentGateway`/`PaymentBackend` contract in `payments-api`, then a thin Android-only adapter per
+  provider (`stripe`, `razorpay`, `cashfree`, `square`, `mpesa`, `wallet`, `stripe-connect`,
+  `hosted-webview`, …) — `StubGateway`/`SimulatedPayment` let the contract be exercised with zero live
+  credentials.
+- 🤖 **`llm-chat` talks to three real cloud LLM APIs** (Gemini, OpenAI, Anthropic) behind one
+  `AiProvider` seam, reusing `:network`'s `httpClientEngine()` directly rather than its retry/timeout
+  wrapper — a documented, deliberate choice (see the module's `build.gradle.kts` comment).
+- 🗄️ **`offline-outbox` is the first Room module in the monorepo** — its own closed `@Database`
+  (Room databases can't be spliced into a host app's), targeting `watchosArm64` /
+  `watchosSimulatorArm64` / `watchosDeviceArm64` alongside Android/JVM/iOS because Mileway's
+  `core:data` needs the outbox on watchOS too.
+- ♟️ **`bots-policy` is a zero-dependency ISMCTS search shell**, extracted from Kursi's ai↔engine
+  inversion — the generic search lives here, the game-specific rollout/leaf-eval stays in the app.
+- 🔗 **One deliberate cross-leaf edge, everywhere else standalone.** `security → common` is the only
+  `kmp-toolkit`-internal dependency between two original leaves; adopting one module never silently
+  drags in a sibling.
+- ✅ **CI runs the full multiplatform matrix on every push** — `assemble jvmTest testAndroidHostTest
+  testDebugUnitTest` across all 32 modules, plus a dedicated no-AI-attribution check workflow.
 
 ## Modules
 
@@ -75,8 +115,13 @@ monorepo.
 | [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening — Keystore, VAPT posture, `FLAG_SECURE` | Android only | PaymentsLab |
 | [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives — tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | HireSignal (`core:designsystem`) |
 | [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction — ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | HireSignal (`core:ai`) |
+| [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client — Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | new (`bb33d0c`), no dependents yet |
 | [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit — synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Kursi |
 | [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math — Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Mileway (`feature:tracking`) |
+| [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the 18 `provider:*` leaves |
+| [**provider:\***](#provider--18-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 18 Android-only adapters implementing `payments-api`'s contract per gateway | Android only | reference integrations |
+| [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox — its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Mileway (`core:data`) |
+| [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell — `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Kursi (ai engine) |
 | [**secrets**](#secrets) | *(docs only, not a Gradle module)* | SOPS + age encrypted-secrets vault + alias manifest | — | reference pattern, no dependents |
 
 ## Family architecture
@@ -97,6 +142,11 @@ graph TD
     AI["ai<br/>OnDeviceLlm"]
     FEEDBACK["feedback<br/>SoundPlayer · HapticManager"]
     LOCATION["location<br/>KalmanSmoother · PathSimplifier"]
+    LLMCHAT["llm-chat<br/>AiProvider (Gemini/OpenAI/Anthropic)"]
+    PAYMENTSAPI["payments-api<br/>PaymentGateway · Money · PaymentResult"]
+    PROVIDERS["provider:* (18 leaves)<br/>stripe · razorpay · cashfree · square · …"]
+    OUTBOX["offline-outbox<br/>Room SubmitOutbox"]
+    BOTS["bots-policy<br/>Policy · Ismcts · SearchBudget"]
 
     NAPIER --> COMMON
     KTOR --> NETWORK
@@ -106,6 +156,10 @@ graph TD
 
     COMMON --> SECURITY
     RESULT -.->|"Phase-4 adoption planned"| NETWORK
+    NETWORK --> LLMCHAT
+    COMMON --> PAYMENTSAPI
+    PAYMENTSAPI --> PROVIDERS
+    COMMON --> PROVIDERS
 
     COMMON --> HIRESIGNAL["HireSignal"]
     NETWORK --> HIRESIGNAL
@@ -116,19 +170,57 @@ graph TD
     COMMON --> PAYMENTSLAB["PaymentsLab"]
     SECURITY --> PAYMENTSLAB
     MVI --> PAYMENTSLAB
+    PROVIDERS --> PAYMENTSLAB
 
     LOCATION --> MILEWAY["Mileway"]
+    OUTBOX --> MILEWAY
 
     MVI --> KURSI["Kursi"]
     FEEDBACK --> KURSI
+    BOTS --> KURSI
 
     style SECURITY fill:#3DDC84,color:#000
     style COMMON fill:#F97316,color:#fff
 ```
 
-`security → common` is the only edge between two `kmp-toolkit` leaves — `security` pulls in
-`AppLog` for its detectors' logging and nothing else. Every other module is standalone: dropping one
-into an app never drags in a sibling.
+`security → common` is the only edge between two original `kmp-toolkit` leaves; `payments-api →
+common` and every `provider:* → payments-api`/`provider:* → common` edge is the newer, equally
+deliberate gateway-abstraction spine. Every module outside those two families is standalone:
+dropping one into an app never drags in a sibling.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Language | Kotlin `2.4.20-Beta1` |
+| Build | Android Gradle Plugin `9.4.0-alpha04`, KSP `2.3.10` |
+| UI | Compose Multiplatform `1.12.0-beta01` (Material3 `1.12.0-alpha03`, BOM `2026.06.01`) |
+| Networking | Ktor `3.5.1` (OkHttp / Darwin / CIO / Js engines) |
+| DI | Koin `4.2.2` |
+| Async | kotlinx-coroutines `1.11.0` |
+| Persistence | Room `2.8.4` (KMP, `offline-outbox`) |
+| Logging | Napier `2.7.1` |
+| Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Robolectric `4.16.1` |
+| Publishing | GitHub Packages Maven (`com.siddharth.kmp`, version `1.0.0`) |
+| CI | GitHub Actions — `ci.yml` (build+test matrix), `no-ai-attribution.yml` |
+
+## Getting started
+
+```bash
+git clone https://github.com/darkpandawarrior/kmp-toolkit.git
+cd kmp-toolkit
+
+# Build + test everything CI runs, across every module
+./gradlew assemble jvmTest testAndroidHostTest testDebugUnitTest --stacktrace
+
+# Or scope to one module, e.g. while working on network
+./gradlew :network:jvmTest
+```
+
+`settings.gradle.kts` uses `includeBuild("../kmp-build-logic")` for the convention plugins, so
+[kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic) must be checked out as a
+sibling directory of `kmp-toolkit` before the first build. See [Install](#install) below for wiring
+this repo — as a composite build or as published Maven coordinates — into a consuming app.
 
 ## Install
 
@@ -684,6 +776,40 @@ stays in your app and consumes this seam. HireSignal's `core:ai` builds `JobInte
 | iOS | Foundation Models seam (`iosArm64`, `iosSimulatorArm64`) |
 | JVM / Desktop | `UnavailableOnDeviceLlm` — the heuristic tier upstream always answers |
 
+## llm-chat
+
+Every app that wants cloud LLM chat re-solves the same problem: three different HTTP APIs
+(Anthropic, OpenAI, Gemini), three different auth headers and request shapes, and a fallback order
+when a key is missing or a provider errors. `llm-chat` collapses that behind one `AiProvider` seam —
+`complete(messages, config) -> String` plus `isAvailable()`.
+
+```kotlin
+import com.siddharth.kmp.llmchat.buildProviderChain
+import com.siddharth.kmp.llmchat.firstAvailable
+import com.siddharth.kmp.llmchat.AiMessage
+import com.siddharth.kmp.llmchat.AiProviderConfig
+
+val chain = buildProviderChain(
+    config = AiProviderConfig(anthropicKey = key1, openAiKey = key2, geminiKey = key3),
+    fallback = myHeuristicProvider,
+)
+val provider = firstAvailable(chain, fallback = myHeuristicProvider)
+val reply = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summarize this JD")))
+```
+
+| Member | Signature | What it does |
+|---|---|---|
+| `AiProvider` | `interface { complete(messages, config): String; isAvailable(): Boolean }` | The single seam every backend implements |
+| `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API |
+| `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → Anthropic → OpenAI → Gemini → fallback, skipping any blank key |
+| `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
+
+`llm-chat` deliberately reuses `:network`'s internal `httpClientEngine()` factory rather than its
+`createHttpClient()` wrapper — the retry/backoff and 30s timeout in `network`'s wrapper would change
+these providers' existing fire-and-forget request behavior, so the module brings its own
+`ktor-client-core`/`content-negotiation` setup on top of the shared engine. Targets: Android, JVM,
+iOS, `wasmJs`. Newest module in the repo (commit `bb33d0c`), no dependents yet.
+
 ## feedback
 
 ![feedback](docs/assets/feedback-banner.svg)
@@ -816,6 +942,119 @@ locationUpdates.collect { fix ->
 `location` depends on no other `kmp-toolkit` module and no third-party library. Consumed by Mileway's
 `feature:tracking`.
 
+## payments-api
+
+The contract every `provider:*` leaf implements: `PaymentGateway.prepare(order)` does the
+server-round-trip step, `PaymentGateway.pay(host, prepared)` launches the provider's SDK/UI and
+suspends until a terminal `PaymentResult`. Splitting the two keeps the network step unit-testable
+without a device, and keeps the messy Activity-callback SDK reality confined to each provider's
+`androidMain`.
+
+```kotlin
+import com.siddharth.kmp.paymentsapi.PaymentGateway
+import com.siddharth.kmp.paymentsapi.PaymentResult
+
+suspend fun charge(gateway: PaymentGateway, order: CreatedOrder, host: PaymentHost): PaymentResult {
+    val prepared = gateway.prepare(order)
+    return when (val result = gateway.pay(host, prepared)) {
+        is PaymentResult.Success -> result // still just a client hint — verify server-side
+        is PaymentResult.Failure -> result
+        is PaymentResult.Pending -> result  // e.g. UPI SUBMITTED — poll the backend
+        is PaymentResult.Cancelled -> result
+    }
+}
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `PaymentGateway` | `interface` | `prepare(order) -> PreparedPayment`, `pay(host, prepared) -> PaymentResult` |
+| `PaymentResult` | `sealed interface` | `Success` / `Failure` / `Pending` / `Cancelled`, each carrying a `RedactedPayload` |
+| `GatewayStatus` | `enum` | `SANDBOX_READY`, `MOCK_MODE`, `KYC_GATED`, `COMING_SOON` — honest per-provider runnability |
+| `Capability` | `enum` | `ONE_TIME_PAYMENT`, `UPI`, `CARDS`, `WALLET`, `NET_BANKING`, `REFUND`, `MANDATE` |
+| `Money` | `data class` | Amount + currency, the shared money type across every provider |
+| `StubGateway` / `SimulatedPayment` | class | A runnable fake gateway — exercises the whole contract with zero live credentials |
+| `Redactor` / `RedactedPayload` | class | Strips secrets from a provider's raw SDK response before it's surfaced anywhere |
+
+The `GatewayStatus` enum is the module's honesty mechanism: `MOCK_MODE` providers run their full
+lifecycle against a mock backend (no live credentials needed to demo), `KYC_GATED` providers ship
+real integration code with catalog/docs only (business onboarding required to actually run),
+`COMING_SOON` is unimplemented. `payments-api` depends on `common` (for `UiText` on
+`PaymentResult.Failure`/`PaymentStep.Errored`) — its only cross-family dependency. Targets: Android,
+JVM, iOS.
+
+## provider:* (18 payment-gateway leaves)
+
+Eighteen Android-only leaf modules, one per gateway, each implementing `payments-api`'s
+`PaymentGateway` contract against a real SDK: `stripe`, `stripe-connect`, `razorpay`, `cashfree`,
+`square`, `omise`, `paystack`, `paytm`, `peach`, `nmi`, `xendit`, `flutterwave`, `googlepay`,
+`upi-intent`, `cash`, `mobile-money`, `mpesa`, `wallet`, and `hosted-webview` (a Compose-WebView
+generic hosted-checkout leaf via `compose-webview-multiplatform`, for gateways with no native SDK).
+
+```kotlin
+// provider:stripe/build.gradle.kts — the shape every leaf follows
+dependencies {
+    implementation(project(":payments-api")) // the PaymentGateway contract
+    implementation(project(":common"))       // AppLog
+    implementation(libs.stripe.paymentsheet)
+    implementation(libs.play.services.wallet) // Google Pay rides Stripe as gateway of record
+}
+```
+
+Every leaf depends on `payments-api` (the contract) and `common` (logging), then whatever
+vendor-specific SDK it wraps — `stripe.paymentsheet` + `play-services-wallet` for `stripe`,
+`razorpay.checkout` for `razorpay`, `cashfree.pg-api`/`cashfree.pg-ui` from Cashfree's own Maven repo
+for `cashfree`, `robolectric` for host-side unit tests in a couple of leaves. None of the 18 leaves
+depend on each other. All Android-only — `compileSdk 37` / `minSdk 24` — since every leaf wraps a
+concrete Android SDK/Activity-callback surface, same reasoning as `security`.
+
+## offline-outbox
+
+The first Room module in the monorepo. A submit-and-retry outbox for offline-first writes — queue a
+mutation locally, retry it when connectivity returns, without ever touching a host app's own `@Room
+Database` (Room databases are closed; this module owns a private one-entity `@Database` of its own,
+see `OutboxDatabase.kt`).
+
+```kotlin
+// module build.gradle.kts
+plugins {
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
+}
+room { schemaDirectory("$projectDir/schemas") }
+```
+
+Targets: Android, JVM, iOS, **and watchOS** (`watchosArm64`, `watchosSimulatorArm64`,
+`watchosDeviceArm64`) — Mileway's `core:data` re-exports the outbox through `commonMain` and targets
+watchOS too, so this module has to match that target set, sharing `appleMain` actuals between iOS and
+watchOS. Depends on Room `2.8.4` + `sqlite-bundled` (Android) and kotlinx-serialization; no other
+`kmp-toolkit` module. Consumed by Mileway (`core:data`).
+
+## bots-policy
+
+A zero-dependency ISMCTS (Information Set Monte Carlo Tree Search) search shell, extracted from
+Kursi's ai↔engine inversion: the generic search primitives (`Policy`, `GameRules`, `Ismcts`,
+`SearchBudget`) live here, and the game-specific rollout policy / leaf evaluation / determinization
+stays in the consuming app — this module never sees a card, a coin, or a Coup-specific rule.
+
+```kotlin
+// module build.gradle.kts — no dependencies beyond kotlin("test") in commonTest
+plugins {
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidKmpLibrary)
+}
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `Policy` | `interface` | The game-agnostic decision seam a bot implements |
+| `GameRules` | `interface` | Legal-move / terminal-state contract the search walks |
+| `Ismcts` | `class` | The information-set MCTS search loop itself |
+| `SearchBudget` | data | Iteration/time budget controlling how long a search runs |
+
+`bots-policy` has zero third-party or cross-module dependencies — genuinely `commonMain`-only Kotlin,
+no coroutine or platform surface. Targets: Android, JVM, iOS, `wasmJs`. Consumed by Kursi's AI
+engine.
+
 ## secrets
 
 ![secrets](docs/assets/secrets-banner.svg)
@@ -862,17 +1101,23 @@ decrypted/materialized secret, or real values in `vault/example.secrets.yaml`.
 
 ```
 kmp-toolkit/
-├── result/                # Result<D,E> + DataError — Android · JVM · iOS · Wasm
-├── common/                 # AppLog + DispatcherProvider — Android · JVM · iOS · Wasm
+├── result/                  # Result<D,E> + DataError — Android · JVM · iOS · Wasm
+├── common/                  # AppLog + DispatcherProvider — Android · JVM · iOS · Wasm
 ├── mvi-core/                # BaseViewModel / StateViewModel / EffectEmitter — Android · JVM · iOS · Wasm
-├── network/                # createHttpClient + connectivity — Android · JVM · iOS
+├── network/                 # createHttpClient + connectivity — Android · JVM · iOS
 ├── security/                # Keystore, VAPT posture, FLAG_SECURE — Android only
 ├── designsystem/            # DesignTokens, ThemeController, MarkdownText — Android · iOS · Wasm
 ├── ai/                      # OnDeviceLlm seam — Android · JVM · iOS
+├── llm-chat/                # Cloud-LLM chat client (Gemini/OpenAI/Anthropic) — Android · JVM · iOS · Wasm
 ├── feedback/                # SoundPlayer, HapticManager — Android · JVM · iOS · Wasm
-├── secrets/                  # SOPS+age vault + alias manifest (docs only, not a Gradle module)
+├── location/                # KalmanSmoother, PathSimplifier — Android · JVM · iOS · Wasm
+├── payments-api/            # PaymentGateway contract, Money, PaymentResult — Android · JVM · iOS
+├── provider/                # 18 Android-only gateway leaves (stripe, razorpay, cashfree, square, …)
+├── offline-outbox/          # Room SubmitOutbox — Android · JVM · iOS · watchOS
+├── bots-policy/             # Generic ISMCTS search shell — Android · JVM · iOS · Wasm
+├── secrets/                 # SOPS+age vault + alias manifest (docs only, not a Gradle module)
 ├── docs/
-│   └── assets/               # animated per-module banner SVGs
+│   └── assets/               # main + per-module animated banner SVGs
 ├── gradle/                   # version catalog (libs.versions.toml)
 ├── gradle.properties
 ├── gradlew / gradlew.bat
@@ -882,8 +1127,40 @@ kmp-toolkit/
 Gradle convention plugins (`androidKmpLibrary`, `composeCompiler`, etc.) applied across the modules
 above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic).
 
+## Roadmap
+
+**Shipped**
+- [x] 9 original leaves extracted from HireSignal / PaymentsLab / Mileway / Kursi (`result`,
+      `common`, `mvi-core`, `network`, `security`, `designsystem`, `ai`, `feedback`, `location`)
+- [x] `llm-chat` — cloud LLM chat client (Gemini / OpenAI / Anthropic) (`bb33d0c`)
+- [x] `payments-api` + 18 `provider:*` gateway leaves — one contract, sandbox-honest `GatewayStatus`
+- [x] `offline-outbox` — first Room module in the monorepo, targeting watchOS alongside Android/JVM/iOS
+- [x] `bots-policy` — zero-dependency ISMCTS search shell extracted from Kursi
+- [x] CI matrix (`assemble jvmTest testAndroidHostTest testDebugUnitTest`) + no-AI-attribution check
+- [x] GitHub Packages publishing under `com.siddharth.kmp`
+
+**Exploring**
+- [ ] Route `network`'s `HttpRequestRetry`/`ResponseException` failures onto `result`'s
+      `DataError.Network` arms, so `result` stops being a foundation with zero consumers
+- [ ] `payments-api` → `result`'s typed `Result<D, DataError>` instead of its own `PaymentResult` shape
+- [ ] `llm-chat` wired into `ai`'s `CompositeOnDeviceLlm` fallback chain as a cloud tier
+- [ ] Move some `provider:*` leaves off `SANDBOX_READY`/`MOCK_MODE` as partner KYC access opens up
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Part of the [kmp-toolkit](https://cv-siddharth.vercel.app/) family;
 convention plugins in [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic).
 [Portfolio](https://cv-siddharth.vercel.app/).
+
+---
+
+<div align="center">
+
+[**Portfolio**](https://cv-siddharth.vercel.app/) ·
+[HireSignal](https://github.com/darkpandawarrior/HireSignal) ·
+[PaymentsLab](https://github.com/darkpandawarrior/PaymentsLab) ·
+[Mileway](https://github.com/darkpandawarrior/Mileway) ·
+[Kursi](https://github.com/darkpandawarrior/Kursi) ·
+[kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
+
+</div>

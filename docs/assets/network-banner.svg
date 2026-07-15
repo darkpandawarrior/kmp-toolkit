@@ -11,24 +11,27 @@
     <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
   </text>
 
-  <!-- client / server, request travels out, response travels back -->
+  <!-- client / server, request travels out, response travels back. Boxes + labels sit at y 94-124
+       (label baseline y=109, box vertical center); the packets travel the open span between the
+       boxes only (x 165-735), stopping short of each box's edge so an arriving packet never
+       overlaps the "client"/"server" text itself. -->
   <rect x="100" y="94" width="46" height="30" rx="5" fill="none" stroke="#087CFA" stroke-width="2"/>
-  <text x="123" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#087CFA">client</text>
+  <text x="123" y="113" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#087CFA">client</text>
 
   <rect x="754" y="94" width="46" height="30" rx="5" fill="none" stroke="#14B8A6" stroke-width="2"/>
-  <text x="777" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#14B8A6">server</text>
+  <text x="777" y="113" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#14B8A6">server</text>
 
   <line x1="146" y1="109" x2="754" y2="109" stroke="url(#kn-grad)" stroke-width="2" opacity="0.3"/>
 
   <!-- request packet: client -> server -->
   <rect width="10" height="10" fill="#087CFA" rx="2">
-    <animateMotion dur="2.6s" repeatCount="indefinite" path="M 150 104 L 750 104" keyPoints="0;1" keyTimes="0;0.4" calcMode="linear"/>
+    <animateMotion dur="2.6s" repeatCount="indefinite" path="M 165 104 L 735 104" keyPoints="0;1" keyTimes="0;0.4" calcMode="linear"/>
     <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.4;0.42;1" dur="2.6s" repeatCount="indefinite"/>
   </rect>
 
   <!-- response packet: server -> client -->
   <rect width="10" height="10" fill="#14B8A6" rx="2">
-    <animateMotion dur="2.6s" repeatCount="indefinite" path="M 750 116 L 150 116" keyPoints="0;1" keyTimes="0;1" begin="1.2s" calcMode="linear"/>
+    <animateMotion dur="2.6s" repeatCount="indefinite" path="M 735 116 L 165 116" keyPoints="0;1" keyTimes="0;1" begin="1.2s" calcMode="linear"/>
     <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.46;0.5;0.9;1" dur="2.6s" begin="0s" repeatCount="indefinite"/>
   </rect>
 
