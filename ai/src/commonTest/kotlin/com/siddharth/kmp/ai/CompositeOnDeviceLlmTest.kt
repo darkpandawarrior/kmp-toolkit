@@ -66,4 +66,34 @@ class CompositeOnDeviceLlmTest {
             assertFalse(composite.isAvailable())
             assertNull(composite.generate("prompt"))
         }
+
+    private class FakeMultimodalBackend(
+        private val available: Boolean,
+        override val supportsImage: Boolean,
+        private val output: String?,
+    ) : OnDeviceLlm {
+        var calls = 0
+
+        override fun isAvailable() = available
+
+        override suspend fun generate(prompt: String): String? = generate(listOf(LlmPart.Text(prompt)))
+
+        override suspend fun generate(parts: List<LlmPart>): String? {
+            calls++
+            return output
+        }
+    }
+
+    @Test
+    fun skips_text_only_backends_when_an_image_part_is_present() =
+        runTest {
+            val textOnly = FakeMultimodalBackend(available = true, supportsImage = false, output = "should-not-win")
+            val multimodal = FakeMultimodalBackend(available = true, supportsImage = true, output = "image-ok")
+            val composite = CompositeOnDeviceLlm(listOf(textOnly, multimodal))
+
+            val parts = listOf(LlmPart.Image(byteArrayOf(1)), LlmPart.Text("describe"))
+            assertEquals("image-ok", composite.generate(parts))
+            assertEquals(0, textOnly.calls, "text-only backend must be skipped when an image part is present")
+            assertEquals(1, multimodal.calls)
+        }
 }

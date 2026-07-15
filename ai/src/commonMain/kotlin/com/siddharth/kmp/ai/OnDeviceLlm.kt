@@ -18,8 +18,21 @@ interface OnDeviceLlm {
      */
     fun isAvailable(): Boolean
 
+    /** True when this backend accepts an [LlmPart.Image] in [generate]. False = text-only. */
+    val supportsImage: Boolean get() = false
+
     /** Runs [prompt] on-device. Returns the model's text, or null when unavailable/declined/failed. */
     suspend fun generate(prompt: String): String?
+
+    /**
+     * Multimodal entry point. Default maps a single [LlmPart.Text] onto [generate] (String) so
+     * every existing text-only actual (MediaPipe, Foundation Models, jvm) keeps working with zero
+     * changes. Backends that accept images (ML Kit GenAI) override this directly.
+     */
+    suspend fun generate(parts: List<LlmPart>): String? {
+        val onlyText = parts.singleOrNull() as? LlmPart.Text ?: return null
+        return generate(onlyText.text)
+    }
 }
 
 /** The common fallback tier: no on-device model. Desktop/JVM/wasm and any pre-AI device land here. */

@@ -13,10 +13,23 @@ class CompositeOnDeviceLlm(
 ) : OnDeviceLlm {
     override fun isAvailable(): Boolean = backends.any { it.isAvailable() }
 
+    override val supportsImage: Boolean get() = backends.any { it.supportsImage }
+
     override suspend fun generate(prompt: String): String? {
         for (backend in backends) {
             if (!backend.isAvailable()) continue
             val result = backend.generate(prompt)
+            if (result != null) return result
+        }
+        return null
+    }
+
+    override suspend fun generate(parts: List<LlmPart>): String? {
+        val needsImage = parts.any { it is LlmPart.Image }
+        for (backend in backends) {
+            if (!backend.isAvailable()) continue
+            if (needsImage && !backend.supportsImage) continue
+            val result = backend.generate(parts)
             if (result != null) return result
         }
         return null

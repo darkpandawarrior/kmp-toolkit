@@ -3,8 +3,10 @@ package com.siddharth.kmp.ai
 import android.content.Context
 import android.os.Build
 import com.google.mlkit.genai.common.FeatureStatus
+import com.google.mlkit.genai.prompt.GenerateContentRequest
 import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerativeModel
+import com.google.mlkit.genai.prompt.ImagePart
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
 
@@ -23,19 +25,38 @@ class MlKitGenAiOnDeviceLlm(
 
     override fun isAvailable(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
-    override suspend fun generate(prompt: String): String? {
+    // ImagePart(byte[]) is a direct constructor on this API — no manual Bitmap decode needed here.
+    override val supportsImage: Boolean = true
+
+    override suspend fun generate(prompt: String): String? = generate(listOf(LlmPart.Text(prompt)))
+
+    override suspend fun generate(parts: List<LlmPart>): String? {
         if (!isAvailable()) return null
-        return runCatching { runGeneration(prompt) }.getOrNull()
+        return runCatching { runGeneration(parts) }.getOrNull()
     }
 
-    private suspend fun runGeneration(prompt: String): String? {
+    private suspend fun runGeneration(parts: List<LlmPart>): String? {
         if (model.checkStatus() != FeatureStatus.AVAILABLE) return null
-        val request = generateContentRequest(TextPart(prompt)) {}
+        val request = buildRequest(parts) ?: return null
         return model
             .generateContent(request)
             .candidates
             .firstOrNull()
             ?.text
             ?.takeIf { it.isNotBlank() }
+    }
+
+    // generateContentRequest() is NOT vararg on this API — it's two fixed overloads, TextPart-only
+    // or ImagePart+TextPart (image first, text LAST — the model reads the trailing text as the
+    // instruction anchoring the preceding image). Multiple images aren't representable by either
+    // overload, so that shape is declined rather than silently dropping extras.
+    private fun buildRequest(parts: List<LlmPart>): GenerateContentRequest? {
+        val images = parts.filterIsInstance<LlmPart.Image>()
+        if (images.size > 1) return null
+        val text = parts.filterIsInstance<LlmPart.Text>().joinToString("\n") { it.text }
+        val image = images.singleOrNull()
+        if (image == null && text.isBlank()) return null
+        return image?.let { generateContentRequest(ImagePart(it.bytes), TextPart(text)) {} }
+            ?: generateContentRequest(TextPart(text)) {}
     }
 }
