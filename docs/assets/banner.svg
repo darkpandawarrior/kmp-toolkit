@@ -6,10 +6,7 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="76" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="url(#kt-grad)">
-    kmp-toolkit
-    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
-  </text>
+  <text x="450" y="76" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="url(#kt-grad)">kmp-toolkit</text>
 
   <!-- animated middle band: small module nodes assembling into a connected graph, y 96-134,
        clear of the title's descender (ends ~80) and the tagline's ascender (starts ~150) -->
@@ -56,6 +53,6 @@
   </g>
 
   <text x="450" y="155" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="3" fill="#94a3b8">
-    32 FOCUSED KOTLIN MULTIPLATFORM MODULES, ONE MONOREPO
+    36 FOCUSED KOTLIN MULTIPLATFORM MODULES, ONE MONOREPO
   </text>
 </svg>

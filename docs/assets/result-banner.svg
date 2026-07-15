@@ -6,10 +6,7 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="50" font-weight="800" fill="url(#kr-grad)">
-    kmp-result
-    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
-  </text>
+  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="50" font-weight="800" fill="url(#kr-grad)">kmp-result</text>
 
   <!-- pipeline: a value token travels in, then forks into Success (green check) / Failure (red x) -->
   <line x1="90" y1="112" x2="440" y2="112" stroke="url(#kr-grad)" stroke-width="2" opacity="0.35"/>

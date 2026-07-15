@@ -6,10 +6,7 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="78" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#ds-grad)">
-    kmp-designsystem
-    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
-  </text>
+  <text x="450" y="78" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#ds-grad)">kmp-designsystem</text>
 
   <!-- theme toggle: a track whose knob slides light <-> dark while the swatch row re-tones -->
   <rect x="366" y="104" width="60" height="26" rx="13" fill="none" stroke="url(#ds-grad)" stroke-width="2"/>

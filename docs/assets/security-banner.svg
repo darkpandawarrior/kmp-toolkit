@@ -6,10 +6,7 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="url(#ks-grad)">
-    kmp-security
-    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
-  </text>
+  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="url(#ks-grad)">kmp-security</text>
 
   <!-- shield: pulses steadily, center stage -->
   <g transform="translate(450,120)">

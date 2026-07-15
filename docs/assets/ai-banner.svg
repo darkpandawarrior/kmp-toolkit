@@ -6,10 +6,7 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="url(#ai-grad)">
-    kmp-ai
-    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
-  </text>
+  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="48" font-weight="800" fill="url(#ai-grad)">kmp-ai</text>
 
   <!-- prompt token cascades through fallback tiers: ML Kit -> MediaPipe -> heuristic, one lighting at a time.
        Tier boxes + labels sit at y 96-114 (text baseline 109); the moving token travels along y=140,

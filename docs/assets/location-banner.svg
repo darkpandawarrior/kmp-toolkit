@@ -6,10 +6,7 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="70" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#loc-grad)">
-    location
-    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
-  </text>
+  <text x="450" y="70" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#loc-grad)">location</text>
 
   <!-- a jagged raw GPS track (dashed) that a smoothed Kalman line traces cleanly through -->
   <polyline points="150,120 200,104 240,132 290,108 340,128 390,106 440,130 500,110 560,126 620,108 680,122 750,114"

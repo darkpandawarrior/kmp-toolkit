@@ -6,17 +6,14 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="62" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#kc-grad)">
-    kmp-common
-    <animate attributeName="opacity" values="0;1" dur="0.9s" begin="0s" fill="freeze"/>
-  </text>
+  <text x="450" y="62" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#kc-grad)">kmp-common</text>
 
-  <!-- AppLog: a log line pulsing through a facade box -->
+  <!-- AppLog: a log line pulsing through a facade box (pulse drawn BEFORE the text so it never overlays it) -->
   <rect x="70" y="82" width="150" height="34" rx="6" fill="none" stroke="#F97316" stroke-width="2"/>
-  <text x="145" y="103" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#F97316">AppLog.d()</text>
   <rect x="70" y="82" width="150" height="34" rx="6" fill="#F97316" opacity="0">
     <animate attributeName="opacity" values="0;0.28;0" dur="1.8s" repeatCount="indefinite"/>
   </rect>
+  <text x="145" y="103" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#F97316">AppLog.d()</text>
 
   <!-- two dispatcher lanes: IO / Default, a dot hops lanes -->
   <text x="450" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" letter-spacing="1">DispatcherProvider</text>
@@ -30,9 +27,9 @@
       path="M 330 105 L 480 105 L 480 128 L 640 128 L 640 105 L 330 105" />
   </circle>
 
-  <!-- request-shaped token traveling into the facade box -->
+  <!-- request-shaped token traveling into the facade box, y=90 clears the "io"/"default" lane labels (y 100-132) -->
   <circle r="4" fill="#A855F7">
-    <animateMotion dur="1.8s" repeatCount="indefinite" path="M 660 99 L 220 99"/>
+    <animateMotion dur="1.8s" repeatCount="indefinite" path="M 660 90 L 220 90"/>
     <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.8;1" dur="1.8s" repeatCount="indefinite"/>
   </circle>
 
