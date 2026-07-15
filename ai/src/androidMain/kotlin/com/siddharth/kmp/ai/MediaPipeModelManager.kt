@@ -17,8 +17,8 @@ import java.io.File
  */
 class MediaPipeModelManager(
     private val context: Context,
+    private val spec: ModelManifestEntry = GEMMA_3_1B,
 ) : ModelManager {
-    private val spec = GEMMA_3_1B
     private val flow = MutableStateFlow(snapshot())
 
     fun modelFile(): File = File(File(context.filesDir, MODELS_DIR).apply { mkdirs() }, spec.fileName)
@@ -36,9 +36,10 @@ class MediaPipeModelManager(
             return
         }
         flow.update { it.copy(state = ModelDownloadState.DOWNLOADING, progress = 0f, error = null) }
-        // TODO(model-download): fetch spec.sourceUrl → modelFile() with a WorkManager wifi-only job +
-        // explicit user consent + progress callbacks (flow.update { it.copy(progress = ...) }). No
-        // source URL / consent UI is committed yet, so this reports FAILED rather than pretending.
+        // TODO(model-download): fetch spec.downloadUrl → modelFile() with a WorkManager wifi-only job +
+        // explicit user consent + progress callbacks (flow.update { it.copy(progress = ...) }). The URL
+        // is now manifest-derived (gallery A5); the resumable fetch itself is gallery A4 (not wired yet),
+        // so this still reports FAILED rather than pretending.
         flow.update {
             it.copy(
                 state = ModelDownloadState.FAILED,
@@ -62,21 +63,19 @@ class MediaPipeModelManager(
             state = if (isReady()) ModelDownloadState.READY else ModelDownloadState.ABSENT,
         )
 
-    private data class ModelSpec(
-        val id: String,
-        val displayName: String,
-        val approxSizeMb: Int,
-        val fileName: String,
-    )
+    companion object {
+        private const val MODELS_DIR = "models"
 
-    private companion object {
-        const val MODELS_DIR = "models"
+        /** Default manifest entry (Gemma 3 1B). Apps can pass their own [ModelManifestEntry] instead. */
         val GEMMA_3_1B =
-            ModelSpec(
+            ModelManifestEntry(
                 id = "gemma3-1b",
                 displayName = "Gemma 3 1B (on-device)",
                 approxSizeMb = 555,
                 fileName = "gemma3-1b-it.task",
+                hfRepo = "litert-community/Gemma3-1B-IT",
+                hfFile = "gemma3-1b-it.task",
+                requiresLicenseAck = true,
             )
     }
 }
