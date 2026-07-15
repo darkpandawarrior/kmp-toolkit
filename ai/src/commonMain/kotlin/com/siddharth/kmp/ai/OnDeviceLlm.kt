@@ -1,5 +1,7 @@
 package com.siddharth.kmp.ai
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import org.koin.core.module.Module
 
 /**
@@ -33,6 +35,15 @@ interface OnDeviceLlm {
         val onlyText = parts.singleOrNull() as? LlmPart.Text ?: return null
         return generate(onlyText.text)
     }
+
+    /**
+     * Streaming variant of [generate]. Default replays the single-shot result as one emission so
+     * every existing actual keeps working with zero changes; backends with native token streaming
+     * (ML Kit GenAI) override this directly.
+     */
+    fun generateStream(prompt: String): Flow<String> = generateStream(listOf(LlmPart.Text(prompt)))
+
+    fun generateStream(parts: List<LlmPart>): Flow<String> = flow { generate(parts)?.let { emit(it) } }
 }
 
 /** The common fallback tier: no on-device model. Desktop/JVM/wasm and any pre-AI device land here. */
