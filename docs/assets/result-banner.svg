@@ -6,42 +6,41 @@
     </linearGradient>
   </defs>
 
-  <text x="450" y="72" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="50" font-weight="800" fill="url(#kr-grad)">kmp-result</text>
+  <text x="450" y="56" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#kr-grad)">kmp-result</text>
 
-  <!-- pipeline: a value token travels in, then forks into Success (green check) / Failure (red x) -->
-  <line x1="90" y1="112" x2="440" y2="112" stroke="url(#kr-grad)" stroke-width="2" opacity="0.35"/>
-  <path d="M 440 112 L 620 78" stroke="#22C55E" stroke-width="2" opacity="0.35"/>
-  <path d="M 440 112 L 620 146" stroke="#EF4444" stroke-width="2" opacity="0.35"/>
+  <!-- pipeline: a value token travels in, then forks into Success (green check) / Failure (red x).
+       Motif band kept to y 78-124 — clear of the tagline at y=156. -->
+  <line x1="110" y1="102" x2="440" y2="102" stroke="url(#kr-grad)" stroke-width="2" opacity="0.35"/>
+  <path d="M 440 102 L 610 84" stroke="#22C55E" stroke-width="2" opacity="0.35"/>
+  <path d="M 440 102 L 610 120" stroke="#EF4444" stroke-width="2" opacity="0.35"/>
 
-  <rect x="70" y="98" width="34" height="28" rx="4" fill="none" stroke="#0EA5E9" stroke-width="2"/>
-  <text x="87" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#0EA5E9">D</text>
+  <rect x="74" y="89" width="32" height="26" rx="4" fill="none" stroke="#0EA5E9" stroke-width="2"/>
+  <text x="90" y="106" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#0EA5E9">D</text>
 
-  <circle cx="440" cy="112" r="5" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+  <circle cx="440" cy="102" r="5" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
 
-  <circle cx="650" cy="78" r="15" fill="none" stroke="#22C55E" stroke-width="2" opacity="0">
+  <circle cx="638" cy="84" r="13" fill="none" stroke="#22C55E" stroke-width="2" opacity="0">
     <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.62;0.95;1" dur="2.4s" repeatCount="indefinite"/>
   </circle>
-  <path d="M 643 78 L 648 84 L 658 71" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0">
+  <path d="M 631 84 L 636 90 L 646 77" fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0">
     <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.62;0.95;1" dur="2.4s" repeatCount="indefinite"/>
   </path>
 
-  <circle cx="650" cy="146" r="15" fill="none" stroke="#EF4444" stroke-width="2" opacity="0">
+  <circle cx="638" cy="120" r="13" fill="none" stroke="#EF4444" stroke-width="2" opacity="0">
     <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.62;0.95;1" dur="2.4s" begin="1.2s" repeatCount="indefinite"/>
   </circle>
-  <path d="M 644 140 L 656 152 M 656 140 L 644 152" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" opacity="0">
+  <path d="M 632 114 L 644 126 M 644 114 L 632 126" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" opacity="0">
     <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.62;0.95;1" dur="2.4s" begin="1.2s" repeatCount="indefinite"/>
   </path>
 
   <circle r="5" fill="#0EA5E9">
-    <animateMotion dur="2.4s" repeatCount="indefinite" path="M 104 112 L 440 112 L 620 78"/>
+    <animateMotion dur="2.4s" repeatCount="indefinite" path="M 106 102 L 440 102 L 610 84"/>
     <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.55;0.6" dur="2.4s" repeatCount="indefinite"/>
   </circle>
   <circle r="5" fill="#0EA5E9">
-    <animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path="M 104 112 L 440 112 L 620 146"/>
+    <animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path="M 106 102 L 440 102 L 610 120"/>
     <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.55;0.6" dur="2.4s" begin="1.2s" repeatCount="indefinite"/>
   </circle>
 
-  <text x="450" y="155" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="2" fill="#94a3b8">
-    A TYPED FORK — SUCCESS OR FAILURE, NEVER A THROW
-  </text>
+  <text x="450" y="156" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="2" fill="#94a3b8">A TYPED FORK — SUCCESS OR FAILURE, NEVER A THROW</text>
 </svg>
