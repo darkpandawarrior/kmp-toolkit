@@ -14,6 +14,9 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
 
+    // BiometricGuard — BiometricPrompt + FragmentActivity (fragment pulled transitively by biometric).
+    implementation(libs.biometric)
+
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.compose.ui)
 

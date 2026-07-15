@@ -15,6 +15,7 @@ compose-material3 = "1.12.0-alpha03"
 compose-bom = "2026.06.01"
 core-ktx = "1.19.0"
 activity-compose = "1.13.0"
+biometric = "1.4.0-alpha07"
 junit = "4.13.2"
 mockk = "1.14.11"
 turbine = "1.2.1"
@@ -78,6 +79,7 @@ compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-
 androidx-compose-ui = { module = "androidx.compose.ui:ui" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 
 # — test —
 junit = { module = "junit:junit", version.ref = "junit" }
