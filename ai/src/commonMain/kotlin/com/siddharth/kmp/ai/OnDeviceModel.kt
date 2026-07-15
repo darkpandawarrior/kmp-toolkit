@@ -3,8 +3,44 @@ package com.siddharth.kmp.ai
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-/** Lifecycle of a downloadable on-device model (e.g. MediaPipe Gemma). */
-enum class ModelDownloadState { ABSENT, DOWNLOADING, READY, FAILED }
+/**
+ * Lifecycle of a downloadable on-device model (e.g. MediaPipe Gemma). [PARTIALLY_DOWNLOADED] marks a
+ * `.tmp` left behind by an interrupted download — the next [ModelManager.download] resumes from it.
+ */
+enum class ModelDownloadState { ABSENT, DOWNLOADING, PARTIALLY_DOWNLOADED, READY, FAILED }
+
+/**
+ * Live progress of a model download. [receivedBytes]/[totalBytes] drive a progress bar; [bytesPerSec]
+ * and [etaMs] drive a "12 MB/s · 2 min left" label. [totalBytes] and [etaMs] are `-1` when unknown
+ * (server sent no Content-Length).
+ */
+data class DownloadProgress(
+    val receivedBytes: Long,
+    val totalBytes: Long,
+    val bytesPerSec: Long,
+    val etaMs: Long,
+) {
+    /** 0f..1f, or 0f when the total size is unknown. */
+    val fraction: Float
+        get() = if (totalBytes > 0) (receivedBytes.toDouble() / totalBytes).toFloat().coerceIn(0f, 1f) else 0f
+}
+
+/**
+ * Pure progress/speed/ETA calc for a resumable download — no I/O, so it is unit-testable. [received]
+ * is the total bytes on disk (including any resumed [startOffset]); [elapsedMs] is time since THIS
+ * session started, so speed reflects the live transfer, not the resumed head start.
+ */
+fun computeDownloadProgress(
+    received: Long,
+    total: Long,
+    elapsedMs: Long,
+    startOffset: Long = 0L,
+): DownloadProgress {
+    val bytesThisSession = (received - startOffset).coerceAtLeast(0L)
+    val bytesPerSec = if (elapsedMs > 0) bytesThisSession * 1000L / elapsedMs else 0L
+    val etaMs = if (bytesPerSec > 0 && total > 0) (total - received).coerceAtLeast(0L) * 1000L / bytesPerSec else -1L
+    return DownloadProgress(receivedBytes = received, totalBytes = total, bytesPerSec = bytesPerSec, etaMs = etaMs)
+}
 
 /**
  * Config-driven description of a downloadable on-device model — the manifest a [ModelManager] reads
@@ -41,6 +77,8 @@ data class ModelInfo(
     val state: ModelDownloadState,
     /** 0f..1f while [state] is DOWNLOADING; otherwise 0f. */
     val progress: Float = 0f,
+    /** Detailed transfer stats while DOWNLOADING (bytes/speed/ETA); null otherwise. */
+    val downloadProgress: DownloadProgress? = null,
     val error: String? = null,
 )
 

@@ -4,24 +4,30 @@ import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import java.io.File
 
 /**
  * Manages the on-demand MediaPipe Gemma model file in app-private storage. The model binary is NEVER
  * committed to the repo — [download] is user-triggered (surfaced on the settings screen via
- * [ModelManager]), wifi-only by default, and lands in `filesDir/models/`.
+ * [ModelManager]) and lands in `filesDir/models/`, resuming from a `.tmp` if a prior attempt was cut off.
  *
- * File presence + [delete] are real; the actual byte fetch is intentionally not wired here (there is
- * no committed model-source URL or download-consent flow yet). See the TODO in [download].
+ * The URL is manifest-derived ([ModelManifestEntry], gallery A5) and the fetch is a real resumable
+ * transfer ([ResumableModelDownloader], gallery A4). The CALLER is responsible for user consent (see
+ * [ModelManifestEntry.requiresLicenseAck]) and for running [download] inside a wifi-only WorkManager
+ * foreground job — this class owns file state + progress, not scheduling.
  */
 class MediaPipeModelManager(
     private val context: Context,
     private val spec: ModelManifestEntry = GEMMA_3_1B,
+    private val downloader: ResumableModelDownloader = ResumableModelDownloader(),
 ) : ModelManager {
     private val flow = MutableStateFlow(snapshot())
 
     fun modelFile(): File = File(File(context.filesDir, MODELS_DIR).apply { mkdirs() }, spec.fileName)
+
+    private fun tmpFile(): File = File(modelFile().parentFile, modelFile().name + ".tmp")
 
     fun isReady(): Boolean = modelFile().let { it.exists() && it.length() > 0 }
 
@@ -35,23 +41,41 @@ class MediaPipeModelManager(
             flow.update { snapshot() }
             return
         }
-        flow.update { it.copy(state = ModelDownloadState.DOWNLOADING, progress = 0f, error = null) }
-        // TODO(model-download): fetch spec.downloadUrl → modelFile() with a WorkManager wifi-only job +
-        // explicit user consent + progress callbacks (flow.update { it.copy(progress = ...) }). The URL
-        // is now manifest-derived (gallery A5); the resumable fetch itself is gallery A4 (not wired yet),
-        // so this still reports FAILED rather than pretending.
+        flow.update { it.copy(state = ModelDownloadState.DOWNLOADING, progress = 0f, downloadProgress = null, error = null) }
+        val result =
+            runCatching {
+                downloader.download(spec.downloadUrl, modelFile()).collect { p ->
+                    flow.update {
+                        it.copy(state = ModelDownloadState.DOWNLOADING, progress = p.fraction, downloadProgress = p)
+                    }
+                }
+            }
         flow.update {
-            it.copy(
-                state = ModelDownloadState.FAILED,
-                progress = 0f,
-                error = "On-device model download isn't wired yet — using the heuristic tier.",
-            )
+            when {
+                result.isSuccess && isReady() ->
+                    it.copy(state = ModelDownloadState.READY, progress = 1f, downloadProgress = null, error = null)
+                // A leftover .tmp means the transfer was interrupted — resumable on the next attempt.
+                tmpFile().exists() ->
+                    it.copy(
+                        state = ModelDownloadState.PARTIALLY_DOWNLOADED,
+                        downloadProgress = null,
+                        error = result.exceptionOrNull()?.message,
+                    )
+                else ->
+                    it.copy(
+                        state = ModelDownloadState.FAILED,
+                        progress = 0f,
+                        downloadProgress = null,
+                        error = result.exceptionOrNull()?.message ?: "download failed",
+                    )
+            }
         }
     }
 
     override suspend fun delete(modelId: String) {
         if (modelId != spec.id) return
         modelFile().delete()
+        tmpFile().delete()
         flow.update { snapshot() }
     }
 
@@ -60,7 +84,12 @@ class MediaPipeModelManager(
             id = spec.id,
             displayName = spec.displayName,
             approxSizeMb = spec.approxSizeMb,
-            state = if (isReady()) ModelDownloadState.READY else ModelDownloadState.ABSENT,
+            state =
+                when {
+                    isReady() -> ModelDownloadState.READY
+                    tmpFile().exists() -> ModelDownloadState.PARTIALLY_DOWNLOADED
+                    else -> ModelDownloadState.ABSENT
+                },
         )
 
     companion object {
