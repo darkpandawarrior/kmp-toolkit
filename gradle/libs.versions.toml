@@ -27,6 +27,8 @@ razorpay = "1.6.41"
 cashfree = "2.5.0"
 robolectric = "4.16.1"
 compose-webview-multiplatform = "2.0.3"
+material-icons = "1.7.3"
+kotlinx-collections-immutable = "0.5.1"
 
 [libraries]
 # — coroutines / serialization (all KMP modules) —
@@ -61,6 +63,8 @@ compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.re
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
+material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "material-icons" }
+kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinx-collections-immutable" }
 
 # — security (AndroidX Compose — distinct from the JetBrains group above; hence the androidx- prefix) —
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }

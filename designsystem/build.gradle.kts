@@ -30,6 +30,10 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.kotlinx.coroutines.core)
+            // StepTimeline node icons (Check/Close) — core set only, no need for `-extended`.
+            implementation(libs.material.icons.core)
+            // StepTimeline/PayloadCard row lists.
+            implementation(libs.kotlinx.collections.immutable)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
