@@ -1,27 +1,10 @@
 plugins {
-    // AGP 9 provides built-in Kotlin support — applying kotlin.android is no longer needed.
-    alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.composeCompiler)
+    id("shared.android.library")
     `maven-publish`
 }
 
 android {
     namespace = "com.siddharth.kmp.provider.stripe"
-    compileSdk = 37
-    defaultConfig { minSdk = 24 }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-    buildFeatures {
-        compose = true
-        buildConfig = false
-    }
-    // Publish only the release variant as com.siddharth.kmp:stripe.
-    publishing {
-        singleVariant("release") { withSourcesJar() }
-    }
 }
 
 dependencies {
@@ -43,12 +26,3 @@ dependencies {
     implementation(libs.play.services.wallet)
 }
 
-// Declare the release publication; artifactId ("stripe") + the GitHub Packages repo come from the
-// shared publishing convention in the root build.gradle.kts.
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            afterEvaluate { from(components["release"]) }
-        }
-    }
-}

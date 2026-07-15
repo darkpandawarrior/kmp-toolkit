@@ -18,6 +18,14 @@ subprojects {
     version = "1.0.0"
     plugins.withId("maven-publish") {
         extensions.configure<PublishingExtension> {
+            // Android-only leaf modules (security + the 11 providers) don't get a publication for
+            // free the way KMP modules do (from the kotlinMultiplatform plugin) — register their
+            // "release" publication here once instead of copy-pasting this block into each module.
+            plugins.withId("com.android.library") {
+                publications.register<MavenPublication>("release") {
+                    afterEvaluate { from(components["release"]) }
+                }
+            }
             publications.withType(MavenPublication::class.java).configureEach {
                 // KMP modules expose a "kotlinMultiplatform" root publication + one per target
                 // (android/jvm/…); the Android-only module (security) exposes a single "release".

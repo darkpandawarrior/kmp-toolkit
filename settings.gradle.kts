@@ -1,4 +1,10 @@
 pluginManagement {
+    // Shared convention plugins (shared.kmp.library / shared.kmp.compose / shared.android.library /
+    // shared.test / …), the same repo the consumer apps (PaymentsLab/Mileway/HireSignal) vendor at
+    // external/kmp-build-logic. Sibling checkout on disk here — apps that vendor kmp-toolkit as
+    // external/kmp-toolkit also vendor kmp-build-logic as its sibling external/kmp-build-logic, so
+    // this relative path resolves the same way in both the standalone repo and the vendored copy.
+    includeBuild("../kmp-build-logic")
     repositories {
         google {
             content {
