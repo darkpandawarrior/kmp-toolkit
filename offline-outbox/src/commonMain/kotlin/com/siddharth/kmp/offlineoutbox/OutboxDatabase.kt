@@ -19,4 +19,6 @@ abstract class OutboxDatabase : RoomDatabase() {
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")
-expect object OutboxDatabaseConstructor : RoomDatabaseConstructor<OutboxDatabase>
+expect object OutboxDatabaseConstructor : RoomDatabaseConstructor<OutboxDatabase> {
+    override fun initialize(): OutboxDatabase
+}

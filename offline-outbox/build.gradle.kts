@@ -58,7 +58,12 @@ kotlin {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", libs.room.compiler)
+    // ponytail: no kspCommonMainMetadata entry — that task makes Room's KSP processor generate a
+    // concrete `actual object OutboxDatabaseConstructor` straight into commonMain's own metadata
+    // compilation, colliding with the hand-written `expect` above ("expect and actual declared in
+    // the same module"). Per-platform targets only, matching Room's official KMP setup guide
+    // (developer.android.com/kotlin/multiplatform/room) — each platform's actual is generated in
+    // its own androidMain/iosMain/jvmMain/watchosMain compilation, not commonMain's.
     add("kspAndroid", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
