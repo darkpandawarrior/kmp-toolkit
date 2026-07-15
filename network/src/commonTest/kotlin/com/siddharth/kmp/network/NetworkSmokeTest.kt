@@ -10,11 +10,13 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class NetworkSmokeTest {
@@ -31,6 +33,11 @@ class NetworkSmokeTest {
     }
 
     @Test
+    fun alwaysOnlineChecker_observeIsOnline_defaultsToSingleShotOfIsOnline() = runTest {
+        assertTrue(AlwaysOnlineConnectivityChecker.observeIsOnline().first())
+    }
+
+    @Test
     fun createHttpClient_negotiatesJson() = runTest {
         val engine = MockEngine {
             respond(
@@ -41,5 +48,20 @@ class NetworkSmokeTest {
         }
         val client: HttpClient = createHttpClient(engine = engine)
         assertEquals("""{"ok":true}""", client.get("https://example.test/ping").bodyAsText())
+    }
+
+    @Test
+    fun createHttpClient_expectSuccessFalse_doesNotThrowOnNon2xx() = runTest {
+        // Kursi's WebSocket + manual-status RoomApi need this: default (expectSuccess=true) throws.
+        val engine = MockEngine {
+            respond(content = """{"error":"nope"}""", status = HttpStatusCode.NotFound)
+        }
+        val strictClient = createHttpClient(engine = engine)
+        assertFailsWith<Exception> { strictClient.get("https://example.test/missing") }
+
+        val lenientClient =
+            createHttpClient(engine = engine, expectSuccess = false, retry = false, requestTimeoutMillis = null)
+        val response = lenientClient.get("https://example.test/missing")
+        assertEquals(HttpStatusCode.NotFound, response.status)
     }
 }

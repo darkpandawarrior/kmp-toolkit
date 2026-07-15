@@ -29,6 +29,7 @@ robolectric = "4.16.1"
 compose-webview-multiplatform = "2.0.3"
 material-icons = "1.7.3"
 kotlinx-collections-immutable = "0.5.1"
+konnection = "1.4.5"
 
 [libraries]
 # — coroutines / serialization (all KMP modules) —
@@ -51,6 +52,8 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
+konnection = { module = "dev.tmapps:konnection", version.ref = "konnection" }
 
 # — ai / security (Koin) —
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }

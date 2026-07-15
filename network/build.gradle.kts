@@ -9,6 +9,10 @@ kotlin {
     jvm()
     iosArm64()
     iosSimulatorArm64()
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
 
     android {
         namespace = "com.siddharth.kmp.network"
@@ -31,9 +35,19 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            // Real reachability (NWPathMonitor-backed) — replaces AlwaysOnlineConnectivityChecker.
+            implementation(libs.konnection)
         }
         jvmMain.dependencies {
             implementation(libs.ktor.client.cio)
+            // Real reachability (periodic interface probe) — replaces AlwaysOnlineConnectivityChecker.
+            implementation(libs.konnection)
+        }
+        val wasmJsMain by getting {
+            dependencies {
+                // Ktor's Js engine is published for both js(IR) and wasmJs targets.
+                implementation(libs.ktor.client.js)
+            }
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
