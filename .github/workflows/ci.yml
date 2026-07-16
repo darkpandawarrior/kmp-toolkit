@@ -14,8 +14,18 @@ concurrency:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kmp-toolkit
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: kmp-toolkit
+      # settings.gradle.kts does includeBuild("../kmp-build-logic") — check out the sibling repo
+      - uses: actions/checkout@v4
+        with:
+          repository: darkpandawarrior/kmp-build-logic
+          path: kmp-build-logic
       - uses: actions/setup-java@v4
         with:
           distribution: zulu

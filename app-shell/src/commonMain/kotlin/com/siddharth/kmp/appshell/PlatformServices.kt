@@ -6,12 +6,24 @@ import kotlinx.coroutines.flow.Flow
 // Each interface is implemented per platform; the consuming app wires the impl into whatever DI
 // framework it uses (this module has no DI dependency of its own).
 
-/** A platform-neutral geographic sample. */
+/**
+ * A platform-neutral geographic sample.
+ *
+ * @param speedMetersPerSecond ground speed, or negative when unknown/invalid (matches
+ *   `CLLocation.speed`'s convention: -1 = invalid). Android's `Location.speed` is never negative,
+ *   so it maps straight through.
+ * @param courseDegrees heading in `[0, 360)`, or negative when unknown/invalid (matches
+ *   `CLLocation.course`; Android's `Location.bearing` is never negative).
+ * @param altitudeMeters altitude above sea level, `0.0` when unknown.
+ */
 data class GeoPoint(
     val latitude: Double,
     val longitude: Double,
     val accuracyMeters: Float = 0f,
     val timestampMillis: Long = 0L,
+    val speedMetersPerSecond: Float = -1f,
+    val courseDegrees: Double = -1.0,
+    val altitudeMeters: Double = 0.0,
 )
 
 /** Continuous + one-shot location access. Android: FusedLocation; iOS: CoreLocation. */

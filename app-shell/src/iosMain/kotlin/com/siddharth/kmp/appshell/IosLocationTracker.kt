@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import platform.CoreLocation.CLLocation
 import platform.CoreLocation.CLLocationManager
 import platform.CoreLocation.CLLocationManagerDelegateProtocol
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
 import platform.CoreLocation.kCLLocationAccuracyBest
 import platform.Foundation.timeIntervalSince1970
 import platform.darwin.NSObject
@@ -16,7 +17,10 @@ import platform.darwin.NSObject
  * iOS location via CoreLocation, counterpart to Android's FusedLocationProvider.
  *
  * Configured for continuous background tracking:
- * - requestAlwaysAuthorization() so the OS keeps delivering fixes when the app is backgrounded.
+ * - requestWhenInUseAuthorization() first, then escalate to requestAlwaysAuthorization() once
+ *   WhenInUse is granted (see [locationDelegate]'s `didChangeAuthorization` callback). Requesting
+ *   Always eagerly risks the OS silently downgrading the prompt to WhenInUse-only on some iOS
+ *   versions if the user hasn't first seen (and accepted) the WhenInUse prompt.
  * - allowsBackgroundLocationUpdates = true: required for continuous background tracking (the
  *   `location` background mode must also be listed in the app's Info.plist).
  * - pausesLocationUpdatesAutomatically = false: prevents CoreLocation from silently halting delivery
@@ -47,6 +51,14 @@ class IosLocationTracker : LocationTracker {
                 lastKnown = point
                 _updates.tryEmit(point)
             }
+
+            override fun locationManagerDidChangeAuthorization(manager: CLLocationManager) {
+                // Escalate WhenInUse -> Always once the user has granted the initial (less scary)
+                // prompt — requesting Always upfront risks a silent OS downgrade (the RN lesson).
+                if (manager.authorizationStatus == kCLAuthorizationStatusAuthorizedWhenInUse) {
+                    manager.requestAlwaysAuthorization()
+                }
+            }
         }
 
     init {
@@ -60,7 +72,7 @@ class IosLocationTracker : LocationTracker {
     override suspend fun current(): GeoPoint? = lastKnown ?: manager.location?.toGeoPoint()
 
     override fun start() {
-        manager.requestAlwaysAuthorization()
+        manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
     }
 
@@ -77,6 +89,12 @@ class IosLocationTracker : LocationTracker {
                 longitude = longitude,
                 accuracyMeters = horizontalAccuracy.toFloat(),
                 timestampMillis = (timestamp.timeIntervalSince1970 * 1000.0).toLong(),
+                // speed/course/altitude are top-level CLLocation properties (not on `coordinate`).
+                // CLLocation reports negative speed/course when invalid — passed through as-is;
+                // GpsFix mapping (IosTrackingController.toGpsFix) guards the negative case.
+                speedMetersPerSecond = speed.toFloat(),
+                courseDegrees = course,
+                altitudeMeters = altitude,
             )
         }
 }

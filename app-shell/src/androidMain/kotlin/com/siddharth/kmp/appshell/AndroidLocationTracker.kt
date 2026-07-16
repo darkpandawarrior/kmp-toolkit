@@ -37,7 +37,9 @@ class AndroidLocationTracker(private val context: Context) : LocationTracker {
             object : LocationCallback() {
                 override fun onLocationResult(result: LocationResult) {
                     result.lastLocation?.let {
-                        _updates.tryEmit(GeoPoint(it.latitude, it.longitude, it.accuracy, it.time))
+                        _updates.tryEmit(
+                            GeoPoint(it.latitude, it.longitude, it.accuracy, it.time, it.speed, it.bearing.toDouble(), it.altitude),
+                        )
                     }
                 }
             }
@@ -58,7 +60,7 @@ class AndroidLocationTracker(private val context: Context) : LocationTracker {
     override suspend fun current(): GeoPoint? =
         try {
             client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
-                ?.let { GeoPoint(it.latitude, it.longitude, it.accuracy, it.time) }
+                ?.let { GeoPoint(it.latitude, it.longitude, it.accuracy, it.time, it.speed, it.bearing.toDouble(), it.altitude) }
         } catch (_: Exception) {
             null
         }
