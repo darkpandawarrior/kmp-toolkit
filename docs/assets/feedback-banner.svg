@@ -1,4 +1,6 @@
-<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kmp-feedback — multiplatform sound and haptic feedback primitives">
+<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="kfb-title kfb-desc">
+  <title id="kfb-title">kmp-feedback</title>
+  <desc id="kfb-desc">Multiplatform sound and haptic feedback primitives — a stamp landing, sound rings expanding, a haptic pulse alongside.</desc>
   <defs>
     <linearGradient id="kf-grad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#F59E0B"/>
@@ -8,31 +10,19 @@
 
   <text x="450" y="54" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#kf-grad)">kmp-feedback</text>
 
-  <!-- a stamp slams down at center; sound rings + a haptic pulse fire on impact.
-       Motif band + ring expansion kept to y 70-128, clear of the tagline at y=156. -->
-  <g transform="translate(450,96)">
-    <g>
-      <animateTransform attributeName="transform" type="translate" values="0,-8;0,-8;0,2;0,-8" keyTimes="0;0.55;0.62;1" dur="2.2s" repeatCount="indefinite"/>
-      <rect x="-13" y="-20" width="26" height="13" rx="2" fill="none" stroke="url(#kf-grad)" stroke-width="2.5"/>
-      <rect x="-5" y="-7" width="10" height="9" fill="none" stroke="url(#kf-grad)" stroke-width="2.5"/>
-    </g>
+  <!-- stamp, landed -->
+  <g transform="translate(450,98)">
+    <rect x="-13" y="-20" width="26" height="13" rx="2" fill="none" stroke="url(#kf-grad)" stroke-width="2.5"/>
+    <rect x="-5" y="-7" width="10" height="9" fill="none" stroke="url(#kf-grad)" stroke-width="2.5"/>
   </g>
 
-  <!-- concentric sound rings, expanding outward but capped so they never reach the tagline -->
-  <circle cx="450" cy="100" r="6" fill="none" stroke="#F59E0B" stroke-width="2" opacity="0">
-    <animate attributeName="r" values="6;28" keyTimes="0;1" dur="1.1s" begin="1.3s" repeatCount="indefinite"/>
-    <animate attributeName="opacity" values="0.9;0" keyTimes="0;1" dur="1.1s" begin="1.3s" repeatCount="indefinite"/>
-  </circle>
-  <circle cx="450" cy="100" r="6" fill="none" stroke="#EC4899" stroke-width="2" opacity="0">
-    <animate attributeName="r" values="6;28" keyTimes="0;1" dur="1.1s" begin="1.55s" repeatCount="indefinite"/>
-    <animate attributeName="opacity" values="0.7;0" keyTimes="0;1" dur="1.1s" begin="1.55s" repeatCount="indefinite"/>
-  </circle>
+  <!-- sound rings, mid-expansion -->
+  <circle cx="450" cy="100" r="18" fill="none" stroke="#F59E0B" stroke-width="2" opacity="0.6"/>
+  <circle cx="450" cy="100" r="28" fill="none" stroke="#EC4899" stroke-width="2" opacity="0.3"/>
 
-  <!-- haptic pulse: a small zigzag squiggle blips beside the impact -->
+  <!-- haptic pulse squiggle -->
   <path d="M 505,98 L 513,90 L 521,106 L 529,94 L 535,98" fill="none" stroke="url(#kf-grad)"
-        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0">
-    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.62;0.78;0.85" dur="2.2s" repeatCount="indefinite"/>
-  </path>
+        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 
   <text x="450" y="156" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="2" fill="#94a3b8">ONE TAP · SOUND ON FOUR PLATFORMS · HAPTICS WHERE THERE'S A MOTOR</text>
 </svg>

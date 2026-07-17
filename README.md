@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="kmp-toolkit" width="700"/>
+<img src="docs/assets/banner.gif" alt="kmp-toolkit" width="700"/>
 
 ### A Kotlin Multiplatform toolkit — a family of small, focused, production-grade libraries extracted from real apps.
 

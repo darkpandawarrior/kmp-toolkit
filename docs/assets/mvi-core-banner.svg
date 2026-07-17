@@ -1,42 +1,22 @@
-<svg viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kmp-mvi-core: Kotlin Multiplatform MVI ViewModel core">
-  <title>kmp-mvi-core</title>
+<svg viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="kmvi-title kmvi-desc">
+  <title id="kmvi-title">kmp-mvi-core</title>
+  <desc id="kmvi-desc">Kotlin Multiplatform unidirectional MVI ViewModel core — Action, State and View arranged in one loop.</desc>
   <defs>
     <linearGradient id="wordmarkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#7F52FF"/>
       <stop offset="100%" stop-color="#3DDC84"/>
-      <animate attributeName="x1" values="0%;18%;0%" dur="6s" repeatCount="indefinite"/>
-      <animate attributeName="x2" values="100%;118%;100%" dur="6s" repeatCount="indefinite"/>
     </linearGradient>
     <linearGradient id="loopGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#7F52FF"/>
       <stop offset="50%" stop-color="#00ACC1"/>
       <stop offset="100%" stop-color="#3DDC84"/>
     </linearGradient>
-    <filter id="dotGlow" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
 
   <text x="480" y="66" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="url(#wordmarkGradient)">kmp-mvi-core</text>
   <text x="480" y="97" text-anchor="middle" font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#8b8b96">Kotlin Multiplatform &#183; unidirectional MVI ViewModel core</text>
 
-  <!-- MVI cycle: Action -> State -> View, looping. Node names match BaseViewModel's real
-       generics: S = state, E = effect, A = action (see lib/src/commonMain .../BaseViewModel.kt). -->
-  <path id="motionPath" d="M480,128 A62,62 0 1,1 480,252 A62,62 0 1,1 480,128" fill="none" opacity="0"/>
-
-  <circle cx="480" cy="190" r="62" fill="none" stroke="url(#loopGradient)" stroke-width="3" stroke-dasharray="3 7" stroke-linecap="round">
-    <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1.6s" repeatCount="indefinite"/>
-  </circle>
-
-  <circle r="7" fill="#FFFFFF" filter="url(#dotGlow)">
-    <animateMotion dur="4s" repeatCount="indefinite">
-      <mpath href="#motionPath"/>
-    </animateMotion>
-  </circle>
+  <circle cx="480" cy="190" r="62" fill="none" stroke="url(#loopGradient)" stroke-width="3" stroke-dasharray="3 7" stroke-linecap="round"/>
 
   <!-- Action (top) -->
   <circle cx="480" cy="128" r="23" fill="#7F52FF"/>

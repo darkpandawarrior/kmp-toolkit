@@ -1,4 +1,6 @@
-<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kmp-designsystem — brand-agnostic Compose Multiplatform design primitives">
+<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="kds-title kds-desc">
+  <title id="kds-title">kmp-designsystem</title>
+  <desc id="kds-desc">Brand-agnostic Compose Multiplatform design primitives — a light/dark theme toggle beside spacing, shape and color tokens.</desc>
   <defs>
     <linearGradient id="ds-grad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#6D28D9"/>
@@ -8,21 +10,12 @@
 
   <text x="450" y="78" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#ds-grad)">kmp-designsystem</text>
 
-  <!-- theme toggle: a track whose knob slides light <-> dark while the swatch row re-tones -->
+  <!-- theme toggle, settled dark -->
   <rect x="366" y="104" width="60" height="26" rx="13" fill="none" stroke="url(#ds-grad)" stroke-width="2"/>
-  <circle cx="379" cy="117" r="9" fill="#0EA5E9">
-    <animate attributeName="cx" values="379;413;379" dur="4s" repeatCount="indefinite" keyTimes="0;0.5;1" calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/>
-    <animate attributeName="fill" values="#0EA5E9;#6D28D9;#0EA5E9" dur="4s" repeatCount="indefinite"/>
-  </circle>
+  <circle cx="413" cy="117" r="9" fill="#6D28D9"/>
 
-  <!-- design-token swatches: three rounded rects pulse in sequence (spacing/shape/color tokens) -->
-  <rect x="452" y="106" width="22" height="22" rx="5" fill="#6D28D9">
-    <animate attributeName="opacity" values="0.3;1;0.3" dur="4s" begin="0s" repeatCount="indefinite"/>
-  </rect>
-  <rect x="480" y="106" width="22" height="22" rx="8" fill="#8B5CF6">
-    <animate attributeName="opacity" values="0.3;1;0.3" dur="4s" begin="0.4s" repeatCount="indefinite"/>
-  </rect>
-  <rect x="508" y="106" width="22" height="22" rx="11" fill="#0EA5E9">
-    <animate attributeName="opacity" values="0.3;1;0.3" dur="4s" begin="0.8s" repeatCount="indefinite"/>
-  </rect>
+  <!-- design-token swatches: spacing / shape / color -->
+  <rect x="452" y="106" width="22" height="22" rx="5" fill="#6D28D9"/>
+  <rect x="480" y="106" width="22" height="22" rx="8" fill="#8B5CF6"/>
+  <rect x="508" y="106" width="22" height="22" rx="11" fill="#0EA5E9"/>
 </svg>

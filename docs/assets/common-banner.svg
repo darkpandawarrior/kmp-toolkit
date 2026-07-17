@@ -1,4 +1,6 @@
-<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="kmp-common — shared AppLog + DispatcherProvider for Kotlin Multiplatform">
+<svg width="900" height="170" viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="kc-title kc-desc">
+  <title id="kc-title">kmp-common</title>
+  <desc id="kc-desc">Shared AppLog and DispatcherProvider for Kotlin Multiplatform — one logging facade, two dispatcher lanes.</desc>
   <defs>
     <linearGradient id="kc-grad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#F97316"/>
@@ -8,30 +10,16 @@
 
   <text x="450" y="62" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="url(#kc-grad)">kmp-common</text>
 
-  <!-- AppLog: a log line pulsing through a facade box (pulse drawn BEFORE the text so it never overlays it) -->
   <rect x="70" y="82" width="150" height="34" rx="6" fill="none" stroke="#F97316" stroke-width="2"/>
-  <rect x="70" y="82" width="150" height="34" rx="6" fill="#F97316" opacity="0">
-    <animate attributeName="opacity" values="0;0.28;0" dur="1.8s" repeatCount="indefinite"/>
-  </rect>
   <text x="145" y="103" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#F97316">AppLog.d()</text>
 
-  <!-- two dispatcher lanes: IO / Default, a dot hops lanes -->
   <text x="450" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" letter-spacing="1">DispatcherProvider</text>
   <line x1="330" y1="105" x2="640" y2="105" stroke="#F97316" stroke-width="2" opacity="0.4"/>
   <line x1="330" y1="128" x2="640" y2="128" stroke="#A855F7" stroke-width="2" opacity="0.4"/>
   <text x="315" y="109" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" fill="#F97316">io</text>
   <text x="315" y="132" text-anchor="end" font-family="system-ui, sans-serif" font-size="11" fill="#A855F7">default</text>
 
-  <circle r="6" fill="#ffffff" stroke="url(#kc-grad)" stroke-width="2">
-    <animateMotion dur="3.2s" repeatCount="indefinite"
-      path="M 330 105 L 480 105 L 480 128 L 640 128 L 640 105 L 330 105" />
-  </circle>
-
-  <!-- request-shaped token traveling into the facade box, y=90 clears the "io"/"default" lane labels (y 100-132) -->
-  <circle r="4" fill="#A855F7">
-    <animateMotion dur="1.8s" repeatCount="indefinite" path="M 660 90 L 220 90"/>
-    <animate attributeName="opacity" values="1;1;0" keyTimes="0;0.8;1" dur="1.8s" repeatCount="indefinite"/>
-  </circle>
+  <circle cx="480" cy="105" r="6" fill="#ffffff" stroke="url(#kc-grad)" stroke-width="2"/>
 
   <text x="450" y="155" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="2" fill="#94a3b8">
     ONE LOGGING FACADE — INJECTABLE DISPATCHERS
