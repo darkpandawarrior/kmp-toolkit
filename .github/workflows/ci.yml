@@ -31,5 +31,15 @@ jobs:
           distribution: zulu
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Build + test all modules
-        run: ./gradlew assemble jvmTest testAndroidHostTest testDebugUnitTest --stacktrace
+        # `check` aggregates jvmTest + testAndroidHostTest (KMP modules) + testDebugUnitTest (the
+        # android-only leaf modules: security + the 11 providers) + wasmJsBrowserTest (karma/headless
+        # Chrome — ubuntu-latest ships Chrome) + AGP lint on the leaf modules, so it's a superset of
+        # the previously hand-listed tasks and won't drift as modules/targets are added. `assemble`
+        # stays alongside it: `check` only compiles iosSimulatorArm64 (the test target), not iosArm64
+        # (the device target consumers actually ship), so `assemble` is what compile-checks it. Both
+        # silently no-op on iOS here — kotlin.native.ignoreDisabledTargets skips Apple targets on a
+        # Linux host; they'd need a macOS runner to actually build (not added — see PR description).
+        run: ./gradlew assemble check --stacktrace

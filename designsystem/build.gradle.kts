@@ -12,7 +12,14 @@ plugins {
 kotlin {
     iosArm64()
     iosSimulatorArm64()
-    wasmJs { browser() }
+    wasmJs {
+        browser()
+        // Required for wasmJsBrowserTest: without a declared executable, the Compose Gradle plugin's
+        // Skiko-runtime check fails the test task outright (CMP-4906) since Compose UI can't load its
+        // renderer from a bare klib. Also gives this CMP module a real production webpack bundle,
+        // matching every other wasmJs-targeting module here.
+        binaries.executable()
+    }
 
     android {
         namespace = "com.siddharth.kmp.designsystem"
