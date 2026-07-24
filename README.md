@@ -222,7 +222,7 @@ placeholders.
 | Persistence | Room `2.8.4` (KMP, `offline-outbox`) |
 | Logging | Napier `2.7.1` |
 | Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Robolectric `4.16.1` |
-| Publishing | GitHub Packages Maven (`com.siddharth.kmp`, version `1.0.0`) |
+| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`); not published to Maven |
 | CI | GitHub Actions — `ci.yml` (build+test matrix), `no-ai-attribution.yml` |
 
 ## Getting started
@@ -241,7 +241,7 @@ cd kmp-toolkit
 `settings.gradle.kts` uses `includeBuild("../kmp-build-logic")` for the convention plugins, so
 [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic) must be checked out as a
 sibling directory of `kmp-toolkit` before the first build. See [Install](#install) below for wiring
-this repo — as a composite build or as published Maven coordinates — into a consuming app.
+this repo — as a source composite build (vendored via git, not published to Maven) — into a consuming app.
 
 ## Install
 
@@ -273,30 +273,18 @@ resolves by path only, and two composite builds both exposing a bare `:lib` coll
 `includeBuild` order. In a monorepo every module already has a distinct top-level path, so that
 workaround is gone.
 
-Consumers that resolve from Maven instead of building from source pull individual modules the plain
-way, same coordinate per module:
+These modules are **not published to any Maven repository** — they are consumed only as a source
+composite build via the `includeBuild` block above (each consuming app vendors this repo at
+`external/kmp-toolkit` as a git gitlink). The `com.siddharth.kmp:<module>` coordinates exist solely as
+`dependencySubstitution` targets that resolve to the local `project(":<module>")`; there is no `1.0.0`
+artifact on GitHub Packages or Maven Central to pull. Declare a module with **no version** and let the
+substitution resolve it:
 
 ```kotlin
-// build.gradle.kts
+// build.gradle.kts — resolves to project(":mvi-core") via the includeBuild substitution above
 dependencies {
-    implementation("com.siddharth.kmp:common:1.0.0")
-    implementation("com.siddharth.kmp:mvi-core:1.0.0")
+    implementation("com.siddharth.kmp:mvi-core")
     // ...one line per module actually needed
-}
-```
-
-```kotlin
-// settings.gradle.kts
-dependencyResolutionManagement {
-    repositories {
-        maven {
-            url = uri("https://maven.pkg.github.com/darkpandawarrior/kmp-toolkit")
-            credentials {
-                username = providers.gradleProperty("gpr.user").orNull
-                password = providers.gradleProperty("gpr.key").orNull
-            }
-        }
-    }
 }
 ```
 
@@ -464,9 +452,9 @@ is just the `Channel<E>` branch, taking a caller-supplied `CoroutineScope` inste
 `viewModelScope`.
 
 ```kotlin
-// module build.gradle.kts
+// module build.gradle.kts — resolves to project(":mvi-core") via the includeBuild substitution
 dependencies {
-    implementation("com.siddharth.kmp:mvi-core:1.0.0")
+    implementation("com.siddharth.kmp:mvi-core")
 }
 ```
 
@@ -1296,9 +1284,10 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 - **No-AI-attribution gate.** `.github/workflows/no-ai-attribution.yml` fails a push or PR if any
   commit message carries AI/assistant attribution, mirroring a local `.githooks/commit-msg` guard so
   nothing slips through `--no-verify` or an unconfigured clone.
-- **Publishing.** GitHub Packages Maven under `com.siddharth.kmp`, one coordinate per module (see
-  [Install](#install)) — a consumer can build from source via `includeBuild` or resolve a specific
-  module from Maven without pulling in the rest of the monorepo.
+- **Consumption.** Vendored as a source composite build, **not published to Maven**. A consumer wires
+  this repo via `includeBuild` (see [Install](#install)) with `dependencySubstitution` mapping each
+  `com.siddharth.kmp:<module>` coordinate to its local `project(":<module>")`. No GitHub Packages /
+  Maven Central artifact is published; the coordinates are substitution targets only.
 
 ## Roadmap
 
@@ -1314,7 +1303,7 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
       permissions/update/review/push/analytics seams), `store` (offline-first `ScreenState` +
       `DecisionEngine` read/write helpers) — none with dependents yet
 - [x] CI matrix (`assemble jvmTest testAndroidHostTest testDebugUnitTest`) + no-AI-attribution check
-- [x] GitHub Packages publishing under `com.siddharth.kmp`
+- [x] Consumed as a source composite build (vendored via `includeBuild`; not Maven-published)
 
 **Exploring**
 - [ ] Route `network`'s `HttpRequestRetry`/`ResponseException` failures onto `result`'s
