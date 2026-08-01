@@ -869,6 +869,8 @@ MarkdownText("**Offer:** ₹32L · _remote_\n\n| role | level |\n|---|---|\n| An
 | `NavigationLayout` | `enum` | `BottomBar` / `Rail` / `Drawer` / `None` |
 | `navigationLayoutFor` | `fun` | Picks the nav affordance from form factor + width + fold posture; knows TV and Wear, which width-only rules get wrong |
 | `Modifier.screenPadding` | `@Composable` | Safe-area insets (cutout, system bars, IME) **plus** the adaptive screen padding, in one call |
+| `Modifier.readableWidth` | `@Composable` | Caps a prose column at a comfortable measure and centres it; per-surface, uncapped on a watch |
+| `Modifier.contentWidth` | `@Composable` | Same, at the wider layout cap — for card grids and dashboards |
 | `Modifier.focusScale` | `@Composable` | Grows a focused element by `focusScale` — D-pad affordance on TV, no-op on touch |
 | `screenEnter` / `screenExit` | `val` | Nav-agnostic screen transitions (fade + 0.95 scale) on the `DesignTokens.Motion` scale |
 | `byWindow` | `fun` / `@Composable` | Per-width-bucket value of any type — the `FooDefaults` idiom in one call |
@@ -890,6 +892,7 @@ wiring a screen from scratch.
 | **Leanback / TV carousel** | `AdaptiveTheme` auto-resolves `Tv` from `uiMode` → cards wear `Modifier.focusScale().focusable()` for the D-pad affordance → `PageIndicator` under the hero. Inset full-bleed art by `overscanPadding`; inset ordinary content by `screenPadding` (already overscan-safe). |
 | **Responsive dashboard / grid** | `AdaptiveTheme` → `LazyVerticalGrid(GridCells.Fixed(tokens.gridColumns))` → the `LoadingState` / `ErrorState` / `EmptyState` triad for the three outcomes. One screen covers phone through desktop and web. |
 | **Wear OS** | `AdaptiveTheme` auto-resolves `Watch` → `gridColumns` collapses to 1, `OtpFieldDefaults.style(cellShape = OtpCellShape.Circle)` fits a code on a wrist. |
+| **Long-form reading** (articles, changelogs, `MarkdownText`) | `Modifier.screenPadding().readableWidth()` — insets past the notch, then caps the line length. Text at the full width of a 2560dp window runs past 200 characters a line and the eye loses the return sweep. |
 | **App navigation chrome** | `navigationLayoutFor(formFactor, width)` → render first-party Material yourself: `NavigationBar`, `NavigationRail`, `PermanentNavigationDrawer`, or nothing. Encodes what a width-only rule gets wrong — a television must never get a bottom bar, and Wear must get no chrome at all. |
 | **Per-component sizing** | `byWindow` / `byFormFactor` inside your own `FooDefaults` object — never by growing `AdaptiveTokens`. |
 | **Screen transitions** | `screenEnter` / `screenExit` into `NavHost`, `AnimatedContent` or `AnimatedVisibility` — no navigation dependency either way. |

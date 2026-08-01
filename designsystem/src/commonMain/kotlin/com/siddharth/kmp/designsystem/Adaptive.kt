@@ -3,11 +3,15 @@ package com.siddharth.kmp.designsystem
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -384,6 +388,43 @@ fun Modifier.screenPadding(horizontal: Boolean = true, vertical: Boolean = true)
             vertical = if (vertical) pad else 0.dp,
         )
 }
+
+/**
+ * Caps a prose column at a comfortable measure and centres it.
+ *
+ * The failure this prevents is invisible on a phone and unmissable on a desktop: text stretched the
+ * full width of a 2560dp window runs past 200 characters a line, and the eye loses its place on the
+ * return sweep. Typographic guidance puts the comfortable measure at 45–75 characters.
+ *
+ * The cap is per-surface rather than one constant, because the character count is what matters and
+ * the type scale differs: a television sets body text at 18–22sp, so the *same* number of characters
+ * needs materially more dp than it does at 14sp on a phone. A watch is never capped — the screen is
+ * already narrower than any sensible measure.
+ *
+ * Use this for paragraphs, articles, changelogs, `MarkdownText`. Use [contentWidth] for dashboards
+ * and card grids, which read fine much wider.
+ */
+@Composable
+fun Modifier.readableWidth(): Modifier {
+    val max = byFormFactor(default = 640.dp, watch = Dp.Infinity, tv = 1100.dp)
+    return centredCap(max)
+}
+
+/**
+ * Caps a layout column at [max] and centres it. Wider than [readableWidth] on purpose: a grid of
+ * cards or a row of stat tiles stays legible at widths where a paragraph would not.
+ */
+@Composable
+fun Modifier.contentWidth(max: Dp = DesignTokens.Spacing.contentMaxWidth): Modifier = centredCap(max)
+
+/**
+ * ponytail: `fillMaxWidth().wrapContentWidth().widthIn(max)` is the documented centre-and-cap chain —
+ * fill claims the row, wrapContentWidth lets the child be narrower and centres it, widthIn does the
+ * capping. `widthIn` alone would cap without centring and leave the column pinned to the start edge.
+ */
+private fun Modifier.centredCap(max: Dp): Modifier =
+    if (max == Dp.Infinity) this
+    else fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = max)
 
 /**
  * Escape hatch for consumers that already resolve a window size class upstream (Android
