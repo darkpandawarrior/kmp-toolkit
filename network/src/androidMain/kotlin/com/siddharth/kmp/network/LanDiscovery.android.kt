@@ -90,6 +90,15 @@ actual class LanAdvertiser actual constructor(
 actual class LanDiscoverer actual constructor(
     private val serviceType: String,
 ) {
+    /**
+     * ponytail: `@SuppressLint("MissingPermission")` is kept, but it is NOT a statement that no
+     * permission is needed — NSD discovery has always wanted `INTERNET` plus (historically)
+     * `CHANGE_WIFI_MULTICAST_STATE`, and Android 17 (API 37) introduces `ACCESS_LOCAL_NETWORK` as a
+     * **runtime** permission gating mDNS/DNS-SD outright. The suppression exists because this is a
+     * library module with no manifest of its own; the consuming app declares and requests. Left in
+     * place so the module still lints clean, documented here so the next reader does not mistake it
+     * for "no permission required" — which is exactly what it would have meant on API 37.
+     */
     @SuppressLint("MissingPermission")
     actual fun discover(): Flow<LanHost> =
         callbackFlow {
@@ -98,6 +107,13 @@ actual class LanDiscoverer actual constructor(
                     close()
                     return@callbackFlow
                 }
+
+            // Contract: LanDiscoverer.discover() emits each host at most once per collection,
+            // de-duplicated by host+port+payload. NSD re-resolves a service on every browse tick and
+            // after any network flap, so without this gate a collector sees the same host repeatedly —
+            // the JVM actual has always had it; android and ios silently did not, so the documented
+            // behaviour held on exactly one of three platforms.
+            val seen = HashSet<String>()
 
             val resolveListener =
                 object : NsdManager.ResolveListener {
@@ -111,6 +127,8 @@ actual class LanDiscoverer actual constructor(
                         val payload =
                             info.attributes[LanAdvertiser.TXT_PAYLOAD]
                                 ?.toString(Charsets.UTF_8) ?: ""
+                        // Same key shape as the JVM actual, so all three platforms de-duplicate alike.
+                        if (!seen.add("$host:${info.port}/$payload")) return
                         trySend(
                             LanHost(
                                 host = host,
