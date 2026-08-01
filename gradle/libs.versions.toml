@@ -27,6 +27,7 @@ play-services-wallet = "20.0.0"
 razorpay = "1.6.41"
 cashfree = "2.5.0"
 robolectric = "4.16.1"
+dokka = "2.2.0"
 compose-webview-multiplatform = "2.0.3"
 material-icons = "1.7.3"
 kotlinx-collections-immutable = "0.5.1"
@@ -123,3 +124,5 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "room" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+# API docs for all 37 modules — aggregated into one browsable site by the root project.
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

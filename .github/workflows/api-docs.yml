@@ -1,0 +1,81 @@
+name: API docs
+
+# Builds the aggregated Dokka site for all modules. On main it publishes to GitHub Pages; on a PR it
+# only builds, so a change that breaks doc generation fails review rather than the deploy.
+#
+# Requires Pages to be enabled once, with Settings -> Pages -> Source = "GitHub Actions". Until then
+# the build-docs job still passes and the deploy job is the only thing that fails.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Not cancel-in-progress on main: a cancelled deploy can leave Pages half-updated.
+  group: api-docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kmp-toolkit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kmp-toolkit
+      # settings.gradle.kts does includeBuild("../kmp-build-logic") — check out the sibling repo
+      - uses: actions/checkout@v4
+        with:
+          repository: darkpandawarrior/kmp-build-logic
+          path: kmp-build-logic
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Generate aggregated API docs
+        run: ./gradlew dokkaGeneratePublicationHtml --stacktrace
+      - name: Fail if a module produced no documentation
+        # Dokka succeeds on an empty module, so a module silently dropping out of the aggregate would
+        # otherwise be invisible. Compare the modules Gradle knows about against the directories the
+        # site actually produced.
+        run: |
+          set -eu
+          SITE=build/dokka/html
+          MISSING=""
+          for m in $(./gradlew -q projects --console=plain \
+                     | grep -oE "Project ':[a-z0-9:-]+'" | sed "s/Project ':\(.*\)'/\1/" \
+                     | cut -d: -f1 | sort -u); do
+            [ -d "$SITE/$m" ] || MISSING="$MISSING $m"
+          done
+          if [ -n "$MISSING" ]; then
+            echo "::error::No documentation generated for:$MISSING"
+            exit 1
+          fi
+          echo "OK — every module produced a documentation directory."
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: kmp-toolkit/build/dokka/html
+
+  deploy-docs:
+    needs: build-docs
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -17,7 +17,7 @@ payment-gateway abstraction, each targeting exactly the platforms its real consu
 ![Modules](https://img.shields.io/badge/modules-36-0EA5E9)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**[Why](#why-kmp-toolkit)** · **[Highlights](#highlights)** · **[Modules](#modules)** · **[Architecture](#family-architecture)** · **[Tech stack](#tech-stack)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)**
+**[Why](#why-kmp-toolkit)** · **[Highlights](#highlights)** · **[Modules](#modules)** · **[Architecture](#family-architecture)** · **[Tech stack](#tech-stack)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)** · **[API reference](https://darkpandawarrior.github.io/kmp-toolkit/)**
 
 **Portfolio:** [cv-siddharth.vercel.app](https://cv-siddharth.vercel.app/) &nbsp;·&nbsp; **Siblings:** [HireSignal](https://github.com/darkpandawarrior/HireSignal) &nbsp;·&nbsp; [PaymentsLab](https://github.com/darkpandawarrior/PaymentsLab) &nbsp;·&nbsp; [Mileway](https://github.com/darkpandawarrior/Mileway) &nbsp;·&nbsp; [Kursi](https://github.com/darkpandawarrior/Kursi) &nbsp;·&nbsp; **Shared build logic:** [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
 
