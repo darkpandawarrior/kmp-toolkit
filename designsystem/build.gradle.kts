@@ -10,6 +10,12 @@ plugins {
 
 
 kotlin {
+    // Must be explicit: the template is applied automatically ONLY while no source set declares its
+    // own `dependsOn`. The `composeUiTest` set below declares one, which silently switches the
+    // template off — and with it the `iosMain` intermediate that holds the `rememberFormFactor`
+    // actual, so the Native compilation fails with "expect declaration has no actual".
+    applyDefaultHierarchyTemplate()
+
     iosArm64()
     iosSimulatorArm64()
     wasmJs {
@@ -46,5 +52,24 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
         }
+
+        // `runComposeUiTest` renders the composables for real. Deliberately NOT in commonTest: the
+        // Android leg is `withHostTest {}`, a bare JVM against the stubbed android.jar, where
+        // `Build.FINGERPRINT` is null and the harness NPEs on startup. Making it run there means
+        // pulling in Robolectric — a heavy dependency for the one platform Roborazzi already covers
+        // elsewhere in the family.
+        //
+        // iOS and wasm are precisely where this reaches UI that Robolectric/Roborazzi cannot, which
+        // is the whole point of gap #5 in the 2026-07-24 absorption note. So it runs exactly there.
+        val composeUiTest by creating {
+            dependsOn(commonTest.get())
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.compose.ui.test)
+            }
+        }
+        iosArm64Test.get().dependsOn(composeUiTest)
+        iosSimulatorArm64Test.get().dependsOn(composeUiTest)
+        wasmJsTest.get().dependsOn(composeUiTest)
     }
 }
