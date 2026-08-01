@@ -8,6 +8,38 @@ plugins {
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
+    // Applied (not `apply false`) — the root project is the aggregator that stitches every module's
+    // docs into one site. See the dokka block below.
+    alias(libs.plugins.dokka)
+}
+
+// API documentation — one browsable site covering every module, at build/dokka/html.
+//
+// A library monorepo whose README sells 37 modules had no API reference at all: the only way to
+// learn a module's surface was to open its source. Dokka reads the KDoc that is already there, so
+// this is closer to switching something on than to writing documentation.
+//
+// Aggregation is Dokka 2's multi-module model: every subproject applies the plugin and the root
+// declares a `dokka(...)` dependency on each, which is what merges them into a single navigable
+// site rather than 37 disconnected ones.
+subprojects {
+    apply(plugin = "org.jetbrains.dokka")
+}
+
+dependencies {
+    // Derived from `subprojects` rather than listing modules by hand — a new module joins the docs
+    // by existing, with no second place to remember to update. The provider:* leaves alone would
+    // make a hand-written list 19 entries longer and immediately stale.
+    subprojects.forEach { dokka(it) }
+}
+
+dokka {
+    moduleName.set("kmp-toolkit")
+    dokkaPublications.html {
+        // Modules with no KDoc-bearing public surface would otherwise fail the build rather than
+        // simply producing an empty page.
+        failOnWarning.set(false)
+    }
 }
 
 // Shared wasmJs webpack fixes for every module — generated here instead of hand-maintained per
