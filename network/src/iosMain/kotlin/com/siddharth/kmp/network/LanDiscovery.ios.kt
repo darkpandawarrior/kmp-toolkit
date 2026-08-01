@@ -75,6 +75,13 @@ actual class LanDiscoverer actual constructor(
             val resolving = mutableListOf<NSNetService>()
             val delegates = mutableListOf<NSObject>()
 
+            // Contract: discover() emits each host at most once per collection, de-duplicated by
+            // host+port+payload. Bonjour re-resolves after a network flap or a TXT update, so without
+            // this gate a collector sees the same host repeatedly. The JVM actual has always had it;
+            // android and ios silently did not, so the documented behaviour held on one of three
+            // platforms. Same key shape as the other two.
+            val seen = HashSet<String>()
+
             val resolveDelegate =
                 object : NSObject(), NSNetServiceDelegateProtocol {
                     override fun netServiceDidResolveAddress(sender: NSNetService) {
@@ -87,6 +94,7 @@ actual class LanDiscoverer actual constructor(
                                     NSString.create(data = d, encoding = NSUTF8StringEncoding)?.toString()
                                 }
                             } ?: ""
+                        if (!seen.add("$host:$port/$payload")) return
                         trySend(
                             LanHost(host = host, port = port, payload = payload, name = sender.name),
                         )

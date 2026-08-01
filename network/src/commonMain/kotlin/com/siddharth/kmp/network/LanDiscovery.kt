@@ -60,6 +60,23 @@ expect class LanAdvertiser(serviceType: String) {
  * by host+port+payload for the lifetime of the collection). Cancelling the collector tears down the
  * platform listener. The JVM actual additionally sends a one-shot UDP "probe" so already-advertising
  * hosts answer immediately rather than only on their next beacon tick.
+ *
+ * ### Permissions the consuming app must declare
+ *
+ * This is a library module with no manifest of its own, so nothing here is declared for you.
+ *
+ * - **Android 17 / API 37 and above** — `android.permission.ACCESS_LOCAL_NETWORK` is a **runtime**
+ *   permission gating mDNS/DNS-SD, local-network scanning and casting. Discovery returns no results
+ *   without it. Declare it in the manifest *and* request it at runtime before collecting, exactly as
+ *   you would for location or camera. This bites when you move `targetSdk` to 37, not when you
+ *   compile against it.
+ * - **iOS 14 and above** — `NSLocalNetworkUsageDescription` plus an `NSBonjourServices` entry naming
+ *   the service type, both in `Info.plist`. Bonjour silently finds nothing if either is missing.
+ * - **All Android versions** — `INTERNET`.
+ *
+ * The Android actual carries `@SuppressLint("MissingPermission")` because a library module cannot
+ * declare what its consumer must request. That suppression is not a claim that no permission is
+ * needed; on API 37 it would be an actively wrong one.
  */
 expect class LanDiscoverer(serviceType: String) {
     fun discover(): Flow<LanHost>
