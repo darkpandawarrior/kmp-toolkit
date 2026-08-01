@@ -754,8 +754,103 @@ MaterialTheme(colorScheme = if (isDark) MyAppDarkColors else MyAppLightColors) {
 Switch(checked = isDark, onCheckedChange = { theme.setDark(it) })
 ```
 
-**Building-block composables** — `MarkdownText` (a lightweight markdown → Compose renderer, tables
-included) and `ComingSoonDialog` (a brand-neutral "not built yet" dialog):
+**Adaptive tokens** — the same token idea, but sized to the surface, on **two orthogonal axes**.
+
+Width alone is not enough. A 1920dp television and a 1920dp desktop monitor are the same width
+bucket, yet one is read from three metres with a D-pad and the other from half a metre with a mouse.
+The usual answer is to fork the whole token system per form factor — one copy for handheld, another
+for TV, a third for watch — which triples every future edit. So instead: `FormFactor` answers *how
+far away the eye is and what the input is*, `WindowType` answers *how much room there is*, and
+`AdaptiveTokens` resolves from both.
+
+| | `Compact` | `Medium` | `Expanded` |
+|---|---|---|---|
+| **`Watch`** | Wear OS — one set; every device is 192–227dp, a ladder would be theatre | ← | ← |
+| **`Handheld`** / **`Desktop`** | phone · <600dp | tablet portrait, foldable · 600–839dp | tablet landscape, desktop, web · ≥840dp |
+| **`Tv`** | **the standard 10-foot set** · <1280dp | desktop-as-TV · 1280–1919dp | ultrawide · ≥1920dp |
+
+```kotlin
+import com.siddharth.kmp.designsystem.AdaptiveTheme
+import com.siddharth.kmp.designsystem.LocalAdaptiveTokens
+
+AdaptiveTheme {                  // FormFactor auto-detected; pass one to force a surface
+    val t = LocalAdaptiveTokens.current
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(t.gridColumns),          // 1 watch · 2–4 handheld · 5–7 TV
+        contentPadding = PaddingValues(t.screenPadding),   // 8 · 16–32 · 48–64
+        verticalArrangement = Arrangement.spacedBy(t.itemSpacing),
+    ) { movie -> MovieCard(Modifier.focusScale().focusable()) }   // grows on D-pad focus, TV only
+}
+```
+
+`FormFactor` is detected per platform via `rememberFormFactor()`: Android reads the system `uiMode`
+type bits, so the *same APK* resolves `Tv` on a television, `Watch` on Wear OS and `Handheld` on a
+phone — and re-resolves on a fold or a display switch, because it reads `LocalConfiguration`. iOS
+reports `Handheld`, Wasm reports `Desktop`. Override it anywhere (`AdaptiveTheme(FormFactor.Tv)`) for
+previews, screenshot tests, and desktop builds that render a leanback UI.
+
+Two tokens exist only for the 10-foot case and are inert everywhere else, so a shared composable can
+carry them without branching: `overscanPadding` (the outer band a TV physically clips — zero on every
+other surface) and `focusScale` (`1f` wherever focus isn't the primary input, which makes
+`Modifier.focusScale()` a genuine no-op on touch).
+
+> **A note on the TV breakpoints.** Real Android TV normalises to roughly **960dp** wide regardless of
+> panel resolution — a 720p set runs tvdpi, a 1080p set runs xhdpi, and both land near 960×540dp. So
+> essentially every television resolves to `Compact`, and the Compact TV set is therefore the
+> *standard* 10-foot set, not a cut-down one. The repo this idea came from used 1400/2600dp for TV,
+> which classifies every real Android TV as its smallest bucket while labelling that bucket "720p" —
+> those numbers describe a desktop window emulating a TV. There is a regression test pinning
+> 960dp → `TvTokens` with a ≥18sp body, the leanback readability floor.
+
+**Reach for `Modifier.screenPadding()` rather than `padding(tokens.screenPadding)`.** A raw token is
+not enough on real hardware: on a landscape phone the display cutout and gesture bar eat the same
+edge, on iOS it's the notch and home indicator, and a television physically clips its border.
+`screenPadding()` applies `WindowInsets.safeDrawing` first — cutouts, system bars and IME on every
+platform that has them, empty on desktop and web — then the token on top.
+
+```kotlin
+Column(Modifier.screenPadding())                    // never under a notch, never off a TV edge
+LazyColumn(Modifier.screenPadding(vertical = false)) // let the list scroll under the status bar
+```
+
+Only values that *should* breathe live here. Shapes, elevation, motion and the a11y-constant
+`Size.minTouch` stay static in `DesignTokens` — a 48dp touch target is 48dp on a watch and on a 4K
+television, and corner radius is brand identity, not a function of viewport width. `AdaptiveTheme`
+reads the *container* width rather than the window, so a detail pane inside a two-pane layout
+correctly resolves to `Compact` on an `Expanded` window.
+
+**Writing your own adaptive values** — `byWindow` / `byFormFactor` are the whole
+`object FooDefaults { fun width(w: WindowType) = when (w) { ... } }` idiom as one call. Reach for
+these instead of adding fields to `AdaptiveTokens`; that class holds only what more than one
+component reads.
+
+```kotlin
+object PosterDefaults {
+    fun width(w: WindowType) = byWindow(w, 100.dp, 140.dp, 160.dp)
+}
+
+// Override only the surface that actually differs:
+val poster = byFormFactor(default = 140.dp, watch = 64.dp, tv = 220.dp)
+```
+
+**`OtpField`** — a one-time-code field, built as a real `BasicTextField` with a `decorationBox` that
+paints the cells, rather than the usual invisible-field-behind-a-clickable-Row trick. That difference
+is functional, not cosmetic: focus, caret, IME action, select-all, paste and the platform's SMS-code
+suggestion all work by default. `Box` / `Line` / `Circle` cells, cell size derived from the surface,
+every colour from `colorScheme`.
+
+**`PageIndicator`** — pill-style carousel dots that grow with viewing distance. Takes an `Int`, not a
+`PagerState`, so it also drives a LazyRow carousel, an onboarding stack or a step counter.
+
+**Screen motion** — `screenEnter` / `screenExit`, a fade with a barely-there scale, as plain
+`EnterTransition`/`ExitTransition` values rather than the `AnimatedContentTransitionScope<NavBackStackEntry>.() ->`
+lambdas the idiom usually ships as. That signature drags in `androidx.navigation`; these work with
+`NavHost`, `AnimatedContent` and `AnimatedVisibility` alike, on every target.
+
+**Building-block composables** — `LoadingState` / `ErrorState` / `EmptyState` (the three outcomes
+every screen has, with "no results" deliberately *not* painted in the error colour), `MarkdownText`
+(a lightweight markdown → Compose renderer, tables included) and `ComingSoonDialog` (a brand-neutral
+"not built yet" dialog):
 
 ```kotlin
 MarkdownText("**Offer:** ₹32L · _remote_\n\n| role | level |\n|---|---|\n| Android | Lead |")
@@ -763,7 +858,53 @@ MarkdownText("**Offer:** ₹32L · _remote_\n\n| role | level |\n|---|---|\n| An
 
 | Member | Kind | What it does |
 |---|---|---|
-| `DesignTokens` | `object` | Brand-agnostic spacing / shape / size scale |
+| `DesignTokens` | `object` | Brand-agnostic spacing / shape / size / elevation / motion scale (static) |
+| `FormFactor` | `enum` | `Watch` / `Handheld` / `Desktop` / `Tv` — viewing distance and input model |
+| `WindowType` | `enum` | `Compact` / `Medium` / `Expanded` — how much room, with per-form-factor breakpoints |
+| `rememberFormFactor` | `@Composable expect` | Platform's own answer; Android reads the `uiMode` type bits so one APK adapts across phone / Wear / TV |
+| `windowTypeFor` | `fun` | `(Dp, FormFactor) → WindowType`; pure, testable without a composition |
+| `AdaptiveTokens` | `data class` | Per-surface padding, spacing, toolbar, `gridColumns`, type scale, `overscanPadding`, `focusScale` |
+| `tokensFor` | `fun` | `(FormFactor, WindowType) → AdaptiveTokens`; total over every pair |
+| `AdaptiveTheme` | `@Composable` | Provides `LocalAdaptiveTokens` / `LocalWindowType` / `LocalFormFactor`; measures the container, or takes both axes you resolved upstream |
+| `NavigationLayout` | `enum` | `BottomBar` / `Rail` / `Drawer` / `None` |
+| `navigationLayoutFor` | `fun` | Picks the nav affordance from form factor + width + fold posture; knows TV and Wear, which width-only rules get wrong |
+| `Modifier.screenPadding` | `@Composable` | Safe-area insets (cutout, system bars, IME) **plus** the adaptive screen padding, in one call |
+| `Modifier.readableWidth` | `@Composable` | Caps a prose column at a comfortable measure and centres it; per-surface, uncapped on a watch |
+| `Modifier.contentWidth` | `@Composable` | Same, at the wider layout cap — for card grids and dashboards |
+| `Modifier.focusScale` | `@Composable` | Grows a focused element by `focusScale` — D-pad affordance on TV, no-op on touch |
+| `screenEnter` / `screenExit` | `val` | Nav-agnostic screen transitions (fade + 0.95 scale) on the `DesignTokens.Motion` scale |
+| `byWindow` | `fun` / `@Composable` | Per-width-bucket value of any type — the `FooDefaults` idiom in one call |
+| `byFormFactor` | `fun` / `@Composable` | Per-surface value, overriding only the surfaces that differ |
+| `OtpField` | `@Composable` | One-time-code field over a real `BasicTextField`; Box/Line/Circle cells, adaptive sizing |
+| `sanitizeOtp` / `otpCellState` | `fun` | The field's pure logic, testable without a composition |
+| `PageIndicator` | `@Composable` | Pill carousel dots; takes an `Int`, so not tied to `PagerState` |
+| `ErrorState` | `@Composable` | Centered failure state with optional retry; uses `colorScheme.error`, never a literal |
+| `EmptyState` | `@Composable` | Succeeded-but-nothing-here state — distinct from error on purpose |
+
+### Combinations
+
+These are designed to compose. The recipes below are the intended pairings — start here rather than
+wiring a screen from scratch.
+
+| Use case | Combination |
+|---|---|
+| **OTP / payment verification** (PaymentsLab) | `AdaptiveTheme` → `OtpField(isError = state.rejected)` → `ErrorState(onRetry)` on failure, `LoadingState` while verifying. Cell size and type scale follow the surface with no extra code, so the same screen is correct on a phone and a tablet. |
+| **Leanback / TV carousel** | `AdaptiveTheme` auto-resolves `Tv` from `uiMode` → cards wear `Modifier.focusScale().focusable()` for the D-pad affordance → `PageIndicator` under the hero. Inset full-bleed art by `overscanPadding`; inset ordinary content by `screenPadding` (already overscan-safe). |
+| **Responsive dashboard / grid** | `AdaptiveTheme` → `LazyVerticalGrid(GridCells.Fixed(tokens.gridColumns))` → the `LoadingState` / `ErrorState` / `EmptyState` triad for the three outcomes. One screen covers phone through desktop and web. |
+| **Wear OS** | `AdaptiveTheme` auto-resolves `Watch` → `gridColumns` collapses to 1, `OtpFieldDefaults.style(cellShape = OtpCellShape.Circle)` fits a code on a wrist. |
+| **Long-form reading** (articles, changelogs, `MarkdownText`) | `Modifier.screenPadding().readableWidth()` — insets past the notch, then caps the line length. Text at the full width of a 2560dp window runs past 200 characters a line and the eye loses the return sweep. |
+| **App navigation chrome** | `navigationLayoutFor(formFactor, width)` → render first-party Material yourself: `NavigationBar`, `NavigationRail`, `PermanentNavigationDrawer`, or nothing. Encodes what a width-only rule gets wrong — a television must never get a bottom bar, and Wear must get no chrome at all. |
+| **Per-component sizing** | `byWindow` / `byFormFactor` inside your own `FooDefaults` object — never by growing `AdaptiveTokens`. |
+| **Screen transitions** | `screenEnter` / `screenExit` into `NavHost`, `AnimatedContent` or `AnimatedVisibility` — no navigation dependency either way. |
+| **Theming around all of it** | `ThemeController` for dark mode, `AdaptiveTheme` for surface metrics. Orthogonal: one owns colour, the other owns dimension, and neither knows about the other. |
+
+**Testing note.** The pure logic (`windowTypeFor`, `tokensFor`, `sanitizeOtp`, `otpCellState`) is
+deliberately separated from the composables so it tests without a composition, and runs on all three
+test targets. The composables themselves are driven by `runComposeUiTest` in the `composeUiTest`
+source set, which is wired to **iOS and wasm only** — the Android leg is `withHostTest {}`, a bare
+JVM where `Build.FINGERPRINT` is null and the harness NPEs, and making it run there means pulling in
+Robolectric for the one platform Roborazzi already covers elsewhere. iOS and wasm are exactly the UI
+that Robolectric and Roborazzi cannot reach, which is the point.
 | `ThemeStore` | `interface` | Persistence seam for the dark-mode choice (`darkOverride()` / `setDark()`) |
 | `InMemoryThemeStore` | `object : ThemeStore` | Default seam — holds the choice for the process lifetime |
 | `ThemeController` | `class` | Dark-first theme-mode state holder exposing `isDark: StateFlow<Boolean>`, `setDark()`, `toggle()` |

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -176,6 +178,86 @@ fun LoadingState(
         if (label != null) {
             Spacer(Modifier.height(DesignTokens.Spacing.m))
             Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/**
+ * The failed sibling of [LoadingState]. Retry is optional — a permanently failed screen (404, revoked
+ * access) should not offer a button that will fail again.
+ *
+ * Colours come from `MaterialTheme.colorScheme.error`, never a literal: this module ships no palette,
+ * so a consumer's own theme decides what "error" looks like.
+ */
+@Composable
+fun ErrorState(
+    message: String,
+    modifier: Modifier = Modifier,
+    onRetry: (() -> Unit)? = null,
+    retryLabel: String = "Retry",
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(DesignTokens.Spacing.huge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+        )
+        if (onRetry != null) {
+            Spacer(Modifier.height(DesignTokens.Spacing.l))
+            Button(onClick = onRetry) { Text(retryLabel) }
+        }
+    }
+}
+
+/**
+ * The succeeded-but-nothing-here sibling of [LoadingState]. Distinct from [ErrorState] on purpose:
+ * "no search results" is a normal outcome and must not be painted in the error colour.
+ */
+@Composable
+fun EmptyState(
+    title: String,
+    modifier: Modifier = Modifier,
+    body: String? = null,
+    icon: ImageVector? = null,
+    action: (@Composable () -> Unit)? = null,
+) {
+    Column(
+        modifier = modifier.fillMaxSize().padding(DesignTokens.Spacing.huge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        if (icon != null) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(DesignTokens.Size.iconXl),
+            )
+            Spacer(Modifier.height(DesignTokens.Spacing.m))
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+        )
+        if (body != null) {
+            Spacer(Modifier.height(DesignTokens.Spacing.xs))
+            Text(
+                body,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        if (action != null) {
+            Spacer(Modifier.height(DesignTokens.Spacing.l))
+            action()
         }
     }
 }
