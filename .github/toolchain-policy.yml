@@ -1,0 +1,28 @@
+# The three versions that must move together across kmp-toolkit, kmp-build-logic and every consumer
+# app. A Gradle composite build requires the included build's plugin versions to agree with the
+# root's, so a repo on its own triple cannot resolve the toolkit at all — it fails to configure.
+#
+# toolchain-watch.yml reads this file, compares each axis against what upstream has published, and
+# opens ONE pull request when a newer version exists and is not held. Dependabot is configured to
+# ignore these three coordinates in every repo precisely so they only ever move through here.
+#
+# `hold` pins an axis and states why. Remove the hold to let the watcher propose it again.
+
+axes:
+  - key: agp
+    metadata: https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml
+
+  - key: kotlin
+    metadata: https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml
+
+  - key: compose-multiplatform
+    metadata: https://repo1.maven.org/maven2/org/jetbrains/compose/compose-gradle-plugin/maven-metadata.xml
+    hold: "1.12.0-beta01"
+    reason: >-
+      beta02 AND beta03 both break compose-resources for a KMP library targeting android + wasmJs:
+      the generated Res class is produced but never lands on the androidMain compilation source path,
+      so every import of it fails to resolve. Reproduced on PaymentsLab core/designsystem on a clean
+      build, isolated against AGP (alpha07 + beta01 is green, alpha07 + beta03 is not). Two
+      consecutive releases failing identically reads like a deliberate change in how library
+      resources are wired rather than a regression awaiting a fix. Re-test before removing this hold
+      — do not assume a later beta fixes it, because beta03 did not.
