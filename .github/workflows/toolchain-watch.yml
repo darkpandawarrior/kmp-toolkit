@@ -1,0 +1,128 @@
+name: Toolchain watch
+
+# Watches the three versions that must move together across the whole family (AGP, Kotlin, Compose
+# Multiplatform) and opens ONE pull request when a newer, un-held version exists.
+#
+# Why this exists rather than Dependabot: Dependabot bumps each repo independently, and this family
+# cannot take an independent bump. A Gradle composite build requires the included build's plugin
+# versions to agree with the root's, so one repo moving alone stops resolving the toolkit entirely.
+# That is how four apps ended up on four different triples with every submodule pin stale. Dependabot
+# is configured to ignore these three coordinates everywhere; they move only through here.
+#
+# It also caught a second failure mode: Dependabot proposed AGP alpha06 on one consumer while alpha07
+# was already published. Watching the axis rather than reacting to a per-repo PR avoids that.
+#
+# The PR is a proposal, not a decision. Merging it runs the full CI matrix here, and only then does
+# notify-consumers tell each app to try the new pins — each of which builds before opening its own PR.
+
+on:
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: toolchain-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare the catalog against what upstream has published
+        id: check
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import re, urllib.request, yaml, os
+
+          policy = yaml.safe_load(open('.github/toolchain-policy.yml'))
+          catalog = open('gradle/libs.versions.toml').read()
+
+          def current(key):
+              m = re.search(rf'^{re.escape(key)} = "([^"]+)"', catalog, re.M)
+              return m.group(1) if m else None
+
+          def published(url):
+              with urllib.request.urlopen(url, timeout=30) as r:
+                  xml = r.read().decode()
+              return re.findall(r'<version>([^<]+)</version>', xml)
+
+          # Order upstream already publishes in: maven-metadata lists oldest-first, so "newer" is
+          # simply "appears later in the list". Avoids inventing a comparator for alpha/beta/RC
+          # strings, which is where hand-rolled version sorting usually goes wrong.
+          lines, changed = [], []
+          for axis in policy['axes']:
+              key = axis['key']
+              cur = current(key)
+              if cur is None:
+                  lines.append(f"  {key}: NOT FOUND in catalog — skipped")
+                  continue
+              hold = axis.get('hold')
+              if hold:
+                  lines.append(f"  {key}: held at {hold} (current {cur})")
+                  continue
+              vs = published(axis['metadata'])
+              if cur not in vs:
+                  lines.append(f"  {key}: current {cur} not published upstream — skipped")
+                  continue
+              newer = vs[vs.index(cur) + 1:]
+              if not newer:
+                  lines.append(f"  {key}: {cur} is newest")
+                  continue
+              latest = newer[-1]
+              lines.append(f"  {key}: {cur} -> {latest}  ({len(newer)} newer)")
+              changed.append((key, cur, latest))
+
+          print("report<<EOF")
+          print("\n".join(lines))
+          print("EOF")
+          print(f"changed={'true' if changed else 'false'}")
+          if changed:
+              print("body<<EOF")
+              print("| axis | current | newest |")
+              print("|---|---|---|")
+              for k, c, l in changed:
+                  print(f"| `{k}` | `{c}` | `{l}` |")
+              print("EOF")
+              # Rewrite the catalog in place; the PR step commits whatever changed.
+              for k, c, l in changed:
+                  catalog = re.sub(rf'^{re.escape(k)} = "{re.escape(c)}"',
+                                   f'{k} = "{l}"', catalog, count=1, flags=re.M)
+              open('gradle/libs.versions.toml', 'w').write(catalog)
+          PY
+
+      - name: Report
+        run: |
+          echo "${{ steps.check.outputs.report }}"
+
+      - name: Propose the coordinated bump
+        if: steps.check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          add-paths: gradle/libs.versions.toml
+          branch: chore/toolchain-bump
+          title: "chore: newer toolchain available"
+          commit-message: "chore: bump the coordinated toolchain versions"
+          body: |
+            A newer version exists on at least one of the three coordinated axes.
+
+            ${{ steps.check.outputs.body }}
+
+            **This is a proposal, not a decision.** Nothing downstream has been verified yet.
+
+            What happens if this merges: CI runs the full matrix here, then `notify-consumers`
+            tells each app to try the new pins, and each app **builds before opening its own PR** —
+            so a version that breaks a consumer produces no PR there and a failed run instead.
+
+            What still needs a human: each consumer's own `libs.versions.toml` must move to the same
+            three versions. Merging this alone puts the toolkit on a triple the apps do not share,
+            which is the exact state that left every submodule pin stale.
+
+            Held axes are skipped entirely — see `.github/toolchain-policy.yml` for which and why.
+            If an axis is held for a reason that no longer applies, remove the hold there rather
+            than bumping it by hand here.
