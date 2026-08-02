@@ -7,8 +7,12 @@ import android.os.Debug
 import java.io.File
 
 // The Android actual needs a Context to read applicationInfo flags; the common factory carries no
-// Context (KMP shape), so the host app installs the application Context once at startup. Without it,
-// inspection degrades to a clean report rather than crashing (e.g. JVM unit tests on this source set).
+// Context (KMP shape), so the host app installs the application Context once at startup.
+//
+// Without it the detectors cannot run. It does NOT crash — a JVM unit test touching this source set
+// must not blow up — but it returns `inspected = false`, which isCompromised treats as compromised.
+// It previously returned a clean report, so an app that forgot the install step ran happily on a
+// rooted device and the only trace was a string inside `signals` that nothing had to read.
 private var appContextHolder: Context? = null
 
 /** Install the application [Context] used by the Android device-integrity actual. Call once at startup. */
@@ -17,15 +21,24 @@ fun installDeviceIntegrityContext(context: Context) {
 }
 
 actual fun deviceIntegrity(config: DeviceIntegrityConfig): DeviceIntegrity =
-    appContextHolder?.let { AndroidDeviceIntegrity(it, config) } ?: CleanDeviceIntegrity
+    appContextHolder?.let { AndroidDeviceIntegrity(it, config) } ?: UninspectedDeviceIntegrity
 
-private object CleanDeviceIntegrity : DeviceIntegrity {
+/**
+ * Returned when no Context was installed. Every flag is false because nothing was measured — which is
+ * exactly why [DeviceIntegrityReport.inspected] is false: the caller must not read those falses as a
+ * clean bill of health. `isCompromised` therefore returns true.
+ */
+private object UninspectedDeviceIntegrity : DeviceIntegrity {
     override fun inspect(): DeviceIntegrityReport =
         DeviceIntegrityReport(
             rooted = false,
             emulator = false,
             debuggerAttached = false,
-            signals = listOf("device-integrity: no Context installed — reporting clean"),
+            signals = listOf(
+                "device-integrity: no Context installed — detectors did NOT run. " +
+                    "Call installDeviceIntegrityContext(applicationContext) at startup.",
+            ),
+            inspected = false,
         )
 }
 
