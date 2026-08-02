@@ -17,12 +17,21 @@ axes:
 
   - key: compose-multiplatform
     metadata: https://repo1.maven.org/maven2/org/jetbrains/compose/compose-gradle-plugin/maven-metadata.xml
-    hold: "1.12.0-beta01"
-    reason: >-
-      beta02 AND beta03 both break compose-resources for a KMP library targeting android + wasmJs:
-      the generated Res class is produced but never lands on the androidMain compilation source path,
-      so every import of it fails to resolve. Reproduced on PaymentsLab core/designsystem on a clean
-      build, isolated against AGP (alpha07 + beta01 is green, alpha07 + beta03 is not). Two
-      consecutive releases failing identically reads like a deliberate change in how library
-      resources are wired rather than a regression awaiting a fix. Re-test before removing this hold
-      — do not assume a later beta fixes it, because beta03 did not.
+    # Hold LIFTED 2026-08-02. It was never a Compose bug to wait out.
+    #
+    # beta02 and beta03 both stop the generated compose-resources `Res` class landing on the
+    # androidMain compilation source path for a KMP LIBRARY that also targets wasmJs. Two
+    # consecutive releases failing identically said this was a deliberate change in how library
+    # resources are wired, not a regression — so waiting for beta04 was waiting for nothing.
+    #
+    # The real fault was ours: PaymentsLab's core/designsystem carried a brand typeface inside a
+    # brand-neutral design-system library, which its own contract forbids. Moving the font to the
+    # app as a plain Android res/font resource (PaymentsLab#16) removed the compose-resources
+    # dependency entirely, and core/designsystem + :app + :web all compile on beta03.
+    #
+    # Mileway also carries compose resources in libraries (core/ui, feature/whatsnew) and was
+    # verified green on beta03 independently — its core/ui targets desktop rather than wasmJs, which
+    # is what made it immune all along and is the strongest evidence for the wasmJs trigger.
+    #
+    # If a future CMP breaks a library again, prefer asking whether that library should own the
+    # resource before pinning six repos to protect it.
