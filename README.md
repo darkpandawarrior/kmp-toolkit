@@ -5,9 +5,15 @@
 ### A Kotlin Multiplatform toolkit — a family of small, focused, production-grade libraries extracted from real apps.
 
 A single monorepo housing every small, reusable KMP library I've pulled out of my own production
-apps — each one extracted the moment a second consumer needed the same logic, never designed as a
-"platform" up front. 36 modules today, from a typed `Result` primitive to a 19-provider
-payment-gateway abstraction, each targeting exactly the platforms its real consumers need.
+apps, never designed as a "platform" up front. 37 modules today, from a typed `Result` primitive to a
+19-provider payment-gateway abstraction, each targeting exactly the platforms its real consumers need.
+
+**Adoption is uneven, on purpose and by accident both.** Measured across the four consuming apps
+(Mileway, PaymentsLab, HireSignal, Kursi): `common`, `mvi-core` and `network` are used by all four;
+`security` and `ai` by three; `designsystem` by two. The rest have one consumer or none — the 19
+payment-gateway leaves serve PaymentsLab alone by design, while `device-integrity` and `store` are
+extractions still waiting for their first. Treat this as a staging ground where a few modules are
+proven across four apps and others are candidates, rather than a uniformly battle-tested platform.
 
 [![CI](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/ci.yml)
 [![No AI Attribution](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/no-ai-attribution.yml/badge.svg)](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/no-ai-attribution.yml)
