@@ -1,0 +1,49 @@
+name: Notify consumers
+
+# Tells every app that vendors this toolkit that main has moved, so each can open its own
+# pin-bump PR. Fires only after CI is green on main — there is no point asking four repos to
+# bump to a commit that does not build.
+#
+# Deliberately a notification, not a bump. This workflow cannot know whether a consumer's build
+# survives the new commit; only the consumer can, and it decides by building. See each app's
+# bump-toolkit.yml.
+#
+# Requires a repo secret CONSUMER_DISPATCH_TOKEN — a fine-grained PAT with "Contents: read-write"
+# on the four consumer repos. The default GITHUB_TOKEN deliberately cannot trigger workflows in
+# other repositories, so this cannot work without one. Absent the secret the job fails loudly
+# rather than silently doing nothing.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    # Only on a green CI run. `workflow_run` fires on failure too.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        consumer: [Mileway, PaymentsLab, HireSignal, Kursi]
+    steps:
+      - name: Dispatch to ${{ matrix.consumer }}
+        env:
+          GH_TOKEN: ${{ secrets.CONSUMER_DISPATCH_TOKEN }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -eu
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::CONSUMER_DISPATCH_TOKEN is not set — cannot dispatch to other repositories."
+            exit 1
+          fi
+          gh api "repos/darkpandawarrior/${{ matrix.consumer }}/dispatches" \
+            -f event_type=kmp-toolkit-updated \
+            -F "client_payload[sha]=$SHA"
+          echo "Notified ${{ matrix.consumer }} of kmp-toolkit $SHA"
