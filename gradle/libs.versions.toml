@@ -108,6 +108,8 @@ compose-webview-multiplatform = { module = "io.github.kevinnzou:compose-webview-
 
 # — settings (russhwolf multiplatform-settings — encrypted cross-platform Settings seam) —
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
+# MapSettings — the in-memory fake, for :auth's TokenStore tests.
+multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security-crypto" }
 
 # — offline-outbox (Room KMP — first Room module in the monorepo, versions match Mileway's) —
