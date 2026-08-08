@@ -35,6 +35,11 @@ konnection = "1.4.5"
 play-services-location = "21.4.0"
 multiplatform-settings = "1.3.0"
 androidx-security-crypto = "1.1.0"
+# Verified against real POMs on repo1.maven.org, not against git tags — compass's 3.x line
+# RENAMED its artifacts (compass-core -> core) and the old `compass-*` names stop at 1.6.7,
+# so a naive coordinate lands you two major versions behind without any error.
+calf = "0.13.0"
+compass = "3.2.0"
 
 [libraries]
 # — coroutines / serialization (all KMP modules) —
@@ -116,6 +121,27 @@ androidx-security-crypto = { module = "androidx.security:security-crypto", versi
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite-bundled" }
+
+# — Calf: adaptive CMP components. Taking ONLY file-picker + io. Apache-2.0, full wasmJs.
+#   Closes a real gap: there is no SAF/file-picker abstraction anywhere in the toolkit
+#   (:app-shell's DocumentScanner is camera page-scan, not file selection).
+#   calf-permissions is deliberately NOT taken — :app-shell already owns PermissionsProvider,
+#   and two permission abstractions is strictly worse than one.
+calf-file-picker = { module = "com.mohamedrejeb.calf:calf-file-picker", version.ref = "calf" }
+calf-io = { module = "com.mohamedrejeb.calf:calf-io", version.ref = "calf" }
+
+# — compass: geocoding + place autocomplete. MIT. Note the artifact names have NO `compass-`
+#   prefix on the 3.x line. Taking geocoding/autocomplete only; compass-geolocation is skipped
+#   because it would be a second location-acquisition abstraction competing with :app-shell's
+#   LocationTracker and the new LocationSource seam.
+#   `*-mobile` variants are android+ios ONLY by design — they must never enter a wasm-targeting
+#   commonMain source set.
+compass-core = { module = "dev.jordond.compass:core", version.ref = "compass" }
+compass-geocoder = { module = "dev.jordond.compass:geocoder", version.ref = "compass" }
+compass-geocoder-mobile = { module = "dev.jordond.compass:geocoder-mobile", version.ref = "compass" }
+compass-geocoder-web-googlemaps = { module = "dev.jordond.compass:geocoder-web-googlemaps", version.ref = "compass" }
+compass-autocomplete = { module = "dev.jordond.compass:autocomplete", version.ref = "compass" }
+compass-autocomplete-mobile = { module = "dev.jordond.compass:autocomplete-mobile", version.ref = "compass" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
