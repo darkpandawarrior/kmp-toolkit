@@ -98,6 +98,34 @@ interface DocumentScanner {
     suspend fun scan(maxPages: Int = 1): List<ByteArray>
 }
 
+/** A plain lat/lng pair — the forward-geocoding counterpart of [PlaceName]'s coordinate string. */
+data class GeoCoordinates(val latitude: Double, val longitude: Double)
+
+/** A place suggestion: a human-readable [label] plus its resolvable [coordinates]. */
+data class GeoPlace(val label: String, val coordinates: GeoCoordinates)
+
+/**
+ * Resolves free-text address input to coordinates (forward geocoding — the counterpart to
+ * [LocationNameResolver]'s reverse direction). Android/iOS: Compass, itself a thin wrapper over the
+ * same OS geocoders [LocationNameResolver] already wraps (`android.location.Geocoder` / `CLGeocoder`).
+ *
+ * Never throws: an unresolved or failed lookup returns an empty list.
+ */
+interface ForwardGeocoder {
+    suspend fun forward(address: String): List<GeoCoordinates>
+}
+
+/**
+ * Place-name autocomplete for an in-progress address search. Android/iOS: Compass's mobile
+ * autocomplete, which matches partial input against the same OS geocoder [ForwardGeocoder] uses —
+ * there is no separate typeahead network call or API key, so availability mirrors [ForwardGeocoder].
+ *
+ * Never throws: an unresolved or failed lookup returns an empty list.
+ */
+interface PlaceAutocomplete {
+    suspend fun search(query: String): List<GeoPlace>
+}
+
 /** Local notifications. Android: NotificationManager + channels; iOS: UNUserNotificationCenter. */
 interface NotificationScheduler {
     suspend fun ensurePermission(): Boolean
@@ -127,4 +155,22 @@ interface PermissionsProvider {
     suspend fun isGranted(permission: AppPermission): Boolean
 
     suspend fun request(permission: AppPermission): PermissionResult
+}
+
+/**
+ * File selection for import/export flows (e.g. picking a receipt, saving an export). Android/iOS:
+ * Calf's file-picker/file-saver, bridged from the host's Compose layer — Calf's launchers are
+ * `@Composable` (they wrap `rememberLauncherForActivityResult`/`UIDocumentPickerViewController`),
+ * so like [PermissionsProvider.request]'s ActivityResult dialog, the actual pick/save UI can't be
+ * driven from this headless module and is bridged in by whoever hosts the Compose UI.
+ */
+interface FilePicker {
+    /** Prompts the user to pick a file; null if cancelled, unavailable, or no host UI has wired the picker. */
+    suspend fun pickFile(): ByteArray?
+
+    /** Prompts the user to choose a save location and writes [bytes] there; true on success. */
+    suspend fun saveFile(
+        fileName: String,
+        bytes: ByteArray,
+    ): Boolean
 }

@@ -40,6 +40,23 @@ object NoOpPermissionsProvider : PermissionsProvider {
     override suspend fun request(permission: AppPermission): PermissionResult = PermissionResult.Denied
 }
 
+object NoOpForwardGeocoder : ForwardGeocoder {
+    override suspend fun forward(address: String): List<GeoCoordinates> = emptyList()
+}
+
+object NoOpPlaceAutocomplete : PlaceAutocomplete {
+    override suspend fun search(query: String): List<GeoPlace> = emptyList()
+}
+
+object NoOpFilePicker : FilePicker {
+    override suspend fun pickFile(): ByteArray? = null
+
+    override suspend fun saveFile(
+        fileName: String,
+        bytes: ByteArray,
+    ): Boolean = false
+}
+
 object NoOpAppUpdateManager : AppUpdateManager {
     override suspend fun checkForUpdate(config: UpdateConfig): UpdateAvailability = UpdateAvailability.NotAvailable
 
