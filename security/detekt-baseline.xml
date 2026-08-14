@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:DeviceIntegrity.kt:fp.startsWith("generic") || fp.startsWith("unknown") || fp.contains("emulator") || fp.contains("sdk_gphone") || fp.contains("vbox")</ID>
+    <ID>ComplexCondition:DeviceIntegrity.kt:mdl.contains("sdk_gphone") || mdl.contains("emulator") || mdl.contains("android sdk built for") || mdl.contains("google_sdk")</ID>
+    <ID>ComplexCondition:DeviceIntegrity.kt:prod.contains("sdk_gphone") || prod.contains("sdk_google") || prod == "google_sdk" || prod.contains("emulator") || prod.contains("vbox86") || prod.startsWith("sdk")</ID>
+    <ID>CyclomaticComplexMethod:DeviceIntegrity.kt:internal fun isEmulatorBuild: Boolean</ID>
+    <ID>FunctionOnlyReturningConstant:PaymentCertificatePinning.kt:PaymentCertificatePinning$fun isPinningActive: Boolean</ID>
+    <ID>MagicNumber:AntiHookDetector.kt:AntiHookDetector$120</ID>
+    <ID>MagicNumber:KeystoreCrypto.kt:KeystoreCrypto$256</ID>
+    <ID>ReturnCount:DeviceIntegrity.kt:internal fun isEmulatorBuild: Boolean</ID>
+    <ID>SwallowedException:AntiDebugDetector.kt:AntiDebugDetector$e: Exception</ID>
+    <ID>SwallowedException:AntiHookDetector.kt:AntiHookDetector$e: ClassNotFoundException</ID>
+    <ID>SwallowedException:AntiHookDetector.kt:AntiHookDetector$e: Exception</ID>
+    <ID>SwallowedException:AntiHookDetector.kt:AntiHookDetector$e: Throwable</ID>
+    <ID>SwallowedException:AntiSslBypassDetector.kt:AntiSslBypassDetector$e: Exception</ID>
+    <ID>SwallowedException:DeviceIntegrity.kt:AndroidDeviceIntegrity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AntiDebugDetector.kt:AntiDebugDetector$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AntiHookDetector.kt:AntiHookDetector$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AntiHookDetector.kt:AntiHookDetector$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:AntiSslBypassDetector.kt:AntiSslBypassDetector$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DeviceIntegrity.kt:AndroidDeviceIntegrity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:KeystoreCrypto.kt:KeystoreCrypto$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:AntiHookDetector.kt:AntiHookDetector$throw Exception("xposed-probe")</ID>
+  </CurrentIssues>
+</SmellBaseline>

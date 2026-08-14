@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:AnthropicProvider.kt:AnthropicProvider$5_000</ID>
+    <ID>MagicNumber:GeminiProvider.kt:GeminiProvider$5_000</ID>
+    <ID>MagicNumber:OpenAiProvider.kt:OpenAiProvider$5_000</ID>
+  </CurrentIssues>
+</SmellBaseline>

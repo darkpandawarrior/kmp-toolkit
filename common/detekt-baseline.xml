@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:Elo.kt:Elo$400.0</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$0x5A827999</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$0x6ED9EBA1</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$0xFF</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$16</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$20</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$24</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$30</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$31</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$32</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$40</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$60</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$64</ID>
+    <ID>MagicNumber:Hashing.kt:Hashing$80</ID>
+    <ID>MagicNumber:Rng.kt:27</ID>
+    <ID>MagicNumber:Rng.kt:30</ID>
+    <ID>MagicNumber:Rng.kt:31</ID>
+  </CurrentIssues>
+</SmellBaseline>

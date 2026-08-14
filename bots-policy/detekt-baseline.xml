@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LoopWithTooManyJumpStatements:Ismcts.kt:Ismcts$while</ID>
+    <ID>SwallowedException:Ismcts.kt:Ismcts$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Ismcts.kt:Ismcts$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>EmptyFunctionBlock:LanDiscovery.android.kt:LanAdvertiser.&lt;no name provided>${}</ID>
+    <ID>EmptyFunctionBlock:LanDiscovery.android.kt:LanDiscoverer.&lt;no name provided>${}</ID>
+    <ID>LoopWithTooManyJumpStatements:LanDiscovery.jvm.kt:LanDiscoverer$while</ID>
+    <ID>MagicNumber:HttpClientFactory.kt:15_000</ID>
+  </CurrentIssues>
+</SmellBaseline>

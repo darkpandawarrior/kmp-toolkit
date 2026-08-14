@@ -1,8 +1,9 @@
 # Single source of truth for the whole kmp-toolkit monorepo — one catalog for every module,
 # so versions can never drift between siblings (the reason for consolidating the old per-repo leaves).
 [versions]
-agp = "9.4.0-alpha07"
-kotlin = "2.4.20-Beta2"
+agp = "9.4.0-alpha08"
+detekt = "2.0.0-alpha.6"
+kotlin = "2.4.20-RC"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.8.0"
@@ -10,7 +11,7 @@ lifecycle = "2.11.0"
 napier = "2.7.1"
 ktor = "3.5.1"
 koin = "4.2.2"
-compose-multiplatform = "1.12.0-beta03"
+compose-multiplatform = "1.12.0-rc01"
 compose-material3 = "1.12.0-alpha03"
 compose-bom = "2026.06.01"
 core-ktx = "1.19.0"
@@ -19,7 +20,7 @@ biometric = "1.4.0-alpha07"
 junit = "4.13.2"
 mockk = "1.14.11"
 turbine = "1.2.1"
-ksp = "2.3.10"
+ksp = "2.3.11"
 room = "2.8.4"
 sqlite-bundled = "2.7.0"
 stripe = "23.11.1"
@@ -144,6 +145,7 @@ compass-autocomplete = { module = "dev.jordond.compass:autocomplete", version.re
 compass-autocomplete-mobile = { module = "dev.jordond.compass:autocomplete-mobile", version.ref = "compass" }
 
 [plugins]
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
