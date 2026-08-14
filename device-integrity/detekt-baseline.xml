@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:DeviceIntegrityHeuristics.kt:fp.startsWith("generic") || fp.startsWith("unknown") || fp.contains("emulator") || fp.contains("sdk_gphone") || fp.contains("vbox")</ID>
+    <ID>ComplexCondition:DeviceIntegrityHeuristics.kt:mdl.contains("sdk_gphone") || mdl.contains("emulator") || mdl.contains("android sdk built for") || mdl.contains("google_sdk")</ID>
+    <ID>ComplexCondition:DeviceIntegrityHeuristics.kt:prod.contains("sdk_gphone") || prod.contains("sdk_google") || prod == "google_sdk" || prod.contains("emulator") || prod.contains("vbox86") || prod.startsWith("sdk")</ID>
+    <ID>CyclomaticComplexMethod:DeviceIntegrityHeuristics.kt:internal fun isEmulatorBuild: Boolean</ID>
+    <ID>ReturnCount:DeviceIntegrityHeuristics.kt:internal fun isEmulatorBuild: Boolean</ID>
+    <ID>SwallowedException:DeviceIntegrity.android.kt:AndroidDeviceIntegrity$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DeviceIntegrity.android.kt:AndroidDeviceIntegrity$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

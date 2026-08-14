@@ -8,9 +8,34 @@ plugins {
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
+    alias(libs.plugins.detekt) apply false
     // Applied (not `apply false`) — the root project is the aggregator that stitches every module's
     // docs into one site. See the dokka block below.
     alias(libs.plugins.dokka)
+}
+
+// Static analysis. This monorepo publishes 37 modules that four apps compile against, and until now
+// nothing analysed any of them — a rule violation here reaches every consumer.
+//
+// `source` points at `src` rather than an enumerated list of source sets. Both Kursi and PaymentsLab
+// carried hand-written lists that had silently stopped matching reality: Kursi named five of fifteen
+// and left nativeMain, gms, noGms and main unscanned; PaymentsLab omitted wasmJsMain. Adding a target
+// adds a source set, and nothing fails when the list is not updated to match, so coverage shrinks
+// while the build stays green. `src` cannot drift that way. detekt only reads .kt, and the filter
+// below drops generated output.
+subprojects {
+    apply(plugin = "dev.detekt")
+    extensions.configure<dev.detekt.gradle.extensions.DetektExtension> {
+        config.setFrom(rootProject.files("config/detekt/detekt.yml"))
+        buildUponDefaultConfig = true
+        parallel = true
+        // Findings that predate the gate are grandfathered so this lands green; new code is gated.
+        baseline = file("detekt-baseline.xml")
+        source.setFrom(layout.projectDirectory.dir("src"))
+    }
+    tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+        exclude("**/build/**", "**/generated/**")
+    }
 }
 
 // API documentation — one browsable site covering every module, at build/dokka/html.

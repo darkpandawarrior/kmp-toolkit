@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LoopWithTooManyJumpStatements:CompositeOnDeviceLlm.kt:CompositeOnDeviceLlm$for</ID>
+    <ID>MagicNumber:ResumableModelDownloader.kt:ResumableModelDownloader$1024</ID>
+    <ID>MagicNumber:ResumableModelDownloader.kt:ResumableModelDownloader$64</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:TieredGpsAlgorithm.kt:TieredGpsAlgorithm$override fun process: FixResult</ID>
+    <ID>LongMethod:TieredGpsAlgorithm.kt:TieredGpsAlgorithm$override fun process: FixResult</ID>
+    <ID>MagicNumber:AlgorithmHarness.kt:AlgorithmHarness$0.5</ID>
+    <ID>MagicNumber:DynamicIntervalCalculator.kt:DynamicIntervalCalculator$1.25</ID>
+    <ID>MagicNumber:DynamicIntervalCalculator.kt:DynamicIntervalCalculator$1.5</ID>
+    <ID>MagicNumber:DynamicIntervalCalculator.kt:DynamicIntervalCalculator$1.75</ID>
+    <ID>MagicNumber:DynamicIntervalCalculator.kt:DynamicIntervalCalculator$30</ID>
+    <ID>MagicNumber:DynamicIntervalCalculator.kt:DynamicIntervalCalculator$50</ID>
+    <ID>MagicNumber:KalmanSmoother.kt:KalmanSmoother$111320.0</ID>
+    <ID>MagicNumber:PassThroughAlgorithm.kt:PassThroughAlgorithm$180.0</ID>
+    <ID>MagicNumber:PassThroughAlgorithm.kt:PassThroughAlgorithm$90.0</ID>
+    <ID>MagicNumber:PassThroughAlgorithm.kt:PassThroughAlgorithm.Companion$1_000_000.0</ID>
+    <ID>MagicNumber:SegmentedTripAlgorithm.kt:SegmentedTripAlgorithm.Companion$1e6</ID>
+    <ID>MagicNumber:TrackingQualityScorer.kt:TrackingQualityScorer$15f</ID>
+    <ID>MagicNumber:TrackingQualityScorer.kt:TrackingQualityScorer$20</ID>
+    <ID>MagicNumber:TrackingQualityScorer.kt:TrackingQualityScorer$35f</ID>
+    <ID>MagicNumber:TrackingQualityScorer.kt:TrackingQualityScorer$75f</ID>
+    <ID>ReturnCount:SegmentedTripAlgorithm.kt:SegmentedTripAlgorithm$override fun process: FixResult</ID>
+  </CurrentIssues>
+</SmellBaseline>
