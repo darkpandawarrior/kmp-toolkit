@@ -16,6 +16,12 @@ kotlin {
     // actual, so the Native compilation fails with "expect declaration has no actual".
     applyDefaultHierarchyTemplate()
 
+    // Added 2026-08-15. Two consumers need a JVM variant of this module: Kursi's `cmp-desktop`
+    // (a real Compose Desktop entry point) and Compose Hot Reload, which only runs on a JVM target.
+    // Note this is a *Compose* jvm target, distinct from `withHostTest {}` below — that one runs
+    // commonTest headlessly against a stubbed android.jar and cannot render.
+    jvm()
+
     iosArm64()
     iosSimulatorArm64()
     wasmJs {
@@ -31,8 +37,9 @@ kotlin {
         namespace = "com.siddharth.kmp.designsystem"
         compileSdk = 37
         minSdk = 24
-        // Runs commonTest on the JVM host (no device) — the CMP leaf has no jvm() target, so this is
-        // the runnable unit-test surface (`testDebugUnitTest`) for the pure logic (ThemeController).
+        // Runs commonTest on the JVM host (no device) against a stubbed android.jar — the
+        // `testDebugUnitTest` surface for pure logic (ThemeController). Kept after `jvm()` was added
+        // above: that target renders Compose, this one deliberately cannot.
         withHostTest {}
     }
 
