@@ -441,6 +441,10 @@ fun AdaptiveTheme(
         LocalAdaptiveTokens provides tokensFor(formFactor, windowType),
         LocalWindowType provides windowType,
         LocalFormFactor provides formFactor,
+        // Pointer, keyboard and hinge posture — the axes FormFactor can't express. Reads as
+        // InputProfile.Touch until the consumer's entry point calls enableMediaQuery(), so this
+        // provider is inert rather than wrong on a surface that hasn't opted in yet.
+        LocalInputProfile provides rememberInputProfile(),
         content = content,
     )
 }
