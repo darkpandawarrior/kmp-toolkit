@@ -29,6 +29,8 @@ razorpay = "1.6.41"
 cashfree = "2.5.0"
 robolectric = "4.16.1"
 dokka = "2.2.0"
+# Maven Central publishing: handles signing, POM, sources+javadoc jars and the Central Portal upload.
+vanniktechMavenPublish = "0.34.0"
 compose-webview-multiplatform = "2.0.3"
 material-icons = "1.7.3"
 kotlinx-collections-immutable = "0.5.1"
@@ -156,3 +158,4 @@ room = { id = "androidx.room", version.ref = "room" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 # API docs for all 37 modules — aggregated into one browsable site by the root project.
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+vanniktechMavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
