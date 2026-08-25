@@ -3,6 +3,7 @@ import org.gradle.api.publish.maven.MavenPublication
 
 // Plugins used by one or more modules — declared here apply-false so each module applies what it needs.
 plugins {
+    alias(libs.plugins.vanniktechMavenPublish) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.androidKmpLibrary) apply false
     alias(libs.plugins.androidLibrary) apply false
@@ -112,12 +113,79 @@ subprojects {
     }
 }
 
+// Single source of truth for the toolkit version. Declared here because the Central block below
+// captures it at configuration time, before the `subprojects` block further down assigns it.
+val toolkitVersion = "1.0.0"
+
+// ── Maven Central ─────────────────────────────────────────────────────────────
+// A curated first wave only. These four are the genuinely reusable, dependency-light modules;
+// the rest stay unpublished until there is a reason for someone else to depend on them.
+// One coordinate a reader can paste and resolve is worth more than 19 nobody can fetch.
+//
+// The published namespace is io.github.darkpandawarrior, which the Central Portal provisions
+// automatically for a GitHub-authenticated account. `com.siddharth.kmp` can never be verified:
+// Central proves namespace ownership against the matching domain, and siddharth.kmp is not one.
+//
+// project.group stays com.siddharth.kmp so the four consumer apps' dependencySubstitution rules
+// keep resolving to project paths unchanged. Only the PUBLISHED coordinate differs, set below.
+//
+// Publishing needs three things this repo cannot hold, all configured as CI secrets:
+//   ORG_GRADLE_PROJECT_mavenCentralUsername / ...Password  (Central Portal user token)
+//   ORG_GRADLE_PROJECT_signingInMemoryKey / ...Password    (ASCII-armoured GPG secret key)
+// Until they exist the publish task is simply unavailable; nothing silently half-publishes.
+val centralModules = setOf("result", "common", "mvi-core", "network")
+
+subprojects {
+    if (name !in centralModules) return@subprojects
+    pluginManager.apply("com.vanniktech.maven.publish")
+
+    extensions.configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+        publishToMavenCentral()
+        // Signing is mandatory on Central. Only enabled when a key is actually present, so a
+        // local `publishToMavenLocal` still works for verification without one.
+        if (providers.gradleProperty("signingInMemoryKey").isPresent ||
+            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey") != null
+        ) {
+            signAllPublications()
+        }
+        coordinates("io.github.darkpandawarrior", project.name, toolkitVersion)
+        pom {
+            name.set(project.name)
+            description.set(
+                "kmp-toolkit ${project.name}: a small, focused Kotlin Multiplatform library " +
+                    "extracted from production apps.",
+            )
+            inceptionYear.set("2026")
+            url.set("https://github.com/darkpandawarrior/kmp-toolkit")
+            licenses {
+                license {
+                    name.set("MIT License")
+                    url.set("https://github.com/darkpandawarrior/kmp-toolkit/blob/main/LICENSE")
+                    distribution.set("repo")
+                }
+            }
+            developers {
+                developer {
+                    id.set("darkpandawarrior")
+                    name.set("Siddharth Pandalai")
+                    url.set("https://github.com/darkpandawarrior")
+                }
+            }
+            scm {
+                url.set("https://github.com/darkpandawarrior/kmp-toolkit")
+                connection.set("scm:git:git://github.com/darkpandawarrior/kmp-toolkit.git")
+                developerConnection.set("scm:git:ssh://git@github.com/darkpandawarrior/kmp-toolkit.git")
+            }
+        }
+    }
+}
+
 // Shared publishing for every module — configured once here instead of a copy-pasted block per
 // module. Each module still publishes `com.siddharth.kmp:<module>` (+ platform variants) to GitHub
 // Packages; credentials come from env (CI) or gradle properties (gitignored) — never committed.
 subprojects {
     group = "com.siddharth.kmp"
-    version = "1.0.0"
+    version = toolkitVersion
     plugins.withId("maven-publish") {
         extensions.configure<PublishingExtension> {
             // Android-only leaf modules (security + the 11 providers) don't get a publication for
