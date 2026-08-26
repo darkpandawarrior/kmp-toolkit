@@ -25,6 +25,10 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
         }
+        androidMain.dependencies {
+            // FileProvider, for shareImage()'s content:// stream.
+            implementation(libs.core.ktx)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
