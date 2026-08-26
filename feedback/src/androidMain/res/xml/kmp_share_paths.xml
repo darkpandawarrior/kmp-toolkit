@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the one cache subdirectory shareImage() writes into. Deliberately not <cache-path path="."/>:
+     a wildcard would expose every cached file the app holds to any app the user picks in the chooser. -->
+<paths>
+    <cache-path name="kmp-share" path="kmp-share/" />
+</paths>
