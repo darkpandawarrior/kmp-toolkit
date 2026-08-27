@@ -13,7 +13,7 @@ ktor = "3.5.1"
 koin = "4.2.2"
 compose-multiplatform = "1.12.0-rc01"
 compose-material3 = "1.12.0-alpha03"
-compose-bom = "2026.06.01"
+compose-bom = "2026.08.00"
 core-ktx = "1.19.0"
 activity-compose = "1.13.0"
 biometric = "1.4.0-alpha07"
@@ -42,7 +42,7 @@ androidx-security-crypto = "1.1.0"
 # RENAMED its artifacts (compass-core -> core) and the old `compass-*` names stop at 1.6.7,
 # so a naive coordinate lands you two major versions behind without any error.
 calf = "0.13.0"
-compass = "3.2.0"
+compass = "4.0.0"
 
 [libraries]
 # — coroutines / serialization (all KMP modules) —
