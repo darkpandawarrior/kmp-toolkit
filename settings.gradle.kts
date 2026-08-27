@@ -18,6 +18,30 @@ pluginManagement {
     }
 }
 
+plugins {
+    // Build scans. Free for everyone at scans.gradle.com, and this repo is MIT, so the OSS terms
+    // apply without qualification.
+    //
+    // PUBLISHED FROM CI ONLY, deliberately. A build scan carries the environment it ran in -
+    // usernames, absolute paths, env vars, machine name. On a GitHub runner that is a throwaway
+    // container; from a laptop it is somebody's home directory, published to a URL anyone holding
+    // the link can read. Local `--scan` still works on demand for whoever wants it.
+    id("com.gradle.develocity") version "4.5.0"
+}
+
+develocity {
+    buildScan {
+        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+        termsOfUseAgree = "yes"
+        publishing.onlyIf { System.getenv("CI") != null }
+        // Tag by what actually explains a slow build later: which workflow it ran in, on which
+        // branch. Without these a scan tells you a build was slow, not why.
+        tag(if (System.getenv("CI") != null) "CI" else "local")
+        System.getenv("GITHUB_WORKFLOW")?.let { value("workflow", it) }
+        System.getenv("GITHUB_REF_NAME")?.let { value("branch", it) }
+    }
+}
+
 dependencyResolutionManagement {
     // PREFER_SETTINGS: the Kotlin/Wasm toolchain plugins add Node/Yarn/Binaryen distribution repos at
     // project level for the wasmJs() targets (result/common/mvi-core/feedback/designsystem);
