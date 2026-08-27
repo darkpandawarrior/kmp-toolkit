@@ -17,8 +17,8 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 [![CI](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/ci.yml)
 [![No AI Attribution](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/no-ai-attribution.yml/badge.svg)](https://github.com/darkpandawarrior/kmp-toolkit/actions/workflows/no-ai-attribution.yml)
-![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20--Beta1-7F52FF?logo=kotlin&logoColor=white)
-![Compose Multiplatform](https://img.shields.io/badge/Compose%20MP-1.12.0--beta01-4285F4?logo=jetpackcompose&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20--RC-7F52FF?logo=kotlin&logoColor=white)
+![Compose Multiplatform](https://img.shields.io/badge/Compose%20MP-1.12.0--rc01-4285F4?logo=jetpackcompose&logoColor=white)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20JVM%20%7C%20Wasm%20%7C%20watchOS-4285F4)
 ![Modules](https://img.shields.io/badge/modules-36-0EA5E9)
 ![License](https://img.shields.io/badge/license-MIT-blue)
