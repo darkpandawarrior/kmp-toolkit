@@ -37,15 +37,44 @@ vault/
 test.sh                             # round-trip check (live if sops+age installed, else documents steps)
 ```
 
-`vault/example.secrets.enc.yaml` (no `.sample`) is what you'd commit as the
-real encrypted artifact once you've actually run `sops -e` — it doesn't exist
-here yet because this repo was populated in an environment without `sops`/
-`age` installed. See `vault/example.secrets.enc.yaml.sample` for the expected
-shape, and the flow below for how to produce the real thing.
+`vault/example.secrets.enc.yaml` is the real encrypted artifact, produced by an
+actual `sops -e` run on 2026-08-27 and committed. It decrypts with the age
+identity described below. `vault/example.secrets.enc.yaml.sample` is kept only
+as an illustration of the shape.
+
+`test.sh` verifies the round trip for real and now passes. It could not before:
+`.sops.yaml` matched only `vault/*.enc.yaml`, but sops selects a creation rule by
+the path of the file it is **reading**, so encrypting the plaintext source could
+never match and failed with `no matching creation rules found`. The rule now
+matches the source.
 
 **No real secrets or private keys live in this repo.** Everything under
-`vault/` uses fictional placeholder values. The age key referenced in
-`.sops.yaml` is a placeholder string, not a real key.
+`vault/` uses fictional placeholder values.
+
+The age recipient in `.sops.yaml` IS a real public key. That is safe and is the
+point: an age public key encrypts, it cannot decrypt. The matching private key
+lives at `~/.config/sops/age/keys.txt` (mode 600, outside every repo), is
+mirrored into the private data repo by AgentHarness `backup-sources.conf`, and is
+in this machine's Keychain as `sops-age-identity`. Because the vault is encrypted
+to a key that is nowhere near it, the vault itself is safe in a public repo.
+
+### macOS: sops does not look in ~/.config
+
+On macOS sops reads `~/Library/Application Support/sops/age/keys.txt`, not the
+XDG path this README tells you to generate into. A key in the "right" place
+therefore fails with:
+
+```
+Failed to get the data key required to decrypt the SOPS file.
+```
+
+which reads like a broken vault and is not. Either export
+`SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt`, or symlink once:
+
+```sh
+mkdir -p ~/Library/Application\ Support/sops/age
+ln -sf ~/.config/sops/age/keys.txt ~/Library/Application\ Support/sops/age/keys.txt
+```
 
 ## The flow: generate age key -> encrypt -> decrypt -> resolve alias
 

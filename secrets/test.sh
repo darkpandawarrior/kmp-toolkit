@@ -33,9 +33,25 @@ pub="$(grep '^# public key:' "$tmp/key.txt" | cut -d: -f2 | tr -d ' ')"
 sops --age "$pub" -e vault/example.secrets.yaml > "$tmp/enc.yaml"
 SOPS_AGE_KEY_FILE="$tmp/key.txt" sops -d "$tmp/enc.yaml" > "$tmp/dec.yaml"
 
-if diff -q "$tmp/dec.yaml" vault/example.secrets.yaml >/dev/null; then
-  echo "round-trip OK: decrypted output matches vault/example.secrets.yaml"
+# Compare the PARSED documents, not the bytes.
+#
+# sops round-trips YAML through its own serializer: it re-indents to 4 spaces and drops quotes it
+# considers redundant. Those are formatting choices, not data, and sops has never promised to
+# preserve them. A `diff -q` byte comparison here can therefore never pass no matter how correct
+# the encryption is - which is exactly what it did, silently, for as long as this test existed.
+#
+# What actually matters is that every key and value survives encrypt -> decrypt unchanged. That is
+# what this asserts.
+if python3 - "$tmp/dec.yaml" vault/example.secrets.yaml <<'PY'
+import sys, yaml
+a, b = (yaml.safe_load(open(p)) for p in sys.argv[1:3])
+sys.exit(0 if a == b else 1)
+PY
+then
+  echo "round-trip OK: every key and value survives encrypt -> decrypt"
 else
-  echo "round-trip FAILED: decrypted output differs from vault/example.secrets.yaml" >&2
+  echo "round-trip FAILED: decrypted data differs from vault/example.secrets.yaml" >&2
+  diff <(python3 -c 'import sys,yaml,json;print(json.dumps(yaml.safe_load(open(sys.argv[1])),indent=2,sort_keys=True))' "$tmp/dec.yaml") \
+       <(python3 -c 'import sys,yaml,json;print(json.dumps(yaml.safe_load(open(sys.argv[1])),indent=2,sort_keys=True))' vault/example.secrets.yaml) >&2 || true
   exit 1
 fi
