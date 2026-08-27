@@ -67,9 +67,9 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 </details>
 
-> **At a glance** — **36-module** monorepo: **17 core/leaf modules** (9 original extractions +
+> **At a glance** — **39-module** monorepo: **20 core/leaf modules** (9 original extractions +
 > `llm-chat` / `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` /
-> `app-shell` / `store`) and **19** `provider:*` payment-gateway leaves, each published
+> `app-shell` / `store` + `auth` / `netlog` / `charts`) and **19** `provider:*` payment-gateway leaves, each published
 > independently under `com.siddharth.kmp:<name>`. *Numbers verified against `settings.gradle.kts`.*
 
 ## Why kmp-toolkit
@@ -80,7 +80,7 @@ separate repos, each extracted from a production app the moment its logic was ne
 and `designsystem` and `ai` out of HireSignal's `core:*` modules, `feedback` out of Kursi. None of
 them were designed up front as a "platform" — each is the smallest reusable slice of a real screen,
 published once the second consumer showed up. `location` joined right after the merge, and the
-monorepo has since grown to **36 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
+monorepo has since grown to **39 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
 19-provider payment-gateway family, `offline-outbox` (the first Room module here), `bots-policy`
 (a generic ISMCTS search shell), and four more standalone platform-service leaves —
 `device-integrity`, `settings`, `app-shell`, `store` — see [Roadmap](#roadmap) for what shipped when.
@@ -120,7 +120,7 @@ monorepo.
   drags in a sibling. `device-integrity`, `settings`, `app-shell` and `store` are the same story —
   zero dependencies on any other module here, so each one is a single-line, no-side-effect pull.
 - ✅ **CI runs the full multiplatform matrix on every push** — `assemble jvmTest testAndroidHostTest
-  testDebugUnitTest` across all 36 modules, plus a dedicated no-AI-attribution check workflow.
+  testDebugUnitTest` across all 39 modules, plus a dedicated no-AI-attribution check workflow.
 
 ## Modules
 
