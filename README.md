@@ -2,7 +2,7 @@
 
 <img src="docs/assets/banner.gif" alt="kmp-toolkit" width="700"/>
 
-### A Kotlin Multiplatform toolkit — a family of small, focused, production-grade libraries extracted from real apps.
+### A Kotlin Multiplatform toolkit, a family of small, focused, production-grade libraries extracted from real apps.
 
 A single monorepo housing every small, reusable KMP library I've pulled out of my own production
 apps, never designed as a "platform" up front. 37 modules today, from a typed `Result` primitive to a
@@ -10,7 +10,7 @@ apps, never designed as a "platform" up front. 37 modules today, from a typed `R
 
 **Adoption is uneven, on purpose and by accident both.** Measured across the four consuming apps
 (Mileway, PaymentsLab, HireSignal, Kursi): `common`, `mvi-core` and `network` are used by all four;
-`security` and `ai` by three; `designsystem` by two. The rest have one consumer or none — the 19
+`security` and `ai` by three; `designsystem` by two. The rest have one consumer or none, the 19
 payment-gateway leaves serve PaymentsLab alone by design, while `device-integrity` and `store` are
 extractions still waiting for their first. Treat this as a staging ground where a few modules are
 proven across four apps and others are candidates, rather than a uniformly battle-tested platform.
@@ -25,7 +25,7 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 **[Why](#why-kmp-toolkit)** · **[Highlights](#highlights)** · **[Modules](#modules)** · **[Architecture](#family-architecture)** · **[Tech stack](#tech-stack)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)** · **[API reference](https://darkpandawarrior.github.io/kmp-toolkit/)**
 
-**Portfolio:** [cv-siddharth.vercel.app](https://cv-siddharth.vercel.app/) &nbsp;·&nbsp; **Siblings:** [HireSignal](https://github.com/darkpandawarrior/HireSignal) &nbsp;·&nbsp; [PaymentsLab](https://github.com/darkpandawarrior/PaymentsLab) &nbsp;·&nbsp; [Mileway](https://github.com/darkpandawarrior/Mileway) &nbsp;·&nbsp; [Kursi](https://github.com/darkpandawarrior/Kursi) &nbsp;·&nbsp; **Shared build logic:** [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
+**Case study:** [The KMP family](https://cv-siddharth.vercel.app/project/kmp-family) &nbsp;·&nbsp; **Siblings:** [HireSignal](https://github.com/darkpandawarrior/HireSignal) &nbsp;·&nbsp; [PaymentsLab](https://github.com/darkpandawarrior/PaymentsLab) &nbsp;·&nbsp; [Mileway](https://github.com/darkpandawarrior/Mileway) &nbsp;·&nbsp; [Kursi](https://github.com/darkpandawarrior/Kursi) &nbsp;·&nbsp; **Shared build logic:** [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
 
 </div>
 
@@ -67,84 +67,84 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 </details>
 
-> **At a glance** — **36-module** monorepo: **17 core/leaf modules** (9 original extractions +
+> **At a glance**, **39-module** monorepo: **20 core/leaf modules** (9 original extractions +
 > `llm-chat` / `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` /
-> `app-shell` / `store`) and **19** `provider:*` payment-gateway leaves, each published
+> `app-shell` / `store` + `auth` / `netlog` / `charts`) and **19** `provider:*` payment-gateway leaves, each published
 > independently under `com.siddharth.kmp:<name>`. *Numbers verified against `settings.gradle.kts`.*
 
 ## Why kmp-toolkit
 
 `kmp-toolkit` started as a monorepo consolidation of eight leaf libraries that had begun life as
-separate repos, each extracted from a production app the moment its logic was needed a second time —
+separate repos, each extracted from a production app the moment its logic was needed a second time
 `mvi-core` out of Mileway's `core:ui`, `security` out of PaymentsLab's `core:security`, `network`
 and `designsystem` and `ai` out of HireSignal's `core:*` modules, `feedback` out of Kursi. None of
-them were designed up front as a "platform" — each is the smallest reusable slice of a real screen,
+them were designed up front as a "platform", each is the smallest reusable slice of a real screen,
 published once the second consumer showed up. `location` joined right after the merge, and the
-monorepo has since grown to **36 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
+monorepo has since grown to **39 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
 19-provider payment-gateway family, `offline-outbox` (the first Room module here), `bots-policy`
-(a generic ISMCTS search shell), and four more standalone platform-service leaves —
-`device-integrity`, `settings`, `app-shell`, `store` — see [Roadmap](#roadmap) for what shipped when.
+(a generic ISMCTS search shell), and four more standalone platform-service leaves
+`device-integrity`, `settings`, `app-shell`, `store`, see [Roadmap](#roadmap) for what shipped when.
 
-Every module targets exactly the platforms its own consumers need — no module claims iOS support
+Every module targets exactly the platforms its own consumers need, no module claims iOS support
 it can't back up, no module ships a `wasmJs` target nobody asked for. Two deliberate inter-module
-spines exist — `security → common` (for `AppLog`) and the `payments-api` ↔ `provider:*` gateway
-contract — everything else is standalone by design, so adopting one leaf never drags in the rest.
+spines exist, `security → common` (for `AppLog`) and the `payments-api` ↔ `provider:*` gateway
+contract, everything else is standalone by design, so adopting one leaf never drags in the rest.
 
 Gradle convention plugins (the `androidKmpLibrary`, `composeCompiler` etc. plugins every
 `build.gradle.kts` here applies) live in a separate repo,
-[**kmp-build-logic**](https://github.com/darkpandawarrior/kmp-build-logic) — not part of this
+[**kmp-build-logic**](https://github.com/darkpandawarrior/kmp-build-logic), not part of this
 monorepo.
 
 ## Highlights
 
 - 🧩 **36 Gradle modules, one dependency graph.** 17 core/leaf modules (9 original + `llm-chat` /
   `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` / `app-shell` /
-  `store`) and 19 `provider:*` payment-gateway leaves — every one published independently under
+  `store`) and 19 `provider:*` payment-gateway leaves, every one published independently under
   `com.siddharth.kmp:<name>`, and a consumer only pulls in the modules it needs.
 - 💳 **`payments-api` + 19 providers is a real gateway-abstraction exercise, not a toy.** One
   `PaymentGateway`/`PaymentBackend` contract in `payments-api`, then a thin Android-only adapter per
   provider (`stripe`, `razorpay`, `cashfree`, `square`, `mpesa`, `wallet`, `stripe-connect`,
-  `hosted-webview`, …) — `StubGateway`/`SimulatedPayment` let the contract be exercised with zero live
+  `hosted-webview`, …), `StubGateway`/`SimulatedPayment` let the contract be exercised with zero live
   credentials.
 - 🤖 **`llm-chat` talks to three real cloud LLM APIs** (Gemini, OpenAI, Anthropic) behind one
   `AiProvider` seam, reusing `:network`'s `httpClientEngine()` directly rather than its retry/timeout
-  wrapper — a documented, deliberate choice (see the module's `build.gradle.kts` comment).
-- 🗄️ **`offline-outbox` is the first Room module in the monorepo** — its own closed `@Database`
+  wrapper, a documented, deliberate choice (see the module's `build.gradle.kts` comment).
+- 🗄️ **`offline-outbox` is the first Room module in the monorepo**, its own closed `@Database`
   (Room databases can't be spliced into a host app's), targeting `watchosArm64` /
   `watchosSimulatorArm64` / `watchosDeviceArm64` alongside Android/JVM/iOS because Mileway's
   `core:data` needs the outbox on watchOS too.
 - ♟️ **`bots-policy` is a zero-dependency ISMCTS search shell**, extracted from Kursi's ai↔engine
-  inversion — the generic search lives here, the game-specific rollout/leaf-eval stays in the app.
+  inversion, the generic search lives here, the game-specific rollout/leaf-eval stays in the app.
 - 🔗 **One deliberate cross-leaf edge, everywhere else standalone.** `security → common` is the only
   `kmp-toolkit`-internal dependency between two original leaves; adopting one module never silently
-  drags in a sibling. `device-integrity`, `settings`, `app-shell` and `store` are the same story —
+  drags in a sibling. `device-integrity`, `settings`, `app-shell` and `store` are the same story
   zero dependencies on any other module here, so each one is a single-line, no-side-effect pull.
-- ✅ **CI runs the full multiplatform matrix on every push** — `assemble jvmTest testAndroidHostTest
-  testDebugUnitTest` across all 36 modules, plus a dedicated no-AI-attribution check workflow.
+- ✅ **CI runs the full multiplatform matrix on every push**: `assemble jvmTest testAndroidHostTest
+  testDebugUnitTest` across all 39 modules, plus a dedicated no-AI-attribution check workflow.
 
 ## Modules
 
 | Module | Coordinate | What it is | Platforms | Consumed by |
 |---|---|---|---|---|
-| [**result**](#result) | `com.siddharth.kmp:result` | `Result<D,E>` + `DataError` — typed, functional error handling | Android · JVM · iOS · Wasm | foundational — no consumers yet, Phase-4 adoption planned across the family |
+| [**result**](#result) | `com.siddharth.kmp:result` | `Result<D,E>` + `DataError`, typed, functional error handling | Android · JVM · iOS · Wasm | foundational, no consumers yet, Phase-4 adoption planned across the family |
 | [**common**](#common) | `com.siddharth.kmp:common` | `AppLog` (Napier facade) + `DispatcherProvider` + `UiText` + `Formatters` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab (via `security`) |
-| [**mvi-core**](#mvi-core) | `com.siddharth.kmp:mvi-core` | MVI ViewModel runtime — `BaseViewModel` / `StateViewModel` / `EffectEmitter` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab, Mileway, Kursi |
-| [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing — client factory, retry, 401 handling, connectivity | Android · JVM · iOS | HireSignal (`core:network`) |
-| [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening — Keystore, VAPT posture, `FLAG_SECURE` | Android only | PaymentsLab |
-| [**device-integrity**](#device-integrity) | `com.siddharth.kmp:device-integrity` | The KMP sibling of `security`'s root/jailbreak check — `DeviceIntegrity.inspect()` for non-Android-only apps | Android · JVM · iOS · Wasm | new, no dependents yet |
-| [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory` — encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | new, no dependents yet |
-| [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives — tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | HireSignal (`core:designsystem`) |
-| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction — ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | HireSignal (`core:ai`) |
-| [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client — Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | new (`bb33d0c`), no dependents yet |
-| [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit — synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Kursi |
-| [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math — Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Mileway (`feature:tracking`) |
-| [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library — location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | new, no dependents yet |
+| [**mvi-core**](#mvi-core) | `com.siddharth.kmp:mvi-core` | MVI ViewModel runtime, `BaseViewModel` / `StateViewModel` / `EffectEmitter` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab, Mileway, Kursi |
+| [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing, client factory, retry, 401 handling, connectivity | Android · JVM · iOS | HireSignal (`core:network`) |
+| [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening, Keystore, VAPT posture, `FLAG_SECURE` | Android only | PaymentsLab |
+| [**device-integrity**](#device-integrity) | `com.siddharth.kmp:device-integrity` | The KMP sibling of `security`'s root/jailbreak check, `DeviceIntegrity.inspect()` for non-Android-only apps | Android · JVM · iOS · Wasm | new, no dependents yet |
+| [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | new, no dependents yet |
+| [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives, tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | HireSignal (`core:designsystem`) |
+| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | HireSignal (`core:ai`) |
+| [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client, Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | new (`bb33d0c`), no dependents yet |
+| [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Kursi |
+| [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Mileway (`feature:tracking`) |
+| [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library, location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | new, no dependents yet |
 | [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the 19 `provider:*` leaves |
 | [**provider:\***](#provider--19-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 19 Android-only adapters implementing `payments-api`'s contract per gateway | Android only | reference integrations |
-| [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox — its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Mileway (`core:data`) |
-| [**store**](#store) | `com.siddharth.kmp:store` | Clean-room offline-first screen-state pattern — `ScreenState`, `DecisionEngine`, `FetchPolicy`, no HTTP/store dependency | Android · JVM · iOS · Wasm | new, no dependents yet |
-| [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell — `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Kursi (ai engine) |
-| [**secrets**](#secrets) | *(docs only, not a Gradle module)* | SOPS + age encrypted-secrets vault + alias manifest | — | reference pattern, no dependents |
+| [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox, its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Mileway (`core:data`) |
+| [**store**](#store) | `com.siddharth.kmp:store` | Clean-room offline-first screen-state pattern, `ScreenState`, `DecisionEngine`, `FetchPolicy`, no HTTP/store dependency | Android · JVM · iOS · Wasm | new, no dependents yet |
+| [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell, `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Kursi (ai engine) |
+| [**secrets**](#secrets) | *(docs only, not a Gradle module)* | SOPS + age encrypted-secrets vault + alias manifest |, | reference pattern, no dependents |
 
 ### Module dependency graph
 
@@ -269,7 +269,7 @@ common` and every `provider:* → payments-api`/`provider:* → common` edge is 
 deliberate gateway-abstraction spine. Every module outside those two families is standalone:
 dropping one into an app never drags in a sibling.
 
-`device-integrity`, `settings`, `app-shell` and `store` are omitted from the graph above — each has
+`device-integrity`, `settings`, `app-shell` and `store` are omitted from the graph above, each has
 zero edges to any other module here and no consumer app yet, so there's nothing to draw. They're
 real, tested, standalone leaves (see the [Modules](#modules) table and their own sections below), not
 placeholders.
@@ -288,7 +288,7 @@ placeholders.
 | Logging | Napier `2.7.1` |
 | Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Robolectric `4.16.1` |
 | Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`); not published to Maven |
-| CI | GitHub Actions — `ci.yml` (build+test matrix), `no-ai-attribution.yml` |
+| CI | GitHub Actions, `ci.yml` (build+test matrix), `no-ai-attribution.yml` |
 
 ## Getting started
 
@@ -306,7 +306,7 @@ cd kmp-toolkit
 `settings.gradle.kts` uses `includeBuild("../kmp-build-logic")` for the convention plugins, so
 [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic) must be checked out as a
 sibling directory of `kmp-toolkit` before the first build. See [Install](#install) below for wiring
-this repo — as a source composite build (vendored via git, not published to Maven) — into a consuming app.
+this repo, as a source composite build (vendored via git, not published to Maven), into a consuming app.
 
 ## Install
 
@@ -331,14 +331,14 @@ includeBuild("external/kmp-toolkit") {
 }
 ```
 
-Module paths are now natural — `:common`, `:network`, `:mvi-core`, and so on. Back when each module
+Module paths are now natural, `:common`, `:network`, `:mvi-core`, and so on. Back when each module
 was its own repo, every leaf had to publish a unique `<name>-lib` subproject path (`:common-lib`,
 `:result-lib`, `:security-lib`, `:feedbacklib`, …) because Gradle's `dependencySubstitution`
 resolves by path only, and two composite builds both exposing a bare `:lib` collided regardless of
 `includeBuild` order. In a monorepo every module already has a distinct top-level path, so that
 workaround is gone.
 
-These modules are **not published to any Maven repository** — they are consumed only as a source
+These modules are **not published to any Maven repository**: they are consumed only as a source
 composite build via the `includeBuild` block above (each consuming app vendors this repo at
 `external/kmp-toolkit` as a git gitlink). The `com.siddharth.kmp:<module>` coordinates exist solely as
 `dependencySubstitution` targets that resolve to the local `project(":<module>")`; there is no `1.0.0`
@@ -360,8 +360,8 @@ dependencies {
 ![result](docs/assets/result-banner.svg)
 
 `kotlin.Result` only carries a `Throwable` in its failure arm, which pushes callers back toward
-`try`/`catch` and string-matching on messages. `result` types the failure arm as `E` — usually a
-sealed [`DataError`](result/src/commonMain/kotlin/com/siddharth/kmp/result/DataError.kt) — so a
+`try`/`catch` and string-matching on messages. `result` types the failure arm as `E`, usually a
+sealed [`DataError`](result/src/commonMain/kotlin/com/siddharth/kmp/result/DataError.kt), so a
 `when` over the error is exhaustive at compile time, and a ViewModel or repository can map, chain,
 and react to failures with the same functional operators it already uses for the success path.
 
@@ -412,12 +412,12 @@ with its own arms (e.g. a `Validation` error) by implementing the interface dire
 | `DataError.Network` | enum | `REQUEST_TIMEOUT`, `TOO_MANY_REQUESTS`, `NO_INTERNET`, `SERVER_ERROR`, `SERIALIZATION`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `UNKNOWN` |
 | `DataError.Local` | enum | `DISK_FULL`, `NOT_FOUND`, `UNKNOWN` |
 
-`result` is standalone — zero dependencies on any other `kmp-toolkit` module — which is what makes
+`result` is standalone, zero dependencies on any other `kmp-toolkit` module, which is what makes
 it the foundation the rest of the family is meant to build on. No module consumes it yet; it ships
 first so the typed-error contract exists before `network` and `security` standardize their failure
 arms on it in a later phase, instead of each inventing its own `sealed class` per app.
 
-Pure Kotlin, `commonMain`-only — `Result` and `DataError` carry no coroutine, lifecycle, or platform
+Pure Kotlin, `commonMain`-only, `Result` and `DataError` carry no coroutine, lifecycle, or platform
 dependency, so every target (Android `minSdk 24` / `compileSdk 37`, JVM, iOS, `wasmJs` browser)
 compiles from the same source set with nothing to bridge.
 
@@ -465,15 +465,15 @@ class UserRepository(
 | `DispatcherProvider` | `interface { main; default; io }` | The injectable dispatcher seam |
 | `StandardDispatchers` | `object : DispatcherProvider` | `main` → `Dispatchers.Main`, `default`/`io` → `Dispatchers.Default` |
 
-`StandardDispatchers.io` maps to `Dispatchers.Default`, not `Dispatchers.IO` — `Dispatchers.IO` is
+`StandardDispatchers.io` maps to `Dispatchers.Default`, not `Dispatchers.IO`, `Dispatchers.IO` is
 JVM/Android-only and doesn't exist in `commonMain` for wasm/native. An Android-specific data layer
 can bind a real `Dispatchers.IO`-backed `DispatcherProvider` for blocking IO if it ever needs one;
 `StandardDispatchers` stays the multiplatform-safe default.
 
-`common` has no dependency on any other `kmp-toolkit` module — it only pulls in Napier and
+`common` has no dependency on any other `kmp-toolkit` module, it only pulls in Napier and
 kotlinx-coroutines. `security` consumes it transitively for `AppLog`; HireSignal uses it app-wide.
 `commonMain`-only implementation across Android (`minSdk 24` / `compileSdk 37`), JVM, iOS, and
-`wasmJs` — only Napier's own platform backends differ underneath.
+`wasmJs`, only Napier's own platform backends differ underneath.
 
 ## mvi-core
 
@@ -523,23 +523,23 @@ dependencies {
 }
 ```
 
-Targets: `androidTarget`, `jvm`, `iosArm64`, `iosSimulatorArm64`, `wasmJs` — the union PaymentsLab
+Targets: `androidTarget`, `jvm`, `iosArm64`, `iosSimulatorArm64`, `wasmJs`, the union PaymentsLab
 and Kursi need. All three classes live in `commonMain`; `androidx.lifecycle:lifecycle-viewmodel`
 publishes for every target in that union (including `wasmJs`), so no intermediate source set split
 was needed.
 
 **Technical notes, grounded in the actual source:**
 
-- **State updates aren't CAS-guarded.** `setState` does `_state.value = _state.value.reducer()` — a
+- **State updates aren't CAS-guarded.** `setState` does `_state.value = _state.value.reducer()`, a
   plain `MutableStateFlow` assignment, not the compare-and-swap loop `MutableStateFlow.update { }`
   gives you. Fine under the contract this library assumes (one writer: whatever dispatches into
-  `onAction`), but calling `setState` concurrently from two coroutines at once can lose an update —
+  `onAction`), but calling `setState` concurrently from two coroutines at once can lose an update
   a real gap to close with `.update { }` if a screen ever needs multiple concurrent writers.
 - **Two effect channels, two different delivery contracts.** `emitEffect` wraps a
-  `Channel<E>(Channel.BUFFERED)` exposed as `effect: Flow<E>` via `receiveAsFlow()` — each value goes
+  `Channel<E>(Channel.BUFFERED)` exposed as `effect: Flow<E>` via `receiveAsFlow()`, each value goes
   to exactly one collector and never repeats (right for navigation/toast, but unread if the screen
   isn't currently collecting). `emitBroadcast` instead `tryEmit`s into a
-  `MutableSharedFlow<E>(replay = 0, extraBufferCapacity = 8, onBufferOverflow = DROP_OLDEST)` — no
+  `MutableSharedFlow<E>(replay = 0, extraBufferCapacity = 8, onBufferOverflow = DROP_OLDEST)`, no
   history for new subscribers, but it outlives a configuration-change screen recreation.
 - **Coroutine scope is minimal, not incidental.** `viewModelScope` is only touched once, inside
   `emitEffect`, wrapping the suspending `Channel.send` so `onAction` itself doesn't need to be a
@@ -547,7 +547,7 @@ was needed.
   buffer above.
 - **Build system detail:** the Android target is wired through AGP's own
   `com.android.kotlin.multiplatform.library` plugin, not the older `com.android.library` +
-  `org.jetbrains.kotlin.multiplatform` combination — there's no explicit `androidTarget()` call.
+  `org.jetbrains.kotlin.multiplatform` combination, there's no explicit `androidTarget()` call.
 
 ## network
 
@@ -555,13 +555,13 @@ was needed.
 
 Every app that talks HTTP over Ktor re-solves the same handful of problems: content negotiation, a
 sane retry policy, a request timeout that doesn't kill a long-lived stream, and a single choke point
-that reacts to a 401 without looping on the login route itself. None of that is app-specific — it's
+that reacts to a 401 without looping on the login route itself. None of that is app-specific, it's
 the same wiring whether the DTOs are job postings or payment orders.
 
 `network` is that wiring, and nothing else. It ships a configured `HttpClient` factory, the platform
 engine bindings (OkHttp / Darwin / CIO), a lenient shared `Json`, and three small seam interfaces
 (`BaseUrlProvider`, `TokenProvider`, `UnauthorizedHandler`) so base URL and auth resolve at call
-time. It deliberately carries **no** app API surface — endpoints, DTOs, and the typed API layer stay
+time. It deliberately carries **no** app API surface, endpoints, DTOs, and the typed API layer stay
 in the consumer, same as `result` carries no app-specific error types.
 
 ```kotlin
@@ -592,7 +592,7 @@ class JobsApi(
 val decoded = networkJson.decodeFromString<JobDto>(rawJson)
 ```
 
-`ConnectivityChecker` gates a `refresh()` before the network call is even made — bind
+`ConnectivityChecker` gates a `refresh()` before the network call is even made, bind
 `AndroidConnectivityChecker(context)` on Android (real `ConnectivityManager` reachability, with
 `NET_CAPABILITY_VALIDATED`) or `AlwaysOnlineConnectivityChecker` on jvm/iOS.
 
@@ -605,19 +605,19 @@ val decoded = networkJson.decodeFromString<JobDto>(rawJson)
 | `UnauthorizedHandler` | `fun interface { suspend fun onUnauthorized() }` | Invoked once per 401 on a non-auth route |
 | `ConnectivityChecker` | `interface { fun isOnline(): Boolean }` | Cheap online check to gate a sync/refresh |
 | `AndroidConnectivityChecker` | `class(context: Context) : ConnectivityChecker` | Real `ConnectivityManager` reachability (Android) |
-| `AlwaysOnlineConnectivityChecker` | `object : ConnectivityChecker` | Naive default (jvm/iOS) — lets the HTTP call fail-and-retry instead of probing |
+| `AlwaysOnlineConnectivityChecker` | `object : ConnectivityChecker` | Naive default (jvm/iOS), lets the HTTP call fail-and-retry instead of probing |
 
 Platform HTTP engines are wired transparently via `internal expect fun httpClientEngine()`: OkHttp
-on Android, Darwin on iOS, CIO on JVM — `createHttpClient()`'s default argument picks the right one.
+on Android, Darwin on iOS, CIO on JVM, `createHttpClient()`'s default argument picks the right one.
 
-`network` is standalone — no dependency on any other `kmp-toolkit` module, only Ktor and
+`network` is standalone, no dependency on any other `kmp-toolkit` module, only Ktor and
 kotlinx-serialization. HireSignal's `core:network` module builds on it; the app layers its own typed
 API + DTOs on top. Planned: mapping `HttpRequestRetry`/`ResponseException` failures onto `result`'s
 `DataError.Network` arms, so a consumer's repository layer gets a typed `Result<D, DataError>`
 straight out of the client instead of catching `ResponseException` itself.
 
 Targets: Android (`minSdk 24` / `compileSdk 37`, OkHttp engine), JVM (CIO engine), iOS (Darwin
-engine). No `wasmJs` — the OkHttp/Darwin/CIO engine split is JVM/Android/iOS by design; a browser
+engine). No `wasmJs`, the OkHttp/Darwin/CIO engine split is JVM/Android/iOS by design; a browser
 target would need the Ktor `Js` engine wired in separately.
 
 ## security
@@ -630,49 +630,49 @@ number, and keep the reaction to all of that configurable per build (strict in r
 a VAPT auditor who needs to run on a rooted, hooked device on purpose).
 
 `security` is that toolkit, extracted from a production payments app's `core:security` module. It's
-**Android-only by nature, not by accident** — every defense here is a real `android.*` API
+**Android-only by nature, not by accident**: every defense here is a real `android.*` API
 (`AndroidKeyStore`, `FLAG_SECURE`, `/proc/self/status`, `TrustManager` introspection), so there's no
 `expect`/`actual` layer pretending this could run anywhere else.
 
 Detection and enforcement are deliberately split: a `SecurityAuditor` only ever answers *"what did
 we find?"* A `SecurityPolicy` answers *"what should we do about it?"*, driven by a swappable
-`SecurityPosture` — so a release build can block on root while a compliance-test build only warns,
+`SecurityPosture`, so a release build can block on root while a compliance-test build only warns,
 without touching a single detector.
 
 **What's in the box:**
 
-- **`SecureStore` / `KeystoreSecureStore`** — key/value secret storage; encrypts every value with
+- **`SecureStore` / `KeystoreSecureStore`**, key/value secret storage; encrypts every value with
   AES-256-GCM under an `AndroidKeyStore` key that never leaves the TEE/StrongBox, and stores even
-  the *keys* as SHA-256 hashes — a filesystem dump of the private prefs file is inert without the
+  the *keys* as SHA-256 hashes, a filesystem dump of the private prefs file is inert without the
   device's hardware-backed key.
-- **`KeystoreCrypto`** — the explicit `AES/GCM/NoPadding` primitive behind the store: a hardware key
+- **`KeystoreCrypto`**, the explicit `AES/GCM/NoPadding` primitive behind the store: a hardware key
   generated once via `KeyGenParameterSpec`, an IV-prefixed `Base64(IV(12) || ciphertext+tag)` wire
   format, and a GCM auth tag that makes `decrypt()` double as a tamper check.
-- **`DeviceIntegrity` / `AndroidDeviceIntegrity`** — root, emulator, and debugger posture as a
+- **`DeviceIntegrity` / `AndroidDeviceIntegrity`**, root, emulator, and debugger posture as a
   `SecurityReport`. The matching rules (`isRootTag`, `isEmulatorBuild`) are pure top-level functions,
   JVM-unit-tested against known fingerprints, no device or Robolectric required.
-- **`AntiDebugDetector`** — `Debug.isDebuggerConnected()`, `Debug.waitingForDebugger()`, and a
+- **`AntiDebugDetector`**, `Debug.isDebuggerConnected()`, `Debug.waitingForDebugger()`, and a
   `TracerPid` parse from `/proc/self/status` (harder to spoof than the `Debug.*` calls alone).
-- **`AntiHookDetector`** — Frida/Xposed/LSPosed heuristics: suspicious thread names, a
+- **`AntiHookDetector`**, Frida/Xposed/LSPosed heuristics: suspicious thread names, a
   `/proc/self/maps` scan for loaded Frida/substrate libraries, a loopback connect attempt on Frida's
   default ports (`27042`/`27043`), and reflective probes for Xposed/LSPosed marker classes.
-- **`AntiSslBypassDetector`** — introspects the platform's default `TrustManager` and
+- **`AntiSslBypassDetector`**, introspects the platform's default `TrustManager` and
   `HostnameVerifier` for permissive/custom implementations, plus a memory-maps scan for known
   SSL-unpinning native libraries.
-- **`SecurityAuditor` / `SecurityAudit`** — the one `suspend fun audit()` a launch sequence calls.
+- **`SecurityAuditor` / `SecurityAudit`**, the one `suspend fun audit()` a launch sequence calls.
   Composes every detector above, applies `SecurityConfig` VAPT `bypass*` flags at the aggregation
-  layer (detection stays fully logged even on a bypassed build — only the gate-feeding boolean is
+  layer (detection stays fully logged even on a bypassed build, only the gate-feeding boolean is
   cleared).
-- **`SecurityPolicy` / `SecurityPosture` / `SecurityDecision`** — a pure `(Audit, Posture) ->
+- **`SecurityPolicy` / `SecurityPosture` / `SecurityDecision`**, a pure `(Audit, Posture) ->
   Decision` fold. Ships `SecurityPosture.strict()` (blocks on root/hook/SSL-bypass/debugger, warns on
   emulator) and `.lenient()` (dev/debug stance).
-- **`AppSecurityManager` / `SecureScreen`** — the screen-facing trio: `FLAG_SECURE` (blocks
+- **`AppSecurityManager` / `SecureScreen`**, the screen-facing trio: `FLAG_SECURE` (blocks
   screenshots/recording, blanks the recents thumbnail), tapjacking protection via
   `filterTouchesWhenObscured`, and a background-overlay hook re-asserting `FLAG_SECURE`.
   `SecureScreen` is the Compose-scoped equivalent for one composable.
-- **`PaymentCertificatePinning`** — an OkHttp `CertificatePinner` config template for payment-gateway
+- **`PaymentCertificatePinning`**, an OkHttp `CertificatePinner` config template for payment-gateway
   API hosts, with placeholder SPKI pins and the exact `openssl` one-liner to replace them.
-- **`securityModule(config)`** — one Koin module wiring the entire graph.
+- **`securityModule(config)`**, one Koin module wiring the entire graph.
 
 ```kotlin
 // Application.onCreate
@@ -709,7 +709,7 @@ val saved = secureStore.getString("kmp_secure_store")
 | Type | What it does |
 |---|---|
 | `SecureStore` / `KeystoreSecureStore` | AES-256-GCM key/value secret storage; keys stored as SHA-256 hashes |
-| `KeystoreCrypto` | `AES/GCM/NoPadding` primitive — IV-prefixed Base64 wire format |
+| `KeystoreCrypto` | `AES/GCM/NoPadding` primitive, IV-prefixed Base64 wire format |
 | `DeviceIntegrity` / `AndroidDeviceIntegrity` | Root, emulator, debugger posture → `SecurityReport` |
 | `AntiDebugDetector` | `TracerPid`, `Debug.isDebuggerConnected()`, `FLAG_DEBUGGABLE` |
 | `AntiHookDetector` | Frida thread names, `/proc/self/maps`, Frida ports, Xposed/LSPosed marker classes |
@@ -718,11 +718,11 @@ val saved = secureStore.getString("kmp_secure_store")
 | `SecurityPolicy` / `SecurityPosture` / `SecurityDecision` | Pure `(Audit, Posture) -> Decision`; `strict()` / `lenient()`, `ALLOW`/`WARN`/`BLOCK` |
 | `AppSecurityManager` | `FLAG_SECURE`, tapjacking, background re-flag overlay |
 | `SecureScreen` (Composable) | Screen-scoped `FLAG_SECURE` via `DisposableEffect` |
-| `PaymentCertificatePinning` | OkHttp `CertificatePinner` template — placeholder SPKI pins |
+| `PaymentCertificatePinning` | OkHttp `CertificatePinner` template, placeholder SPKI pins |
 | `securityModule(config)` | Koin module wiring the whole graph |
 
-`security` depends on `common` for `AppLog` — its only cross-family dependency — and is consumed
-today by PaymentsLab, which extracted it from its own former `core:security` module. Android only —
+`security` depends on `common` for `AppLog`, its only cross-family dependency, and is consumed
+today by PaymentsLab, which extracted it from its own former `core:security` module. Android only
 `compileSdk 37`, `minSdk 24`; deliberate, since every defense wraps a concrete `android.*` API with
 no cross-platform equivalent.
 
@@ -730,7 +730,7 @@ no cross-platform equivalent.
 
 `security`'s root/jailbreak posture check is Android-only by design (it wraps concrete `android.*`
 APIs). An app whose non-Android targets also want a launch-time compromise check needs the same
-seam without the Android-specific baggage — that's `device-integrity`: the KMP sibling, not a
+seam without the Android-specific baggage, that's `device-integrity`: the KMP sibling, not a
 replacement.
 
 ```kotlin
@@ -746,17 +746,17 @@ if (report.isCompromised) {
 
 | Member | Kind | What it does |
 |---|---|---|
-| `DeviceIntegrity` | `interface` | `inspect(): DeviceIntegrityReport` — the single seam |
+| `DeviceIntegrity` | `interface` | `inspect(): DeviceIntegrityReport`, the single seam |
 | `DeviceIntegrityReport` | data class | `rooted`, `emulator`, `debuggerAttached`, `signals`; `isCompromised` gates on `rooted \|\| debuggerAttached` |
-| `DeviceIntegrityConfig` | data class | `allowEmulator` / `allowDebuggerInDebug` — non-blocking-by-default toggles |
-| `deviceIntegrity(config)` | `expect fun` | Platform factory — root/emulator/debugger on Android, jailbreak/simulator on iOS, clean posture on JVM/Wasm (outside the mobile threat model; JVM additionally checks for an attached JDWP debugger) |
+| `DeviceIntegrityConfig` | data class | `allowEmulator` / `allowDebuggerInDebug`, non-blocking-by-default toggles |
+| `deviceIntegrity(config)` | `expect fun` | Platform factory, root/emulator/debugger on Android, jailbreak/simulator on iOS, clean posture on JVM/Wasm (outside the mobile threat model; JVM additionally checks for an attached JDWP debugger) |
 
-Emulator alone never gates by default — CI and QA both run on emulators. `device-integrity` has no
+Emulator alone never gates by default, CI and QA both run on emulators. `device-integrity` has no
 dependency on any other `kmp-toolkit` module. New addition, no dependents yet.
 
 ## settings
 
-`android.util.Log` isn't the only thing missing from `commonMain` — so is a single encrypted
+`android.util.Log` isn't the only thing missing from `commonMain`, so is a single encrypted
 key/value store. `settings` wraps [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings)'
 own `Settings` interface behind a platform factory, so a consumer's code never changes: only which
 concrete store backs it does.
@@ -771,7 +771,7 @@ val saved = settings.getStringOrNull("session_token")
 
 | Member | Signature | What it does |
 |---|---|---|
-| `SecureSettingsFactory` | `expect class { fun create(): Settings }` | Returns the standard `multiplatform-settings` `Settings` — zero API change for callers |
+| `SecureSettingsFactory` | `expect class { fun create(): Settings }` | Returns the standard `multiplatform-settings` `Settings`, zero API change for callers |
 
 Per platform: Android backs it with `EncryptedSharedPreferences` (`MasterKey.AES256_GCM`); iOS with
 `KeychainSettings`; JVM with an AES-256-GCM-encrypted `PropertiesSettings` (key file beside the
@@ -782,16 +782,16 @@ addition, no dependents yet.
 
 ![designsystem](docs/assets/designsystem-banner.svg)
 
-A real design system is *branded* — its palette, logo mark and typography are the product. Those
+A real design system is *branded*, its palette, logo mark and typography are the product. Those
 belong in the app, not a shared library. But underneath the brand sits a layer that every Compose
 Multiplatform app re-implements identically: a spacing/shape token scale, a dark-mode state holder
 that survives process death, and a handful of brand-neutral building blocks.
 
 `designsystem` is exactly that layer, and nothing brand-specific. It carries **no** palette, **no**
-logo, **no** app typography — you keep those. It ships the plumbing you'd otherwise copy-paste into
+logo, **no** app typography, you keep those. It ships the plumbing you'd otherwise copy-paste into
 every new app, so your own `AppTheme`/`AppPalette` is the only design code you actually write.
 
-**Spacing/shape tokens** — one scale, no magic numbers scattered across screens:
+**Spacing/shape tokens**: one scale, no magic numbers scattered across screens:
 
 ```kotlin
 import com.siddharth.kmp.designsystem.DesignTokens
@@ -801,7 +801,7 @@ Column(verticalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m)) {
 }
 ```
 
-**Theme-mode controller** — dark-first, persists the user's choice through a swappable `ThemeStore`
+**Theme-mode controller**: dark-first, persists the user's choice through a swappable `ThemeStore`
 seam (default is in-memory; bind a DataStore-backed `ThemeStore` in your DI so the choice survives
 process death, with no change to callers):
 
@@ -819,20 +819,20 @@ MaterialTheme(colorScheme = if (isDark) MyAppDarkColors else MyAppLightColors) {
 Switch(checked = isDark, onCheckedChange = { theme.setDark(it) })
 ```
 
-**Adaptive tokens** — the same token idea, but sized to the surface, on **two orthogonal axes**.
+**Adaptive tokens**: the same token idea, but sized to the surface, on **two orthogonal axes**.
 
 Width alone is not enough. A 1920dp television and a 1920dp desktop monitor are the same width
 bucket, yet one is read from three metres with a D-pad and the other from half a metre with a mouse.
-The usual answer is to fork the whole token system per form factor — one copy for handheld, another
-for TV, a third for watch — which triples every future edit. So instead: `FormFactor` answers *how
+The usual answer is to fork the whole token system per form factor, one copy for handheld, another
+for TV, a third for watch, which triples every future edit. So instead: `FormFactor` answers *how
 far away the eye is and what the input is*, `WindowType` answers *how much room there is*, and
 `AdaptiveTokens` resolves from both.
 
 | | `Compact` | `Medium` | `Expanded` |
 |---|---|---|---|
-| **`Watch`** | Wear OS — one set; every device is 192–227dp, a ladder would be theatre | ← | ← |
-| **`Handheld`** / **`Desktop`** | phone · <600dp | tablet portrait, foldable · 600–839dp | tablet landscape, desktop, web · ≥840dp |
-| **`Tv`** | **the standard 10-foot set** · <1280dp | desktop-as-TV · 1280–1919dp | ultrawide · ≥1920dp |
+| **`Watch`** | Wear OS, one set; every device is 192 to 227dp, a ladder would be theatre | ← | ← |
+| **`Handheld`** / **`Desktop`** | phone · <600dp | tablet portrait, foldable · 600 to 839dp | tablet landscape, desktop, web · ≥840dp |
+| **`Tv`** | **the standard 10-foot set** · <1280dp | desktop-as-TV · 1280 to 1919dp | ultrawide · ≥1920dp |
 
 ```kotlin
 import com.siddharth.kmp.designsystem.AdaptiveTheme
@@ -850,28 +850,28 @@ AdaptiveTheme {                  // FormFactor auto-detected; pass one to force 
 
 `FormFactor` is detected per platform via `rememberFormFactor()`: Android reads the system `uiMode`
 type bits, so the *same APK* resolves `Tv` on a television, `Watch` on Wear OS and `Handheld` on a
-phone — and re-resolves on a fold or a display switch, because it reads `LocalConfiguration`. iOS
+phone, and re-resolves on a fold or a display switch, because it reads `LocalConfiguration`. iOS
 reports `Handheld`, Wasm reports `Desktop`. Override it anywhere (`AdaptiveTheme(FormFactor.Tv)`) for
 previews, screenshot tests, and desktop builds that render a leanback UI.
 
 Two tokens exist only for the 10-foot case and are inert everywhere else, so a shared composable can
-carry them without branching: `overscanPadding` (the outer band a TV physically clips — zero on every
+carry them without branching: `overscanPadding` (the outer band a TV physically clips, zero on every
 other surface) and `focusScale` (`1f` wherever focus isn't the primary input, which makes
 `Modifier.focusScale()` a genuine no-op on touch).
 
 > **A note on the TV breakpoints.** Real Android TV normalises to roughly **960dp** wide regardless of
-> panel resolution — a 720p set runs tvdpi, a 1080p set runs xhdpi, and both land near 960×540dp. So
+> panel resolution, a 720p set runs tvdpi, a 1080p set runs xhdpi, and both land near 960×540dp. So
 > essentially every television resolves to `Compact`, and the Compact TV set is therefore the
 > *standard* 10-foot set, not a cut-down one. The repo this idea came from used 1400/2600dp for TV,
-> which classifies every real Android TV as its smallest bucket while labelling that bucket "720p" —
+> which classifies every real Android TV as its smallest bucket while labelling that bucket "720p"
 > those numbers describe a desktop window emulating a TV. There is a regression test pinning
 > 960dp → `TvTokens` with a ≥18sp body, the leanback readability floor.
 
 **Reach for `Modifier.screenPadding()` rather than `padding(tokens.screenPadding)`.** A raw token is
 not enough on real hardware: on a landscape phone the display cutout and gesture bar eat the same
 edge, on iOS it's the notch and home indicator, and a television physically clips its border.
-`screenPadding()` applies `WindowInsets.safeDrawing` first — cutouts, system bars and IME on every
-platform that has them, empty on desktop and web — then the token on top.
+`screenPadding()` applies `WindowInsets.safeDrawing` first, cutouts, system bars and IME on every
+platform that has them, empty on desktop and web, then the token on top.
 
 ```kotlin
 Column(Modifier.screenPadding())                    // never under a notch, never off a TV edge
@@ -879,12 +879,12 @@ LazyColumn(Modifier.screenPadding(vertical = false)) // let the list scroll unde
 ```
 
 Only values that *should* breathe live here. Shapes, elevation, motion and the a11y-constant
-`Size.minTouch` stay static in `DesignTokens` — a 48dp touch target is 48dp on a watch and on a 4K
+`Size.minTouch` stay static in `DesignTokens`, a 48dp touch target is 48dp on a watch and on a 4K
 television, and corner radius is brand identity, not a function of viewport width. `AdaptiveTheme`
 reads the *container* width rather than the window, so a detail pane inside a two-pane layout
 correctly resolves to `Compact` on an `Expanded` window.
 
-**Writing your own adaptive values** — `byWindow` / `byFormFactor` are the whole
+**Writing your own adaptive values**: `byWindow` / `byFormFactor` are the whole
 `object FooDefaults { fun width(w: WindowType) = when (w) { ... } }` idiom as one call. Reach for
 these instead of adding fields to `AdaptiveTokens`; that class holds only what more than one
 component reads.
@@ -898,21 +898,21 @@ object PosterDefaults {
 val poster = byFormFactor(default = 140.dp, watch = 64.dp, tv = 220.dp)
 ```
 
-**`OtpField`** — a one-time-code field, built as a real `BasicTextField` with a `decorationBox` that
+**`OtpField`**, a one-time-code field, built as a real `BasicTextField` with a `decorationBox` that
 paints the cells, rather than the usual invisible-field-behind-a-clickable-Row trick. That difference
 is functional, not cosmetic: focus, caret, IME action, select-all, paste and the platform's SMS-code
 suggestion all work by default. `Box` / `Line` / `Circle` cells, cell size derived from the surface,
 every colour from `colorScheme`.
 
-**`PageIndicator`** — pill-style carousel dots that grow with viewing distance. Takes an `Int`, not a
+**`PageIndicator`**, pill-style carousel dots that grow with viewing distance. Takes an `Int`, not a
 `PagerState`, so it also drives a LazyRow carousel, an onboarding stack or a step counter.
 
-**Screen motion** — `screenEnter` / `screenExit`, a fade with a barely-there scale, as plain
+**Screen motion**: `screenEnter` / `screenExit`, a fade with a barely-there scale, as plain
 `EnterTransition`/`ExitTransition` values rather than the `AnimatedContentTransitionScope<NavBackStackEntry>.() ->`
 lambdas the idiom usually ships as. That signature drags in `androidx.navigation`; these work with
 `NavHost`, `AnimatedContent` and `AnimatedVisibility` alike, on every target.
 
-**Building-block composables** — `LoadingState` / `ErrorState` / `EmptyState` (the three outcomes
+**Building-block composables**: `LoadingState` / `ErrorState` / `EmptyState` (the three outcomes
 every screen has, with "no results" deliberately *not* painted in the error colour), `MarkdownText`
 (a lightweight markdown → Compose renderer, tables included) and `ComingSoonDialog` (a brand-neutral
 "not built yet" dialog):
@@ -924,8 +924,8 @@ MarkdownText("**Offer:** ₹32L · _remote_\n\n| role | level |\n|---|---|\n| An
 | Member | Kind | What it does |
 |---|---|---|
 | `DesignTokens` | `object` | Brand-agnostic spacing / shape / size / elevation / motion scale (static) |
-| `FormFactor` | `enum` | `Watch` / `Handheld` / `Desktop` / `Tv` — viewing distance and input model |
-| `WindowType` | `enum` | `Compact` / `Medium` / `Expanded` — how much room, with per-form-factor breakpoints |
+| `FormFactor` | `enum` | `Watch` / `Handheld` / `Desktop` / `Tv`, viewing distance and input model |
+| `WindowType` | `enum` | `Compact` / `Medium` / `Expanded`, how much room, with per-form-factor breakpoints |
 | `rememberFormFactor` | `@Composable expect` | Platform's own answer; Android reads the `uiMode` type bits so one APK adapts across phone / Wear / TV |
 | `windowTypeFor` | `fun` | `(Dp, FormFactor) → WindowType`; pure, testable without a composition |
 | `AdaptiveTokens` | `data class` | Per-surface padding, spacing, toolbar, `gridColumns`, type scale, `overscanPadding`, `focusScale` |
@@ -935,20 +935,20 @@ MarkdownText("**Offer:** ₹32L · _remote_\n\n| role | level |\n|---|---|\n| An
 | `navigationLayoutFor` | `fun` | Picks the nav affordance from form factor + width + fold posture; knows TV and Wear, which width-only rules get wrong |
 | `Modifier.screenPadding` | `@Composable` | Safe-area insets (cutout, system bars, IME) **plus** the adaptive screen padding, in one call |
 | `Modifier.readableWidth` | `@Composable` | Caps a prose column at a comfortable measure and centres it; per-surface, uncapped on a watch |
-| `Modifier.contentWidth` | `@Composable` | Same, at the wider layout cap — for card grids and dashboards |
-| `Modifier.focusScale` | `@Composable` | Grows a focused element by `focusScale` — D-pad affordance on TV, no-op on touch |
+| `Modifier.contentWidth` | `@Composable` | Same, at the wider layout cap, for card grids and dashboards |
+| `Modifier.focusScale` | `@Composable` | Grows a focused element by `focusScale`, D-pad affordance on TV, no-op on touch |
 | `screenEnter` / `screenExit` | `val` | Nav-agnostic screen transitions (fade + 0.95 scale) on the `DesignTokens.Motion` scale |
-| `byWindow` | `fun` / `@Composable` | Per-width-bucket value of any type — the `FooDefaults` idiom in one call |
+| `byWindow` | `fun` / `@Composable` | Per-width-bucket value of any type, the `FooDefaults` idiom in one call |
 | `byFormFactor` | `fun` / `@Composable` | Per-surface value, overriding only the surfaces that differ |
 | `OtpField` | `@Composable` | One-time-code field over a real `BasicTextField`; Box/Line/Circle cells, adaptive sizing |
 | `sanitizeOtp` / `otpCellState` | `fun` | The field's pure logic, testable without a composition |
 | `PageIndicator` | `@Composable` | Pill carousel dots; takes an `Int`, so not tied to `PagerState` |
 | `ErrorState` | `@Composable` | Centered failure state with optional retry; uses `colorScheme.error`, never a literal |
-| `EmptyState` | `@Composable` | Succeeded-but-nothing-here state — distinct from error on purpose |
+| `EmptyState` | `@Composable` | Succeeded-but-nothing-here state, distinct from error on purpose |
 
 ### Combinations
 
-These are designed to compose. The recipes below are the intended pairings — start here rather than
+These are designed to compose. The recipes below are the intended pairings, start here rather than
 wiring a screen from scratch.
 
 | Use case | Combination |
@@ -957,26 +957,26 @@ wiring a screen from scratch.
 | **Leanback / TV carousel** | `AdaptiveTheme` auto-resolves `Tv` from `uiMode` → cards wear `Modifier.focusScale().focusable()` for the D-pad affordance → `PageIndicator` under the hero. Inset full-bleed art by `overscanPadding`; inset ordinary content by `screenPadding` (already overscan-safe). |
 | **Responsive dashboard / grid** | `AdaptiveTheme` → `LazyVerticalGrid(GridCells.Fixed(tokens.gridColumns))` → the `LoadingState` / `ErrorState` / `EmptyState` triad for the three outcomes. One screen covers phone through desktop and web. |
 | **Wear OS** | `AdaptiveTheme` auto-resolves `Watch` → `gridColumns` collapses to 1, `OtpFieldDefaults.style(cellShape = OtpCellShape.Circle)` fits a code on a wrist. |
-| **Long-form reading** (articles, changelogs, `MarkdownText`) | `Modifier.screenPadding().readableWidth()` — insets past the notch, then caps the line length. Text at the full width of a 2560dp window runs past 200 characters a line and the eye loses the return sweep. |
-| **App navigation chrome** | `navigationLayoutFor(formFactor, width)` → render first-party Material yourself: `NavigationBar`, `NavigationRail`, `PermanentNavigationDrawer`, or nothing. Encodes what a width-only rule gets wrong — a television must never get a bottom bar, and Wear must get no chrome at all. |
-| **Per-component sizing** | `byWindow` / `byFormFactor` inside your own `FooDefaults` object — never by growing `AdaptiveTokens`. |
-| **Screen transitions** | `screenEnter` / `screenExit` into `NavHost`, `AnimatedContent` or `AnimatedVisibility` — no navigation dependency either way. |
+| **Long-form reading** (articles, changelogs, `MarkdownText`) | `Modifier.screenPadding().readableWidth()`, insets past the notch, then caps the line length. Text at the full width of a 2560dp window runs past 200 characters a line and the eye loses the return sweep. |
+| **App navigation chrome** | `navigationLayoutFor(formFactor, width)` → render first-party Material yourself: `NavigationBar`, `NavigationRail`, `PermanentNavigationDrawer`, or nothing. Encodes what a width-only rule gets wrong, a television must never get a bottom bar, and Wear must get no chrome at all. |
+| **Per-component sizing** | `byWindow` / `byFormFactor` inside your own `FooDefaults` object, never by growing `AdaptiveTokens`. |
+| **Screen transitions** | `screenEnter` / `screenExit` into `NavHost`, `AnimatedContent` or `AnimatedVisibility`, no navigation dependency either way. |
 | **Theming around all of it** | `ThemeController` for dark mode, `AdaptiveTheme` for surface metrics. Orthogonal: one owns colour, the other owns dimension, and neither knows about the other. |
 
 **Testing note.** The pure logic (`windowTypeFor`, `tokensFor`, `sanitizeOtp`, `otpCellState`) is
 deliberately separated from the composables so it tests without a composition, and runs on all three
 test targets. The composables themselves are driven by `runComposeUiTest` in the `composeUiTest`
-source set, which is wired to **iOS and wasm only** — the Android leg is `withHostTest {}`, a bare
+source set, which is wired to **iOS and wasm only**: the Android leg is `withHostTest {}`, a bare
 JVM where `Build.FINGERPRINT` is null and the harness NPEs, and making it run there means pulling in
 Robolectric for the one platform Roborazzi already covers elsewhere. iOS and wasm are exactly the UI
 that Robolectric and Roborazzi cannot reach, which is the point.
 | `ThemeStore` | `interface` | Persistence seam for the dark-mode choice (`darkOverride()` / `setDark()`) |
-| `InMemoryThemeStore` | `object : ThemeStore` | Default seam — holds the choice for the process lifetime |
+| `InMemoryThemeStore` | `object : ThemeStore` | Default seam, holds the choice for the process lifetime |
 | `ThemeController` | `class` | Dark-first theme-mode state holder exposing `isDark: StateFlow<Boolean>`, `setDark()`, `toggle()` |
 | `MarkdownText` | `@Composable` | Lightweight markdown → Compose renderer (headings, emphasis, lists, tables) |
 | `ComingSoonDialog` | `@Composable` | Brand-neutral placeholder dialog |
 
-`designsystem` depends only on Compose Multiplatform + coroutines — no other `kmp-toolkit` module.
+`designsystem` depends only on Compose Multiplatform + coroutines, no other `kmp-toolkit` module.
 An app layers its own brand (palette, logo, typography) and its app-coupled components on top; those
 stay in the app, same reason `network` keeps your API and DTOs in the app. HireSignal's
 `core:designsystem` adds `HireSignalPalette` / `HireSignalTheme` / status-colored components on top,
@@ -995,7 +995,7 @@ GenAI / Gemini Nano on AICore devices, MediaPipe LLM Inference for broad Gemma c
 Models on iOS 26, nothing at all on desktop), each has its own residency/availability dance, and any
 of them can just fail. The domain code that *uses* the model shouldn't know or care which one ran.
 
-`ai` collapses all of that behind one seam: `OnDeviceLlm` — `isAvailable()` + `suspend fun
+`ai` collapses all of that behind one seam: `OnDeviceLlm`, `isAvailable()` + `suspend fun
 generate(prompt): String?`. `generate` returns `null` on any miss (no model resident, declined,
 failed), so your caller degrades to its own heuristic tier instead of throwing. A
 `CompositeOnDeviceLlm` chains backends in preference order and returns the first non-null answer.
@@ -1024,7 +1024,7 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myR
 
 | Member | Signature | What it does |
 |---|---|---|
-| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): String? }` | The single seam — text in, text out, `null` on any miss |
+| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): String? }` | The single seam, text in, text out, `null` on any miss |
 | `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) |
 | `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first non-null wins |
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
@@ -1033,7 +1033,7 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myR
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
-`ai` is standalone — depends only on coroutines + Koin (and, on Android, the ML Kit GenAI +
+`ai` is standalone, depends only on coroutines + Koin (and, on Android, the ML Kit GenAI +
 MediaPipe SDKs). Your domain "intelligence" layer (prompt templates, output parsing, heuristics)
 stays in your app and consumes this seam. HireSignal's `core:ai` builds `JobIntelligence` on top.
 
@@ -1041,13 +1041,13 @@ stays in your app and consumes this seam. HireSignal's `core:ai` builds `JobInte
 |---|---|
 | Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback |
 | iOS | Foundation Models seam (`iosArm64`, `iosSimulatorArm64`) |
-| JVM / Desktop | `UnavailableOnDeviceLlm` — the heuristic tier upstream always answers |
+| JVM / Desktop | `UnavailableOnDeviceLlm`, the heuristic tier upstream always answers |
 
 ## llm-chat
 
 Every app that wants cloud LLM chat re-solves the same problem: three different HTTP APIs
 (Anthropic, OpenAI, Gemini), three different auth headers and request shapes, and a fallback order
-when a key is missing or a provider errors. `llm-chat` collapses that behind one `AiProvider` seam —
+when a key is missing or a provider errors. `llm-chat` collapses that behind one `AiProvider` seam
 `complete(messages, config) -> String` plus `isAvailable()`.
 
 ```kotlin
@@ -1072,7 +1072,7 @@ val reply = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summarize t
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
 
 `llm-chat` deliberately reuses `:network`'s internal `httpClientEngine()` factory rather than its
-`createHttpClient()` wrapper — the retry/backoff and 30s timeout in `network`'s wrapper would change
+`createHttpClient()` wrapper, the retry/backoff and 30s timeout in `network`'s wrapper would change
 these providers' existing fire-and-forget request behavior, so the module brings its own
 `ktor-client-core`/`content-negotiation` setup on top of the shared engine. Targets: Android, JVM,
 iOS, `wasmJs`. Newest module in the repo (commit `bb33d0c`), no dependents yet.
@@ -1083,33 +1083,33 @@ iOS, `wasmJs`. Newest module in the repo (commit `bb33d0c`), no dependents yet.
 
 A card game lives or dies on game feel: a stamp needs a thud, a steal needs a heavier thud, a win
 needs a fanfare, and a phone in someone's hand should buzz when a claim gets caught in a lie. None of
-that has anything to do with any one screen — it's a cross-cutting concern that every platform
+that has anything to do with any one screen, it's a cross-cutting concern that every platform
 target of a KMP game needs the same small vocabulary for.
 
 `feedback` is that vocabulary: a coarse, intentionally small set of `SoundKey`s and `HapticPattern`s
-behind one `SoundPlayer` contract, with a **real, audible** actual on every target — including the
+behind one `SoundPlayer` contract, with a **real, audible** actual on every target, including the
 two platforms (JVM desktop, wasmJs web) that don't usually get game-feel treatment. Nothing is a
 bundled asset; every sound is a few hundred bytes of synthesised PCM rendered at startup, so there's
 no audio pipeline to wire and no `.wav` files to ship.
 
 **What's in the box:**
 
-- **`SoundKey`** — the SFX vocabulary: `Stamp` (rubber-stamp slam), `Coin` (economic actions),
+- **`SoundKey`**, the SFX vocabulary: `Stamp` (rubber-stamp slam), `Coin` (economic actions),
   `Thud` (steals / heavier actions), `Win` (the fanfare). One per *feel*, not per moment.
-- **`HapticPattern`** — the device-buzz vocabulary: `None`, `Tick` (light, routine), `Thud` (firm),
+- **`HapticPattern`**, the device-buzz vocabulary: `None`, `Tick` (light, routine), `Thud` (firm),
   `DoubleBuzz` (a "caught lying" reveal), `HeavyLong` (Coup / elimination / win).
-- **`SoundPlayer`** — the `expect` contract: `playSound(key)`, `haptic(pattern)`, `release()`. Every
-  method is fire-and-forget and must never throw — a missing audio device, a denied haptic
+- **`SoundPlayer`**, the `expect` contract: `playSound(key)`, `haptic(pattern)`, `release()`. Every
+  method is fire-and-forget and must never throw, a missing audio device, a denied haptic
   permission, or a headless CI box all degrade to a silent no-op by contract, not by accident.
-- **`defaultSoundPlayer()`** — the platform factory. Returns the real actual for whichever target is
+- **`defaultSoundPlayer()`**, the platform factory. Returns the real actual for whichever target is
   compiling.
-- **`HapticManager`** — a small facade over `HapticPattern` for callers that think in terms of
+- **`HapticManager`**, a small facade over `HapticPattern` for callers that think in terms of
   `HapticStyle` (`Light`/`Medium`/`Heavy`) or `HapticNotificationType` (`Success`/`Warning`/`Error`).
-- **`ShareResult`** — `expect fun shareGameResult(text: String)`. Real on Android (an `ACTION_SEND`
+- **`ShareResult`**, `expect fun shareGameResult(text: String)`. Real on Android (an `ACTION_SEND`
   chooser Intent); a documented no-op on JVM/iOS/wasmJs today.
-- **`NotificationPermissionState`** — a `StateFlow<NotificationPermission>` (`GRANTED` / `DENIED` /
+- **`NotificationPermissionState`**, a `StateFlow<NotificationPermission>` (`GRANTED` / `DENIED` /
   `NOT_ASKED`) any screen can observe, updated by the host app once it knows the real OS answer.
-- **`NotificationChannelManager`** (Android) — creates the `game_invites` / `system`
+- **`NotificationChannelManager`** (Android), creates the `game_invites` / `system`
   `NotificationChannel`s the app needs before posting a notification on API 26+.
 
 ```kotlin
@@ -1148,45 +1148,45 @@ NotificationPermissionState.permission.collect { permission -> /* … */ }
 
 | Type | What it does |
 |---|---|
-| `SoundKey` | SFX vocabulary — `Stamp`, `Coin`, `Thud`, `Win` |
-| `HapticPattern` | Haptic vocabulary — `None`, `Tick`, `Thud`, `DoubleBuzz`, `HeavyLong` |
-| `SoundPlayer` | `expect` contract — `playSound(key)`, `haptic(pattern)`, `release()`; never throws |
+| `SoundKey` | SFX vocabulary, `Stamp`, `Coin`, `Thud`, `Win` |
+| `HapticPattern` | Haptic vocabulary, `None`, `Tick`, `Thud`, `DoubleBuzz`, `HeavyLong` |
+| `SoundPlayer` | `expect` contract, `playSound(key)`, `haptic(pattern)`, `release()`; never throws |
 | `defaultSoundPlayer()` | Platform factory returning the real actual for the compiling target |
 | `HapticManager` | `hapticImpact(HapticStyle)` / `hapticNotification(HapticNotificationType)` facade |
-| `shareGameResult(text)` | `expect fun` — real Android share-sheet Intent; no-op elsewhere today |
-| `NotificationPermissionState` | `StateFlow<NotificationPermission>` — `GRANTED`/`DENIED`/`NOT_ASKED` |
+| `shareGameResult(text)` | `expect fun`, real Android share-sheet Intent; no-op elsewhere today |
+| `NotificationPermissionState` | `StateFlow<NotificationPermission>`, `GRANTED`/`DENIED`/`NOT_ASKED` |
 | `NotificationChannelManager` (Android) | Creates the `game_invites` / `system` notification channels |
-| `FeedbackAndroid.install(context)` | Optional Android hook — unlocks the real system `Vibrator` for haptics |
+| `FeedbackAndroid.install(context)` | Optional Android hook, unlocks the real system `Vibrator` for haptics |
 
-Every target genuinely produces sound or haptics — nothing is a silent stub by default:
+Every target genuinely produces sound or haptics, nothing is a silent stub by default:
 
 | Target | Sound | Haptics |
 |---|---|---|
-| **JVM** (desktop) | `javax.sound.sampled` — PCM tone synth streamed on a `SourceDataLine` | No-op (no vibration motor) |
-| **Android** | Synthesised PCM streamed on a short-lived `AudioTrack` — no bundled assets, no `Context` required | Real `Vibrator`/`VibratorManager` (`VibrationEffect` on API 26+) once `FeedbackAndroid.install()` is called |
+| **JVM** (desktop) | `javax.sound.sampled`, PCM tone synth streamed on a `SourceDataLine` | No-op (no vibration motor) |
+| **Android** | Synthesised PCM streamed on a short-lived `AudioTrack`, no bundled assets, no `Context` required | Real `Vibrator`/`VibratorManager` (`VibrationEffect` on API 26+) once `FeedbackAndroid.install()` is called |
 | **iOS** | In-memory WAV built from synthesised samples, played via `AVAudioPlayer` | `UIImpactFeedbackGenerator` (light/medium/heavy) + `UINotificationFeedbackGenerator` for `DoubleBuzz` |
-| **wasmJs** (web) | Web Audio oscillator beep via a `@JsFun` bridge — degrades silently pre-user-gesture or without `AudioContext` | `navigator.vibrate` where supported; silent no-op on desktop browsers |
+| **wasmJs** (web) | Web Audio oscillator beep via a `@JsFun` bridge, degrades silently pre-user-gesture or without `AudioContext` | `navigator.vibrate` where supported; silent no-op on desktop browsers |
 
-`feedback` has no dependency on another `kmp-toolkit` module — `commonMain` only reaches for
+`feedback` has no dependency on another `kmp-toolkit` module, `commonMain` only reaches for
 `kotlinx-coroutines-core`. It's consumed by Kursi, the family's KMP card game.
 
 ## location
 
 ![location](docs/assets/location-banner.svg)
 
-Pure, allocation-light GPS-track math — the reusable core of a real offline-first tracking engine,
+Pure, allocation-light GPS-track math, the reusable core of a real offline-first tracking engine,
 with **zero** platform or coroutine dependencies (only `kotlin.math`), so it runs identically on
 Android, iOS, desktop and the browser. The location *service* (foreground service, sensors, GMS
 activity recognition) and the app's `LocationData` model stay in the app; this is just the math.
 
-- **`KalmanSmoother`** — a 2-D constant-velocity Kalman filter over lat/lng with per-fix measurement
+- **`KalmanSmoother`**, a 2-D constant-velocity Kalman filter over lat/lng with per-fix measurement
   noise derived from GPS accuracy; smooths a jittery fix stream toward the true path. `smooth(lat,
   lng, accuracyMeters, timestampMs)` → smoothed `(lat, lng)`; `reset()` between journeys.
-- **`PathSimplifier`** — Douglas–Peucker simplification (`GeoPoint` list) for *rendering only*, with
-  named `Epsilon` presets. Never use the simplified path for distance — it drops 5–25% of length.
-- **`DynamicIntervalCalculator`** — picks the next GPS polling interval from speed/activity/harsh-accel
+- **`PathSimplifier`**, Douglas-Peucker simplification (`GeoPoint` list) for *rendering only*, with
+  named `Epsilon` presets. Never use the simplified path for distance, it drops 5 to 25% of length.
+- **`DynamicIntervalCalculator`**, picks the next GPS polling interval from speed/activity/harsh-accel
   inputs (`IntervalInputs`), trading battery against fix density.
-- **`TrackingQualityScorer`** — a *live* fix-quality score (`QualityInputs`) for a tracking
+- **`TrackingQualityScorer`**, a *live* fix-quality score (`QualityInputs`) for a tracking
   notification / quality chip, scored as conditions happen rather than post-hoc.
 
 ```kotlin
@@ -1202,7 +1202,7 @@ locationUpdates.collect { fix ->
 | Member | Kind | What it does |
 |---|---|---|
 | `KalmanSmoother` | `class` | 2-D constant-velocity Kalman smoothing of a GPS fix stream |
-| `PathSimplifier` | `object` | Douglas–Peucker path simplification (render-only) over `GeoPoint` |
+| `PathSimplifier` | `object` | Douglas-Peucker path simplification (render-only) over `GeoPoint` |
 | `DynamicIntervalCalculator` | `object` | Battery-vs-density GPS polling interval from `IntervalInputs` |
 | `TrackingQualityScorer` | `object` | Live fix-quality score from `QualityInputs` |
 
@@ -1211,9 +1211,9 @@ locationUpdates.collect { fix ->
 
 ## app-shell
 
-A handful of device capabilities have no single go-to KMP library — location tracking, reverse
+A handful of device capabilities have no single go-to KMP library, location tracking, reverse
 geocoding, document scanning, local notifications, runtime permissions, in-app update/review, push
-tokens, analytics — so every app either forks its own `expect`/`actual` seam per capability or pulls
+tokens, analytics, so every app either forks its own `expect`/`actual` seam per capability or pulls
 in a different third-party library for each one. `app-shell` is that seam, extracted from the same
 lineage as Mileway's `core:platform` (the `AndroidLocationTracker` implementation is the same fused-
 location + `Task.await()` code that module carried unconditionally on both its build flavors,
@@ -1237,18 +1237,18 @@ class TrackingStarter(
 | Member | Kind | What it does |
 |---|---|---|
 | `LocationTracker` | `interface` | Continuous (`updates: Flow<GeoPoint>`) + one-shot (`current()`) location |
-| `LocationNameResolver` | `interface` | Reverse geocoding — `suspend fun resolve(lat, lng): PlaceName`, never throws |
-| `DocumentScanner` | `interface` | `suspend fun scan(maxPages): List<ByteArray>` — ML Kit doc scanner (Android) / VisionKit (iOS) |
-| `NotificationScheduler` | `interface` | Local notifications — permission, `notify()`, `cancel()` |
+| `LocationNameResolver` | `interface` | Reverse geocoding, `suspend fun resolve(lat, lng): PlaceName`, never throws |
+| `DocumentScanner` | `interface` | `suspend fun scan(maxPages): List<ByteArray>`, ML Kit doc scanner (Android) / VisionKit (iOS) |
+| `NotificationScheduler` | `interface` | Local notifications, permission, `notify()`, `cancel()` |
 | `PermissionsProvider` | `interface` | Runtime permission check + request, one `AppPermission` enum |
-| `AppUpdateManager` | `interface` | In-app update — Play-Core (gms) / iTunes Lookup version compare (iOS) |
-| `AppReviewManager` | `interface` | In-app review prompt — Play review (gms) / `SKStoreReviewController` (iOS) |
+| `AppUpdateManager` | `interface` | In-app update, Play-Core (gms) / iTunes Lookup version compare (iOS) |
+| `AppReviewManager` | `interface` | In-app review prompt, Play review (gms) / `SKStoreReviewController` (iOS) |
 | `LoggingAnalyticsHelper` | class | The no-op/Napier-logging `AnalyticsHelper` impl for noGms/iOS/desktop builds |
 | `PushTokenStore` / `ReviewTracker` / `PermissionOrchestrator` | class | Small stateful helpers layered on the seams above |
 
 Every implementation degrades to a documented no-op rather than throwing when its backing
 key/service is absent (see `NoOpDefaults.kt`). `app-shell` has no dependency on any other
-`kmp-toolkit` module — Android pulls in Play Services location, iOS pulls in Ktor's Darwin engine
+`kmp-toolkit` module, Android pulls in Play Services location, iOS pulls in Ktor's Darwin engine
 (for the iTunes Lookup update check). Targets: Android, JVM, iOS. New addition, no dependents yet.
 
 ## payments-api
@@ -1278,17 +1278,17 @@ suspend fun charge(gateway: PaymentGateway, order: CreatedOrder, host: PaymentHo
 |---|---|---|
 | `PaymentGateway` | `interface` | `prepare(order) -> PreparedPayment`, `pay(host, prepared) -> PaymentResult` |
 | `PaymentResult` | `sealed interface` | `Success` / `Failure` / `Pending` / `Cancelled`, each carrying a `RedactedPayload` |
-| `GatewayStatus` | `enum` | `SANDBOX_READY`, `MOCK_MODE`, `KYC_GATED`, `COMING_SOON` — honest per-provider runnability |
+| `GatewayStatus` | `enum` | `SANDBOX_READY`, `MOCK_MODE`, `KYC_GATED`, `COMING_SOON`, honest per-provider runnability |
 | `Capability` | `enum` | `ONE_TIME_PAYMENT`, `UPI`, `CARDS`, `WALLET`, `NET_BANKING`, `REFUND`, `MANDATE` |
 | `Money` | `data class` | Amount + currency, the shared money type across every provider |
-| `StubGateway` / `SimulatedPayment` | class | A runnable fake gateway — exercises the whole contract with zero live credentials |
+| `StubGateway` / `SimulatedPayment` | class | A runnable fake gateway, exercises the whole contract with zero live credentials |
 | `Redactor` / `RedactedPayload` | class | Strips secrets from a provider's raw SDK response before it's surfaced anywhere |
 
 The `GatewayStatus` enum is the module's honesty mechanism: `MOCK_MODE` providers run their full
 lifecycle against a mock backend (no live credentials needed to demo), `KYC_GATED` providers ship
 real integration code with catalog/docs only (business onboarding required to actually run),
 `COMING_SOON` is unimplemented. `payments-api` depends on `common` (for `UiText` on
-`PaymentResult.Failure`/`PaymentStep.Errored`) — its only cross-family dependency. Targets: Android,
+`PaymentResult.Failure`/`PaymentStep.Errored`), its only cross-family dependency. Targets: Android,
 JVM, iOS.
 
 ## provider:* (19 payment-gateway leaves)
@@ -1310,15 +1310,15 @@ dependencies {
 ```
 
 Every leaf depends on `payments-api` (the contract) and `common` (logging), then whatever
-vendor-specific SDK it wraps — `stripe.paymentsheet` + `play-services-wallet` for `stripe`,
+vendor-specific SDK it wraps, `stripe.paymentsheet` + `play-services-wallet` for `stripe`,
 `razorpay.checkout` for `razorpay`, `cashfree.pg-api`/`cashfree.pg-ui` from Cashfree's own Maven repo
 for `cashfree`, `robolectric` for host-side unit tests in a couple of leaves. None of the 19 leaves
-depend on each other. All Android-only — `compileSdk 37` / `minSdk 24` — since every leaf wraps a
+depend on each other. All Android-only, `compileSdk 37` / `minSdk 24`, since every leaf wraps a
 concrete Android SDK/Activity-callback surface, same reasoning as `security`.
 
 ## offline-outbox
 
-The first Room module in the monorepo. A submit-and-retry outbox for offline-first writes — queue a
+The first Room module in the monorepo. A submit-and-retry outbox for offline-first writes, queue a
 mutation locally, retry it when connectivity returns, without ever touching a host app's own `@Room
 Database` (Room databases are closed; this module owns a private one-entity `@Database` of its own,
 see `OutboxDatabase.kt`).
@@ -1333,15 +1333,15 @@ room { schemaDirectory("$projectDir/schemas") }
 ```
 
 Targets: Android, JVM, iOS, **and watchOS** (`watchosArm64`, `watchosSimulatorArm64`,
-`watchosDeviceArm64`) — Mileway's `core:data` re-exports the outbox through `commonMain` and targets
+`watchosDeviceArm64`), Mileway's `core:data` re-exports the outbox through `commonMain` and targets
 watchOS too, so this module has to match that target set, sharing `appleMain` actuals between iOS and
 watchOS. Depends on Room `2.8.4` + `sqlite-bundled` (Android) and kotlinx-serialization; no other
 `kmp-toolkit` module. Consumed by Mileway (`core:data`).
 
 ## store
 
-Every offline-first screen re-derives the same handful of flags — is it loading, is this cache or a
-live fetch, is it stale, did it fail, is a background refresh running — usually as a scatter of
+Every offline-first screen re-derives the same handful of flags, is it loading, is this cache or a
+live fetch, is it stale, did it fail, is a background refresh running, usually as a scatter of
 booleans a `when` can't exhaustively cover. `store` is a clean-room take on the pattern (no Store5,
 no HTTP client, no dependency on `:network` or `:offline-outbox`): one sealed `ScreenState`, a pure
 decision function, and a fetch-policy vocabulary a repository declares intent with.
@@ -1364,15 +1364,15 @@ val state = DecisionEngine.decide(
 
 | Member | Kind | What it does |
 |---|---|---|
-| `ScreenState<T>` | `sealed interface` | `Loading` / `Empty` / `NoNetwork` / `Unauthenticated` / `Error` / `Content` — the one type a screen renders |
+| `ScreenState<T>` | `sealed interface` | `Loading` / `Empty` / `NoNetwork` / `Unauthenticated` / `Error` / `Content`, the one type a screen renders |
 | `StoreData<T>` | data class | Caller-filled snapshot: `data`, `error`, `fetchedAt`, `isRefreshing` |
-| `DecisionEngine.decide` | pure `fun` | `(StoreData, Connectivity, ttl, now, classify) -> ScreenState` — no coroutines, no I/O |
-| `FetchPolicy` | `sealed interface` | `NetworkWithCache` (default) / `NetworkOnly` / `CacheOnly` / `Periodic(intervalMs)` — the read strategy a repository declares |
+| `DecisionEngine.decide` | pure `fun` | `(StoreData, Connectivity, ttl, now, classify) -> ScreenState`, no coroutines, no I/O |
+| `FetchPolicy` | `sealed interface` | `NetworkWithCache` (default) / `NetworkOnly` / `CacheOnly` / `Periodic(intervalMs)`, the read strategy a repository declares |
 | `freshnessBand` / `FreshnessBand` | `fun` / enum | Pure time-only staleness: `Initial` / `Fresh` / `Stale` / `VeryStale` |
 | `submitFlow` | `fun` | The write path: `Submitting → Success/Failed`, retryable failures enqueue via a caller-supplied `enqueueOffline` (e.g. `:offline-outbox`) |
 | `MutationState<R>` | `sealed interface` | `Submitting` / `Success` / `Failed(error, queuedOffline)` |
 
-`store` never depends on `:offline-outbox` or `:network` directly — `submitFlow`'s `enqueueOffline`
+`store` never depends on `:offline-outbox` or `:network` directly, `submitFlow`'s `enqueueOffline`
 is a plain suspend callback, so a repository wires it to whatever durable queue it uses without this
 module knowing `:offline-outbox` exists. Targets: Android, JVM, iOS, `wasmJs`. New addition, no
 dependents yet.
@@ -1382,7 +1382,7 @@ dependents yet.
 A zero-dependency ISMCTS (Information Set Monte Carlo Tree Search) search shell, extracted from
 Kursi's ai↔engine inversion: the generic search primitives (`Policy`, `GameRules`, `Ismcts`,
 `SearchBudget`) live here, and the game-specific rollout policy / leaf evaluation / determinization
-stays in the consuming app — this module never sees a card, a coin, or a Coup-specific rule.
+stays in the consuming app, this module never sees a card, a coin, or a Coup-specific rule.
 
 ```kotlin
 // module build.gradle.kts — no dependencies beyond kotlin("test") in commonTest
@@ -1399,7 +1399,7 @@ plugins {
 | `Ismcts` | `class` | The information-set MCTS search loop itself |
 | `SearchBudget` | data | Iteration/time budget controlling how long a search runs |
 
-`bots-policy` has zero third-party or cross-module dependencies — genuinely `commonMain`-only Kotlin,
+`bots-policy` has zero third-party or cross-module dependencies, genuinely `commonMain`-only Kotlin,
 no coroutine or platform surface. Targets: Android, JVM, iOS, `wasmJs`. Consumed by Kursi's AI
 engine.
 
@@ -1407,7 +1407,7 @@ engine.
 
 ![secrets](docs/assets/secrets-banner.svg)
 
-`secrets` isn't a Gradle module — it's a standalone SOPS+age encrypted-secrets vault and alias
+`secrets` isn't a Gradle module, it's a standalone SOPS+age encrypted-secrets vault and alias
 manifest, demonstrating the "vault mode" secret-resolution model:
 
 ```
@@ -1437,10 +1437,10 @@ decrypted YAML, and writes it to the `materialize.at` target on disk.
 
 `./test.sh` round-trips the whole flow: if `sops`/`age-keygen` are installed it generates a
 throwaway identity, encrypts, decrypts, and asserts byte-for-byte equality (`brew install sops age`
-to run it live); if either tool is missing it prints the manual steps and exits 0 — a missing local
+to run it live); if either tool is missing it prints the manual steps and exits 0, a missing local
 tool isn't a failure of this repo.
 
-**No real secrets or private keys live in this repo** — every value under `vault/` is fictional, and
+**No real secrets or private keys live in this repo**: every value under `vault/` is fictional, and
 the age key referenced in `.sops.yaml` is a placeholder string. Never commit a real private age
 identity (`*.age`, `key.txt`, `*.agekey`, `keys.txt`, anything under `keys/`), a real
 decrypted/materialized secret, or real values in `vault/example.secrets.yaml`.
@@ -1481,12 +1481,12 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 
 ## Testing and quality
 
-- **Unit tests per module.** Each leaf carries its own `commonTest`/`jvmTest` suite — pure-Kotlin
+- **Unit tests per module.** Each leaf carries its own `commonTest`/`jvmTest` suite, pure-Kotlin
   modules (`result`, `bots-policy`, `location`, `store`) test on the JVM target with `kotlin.test`;
   Android-facing modules (`security`, the `provider:*` leaves) add MockK, Turbine and Robolectric
   where a host-side Android API needs exercising.
 - **CI matrix.** `.github/workflows/ci.yml` runs `./gradlew assemble jvmTest testAndroidHostTest
-  testDebugUnitTest --stacktrace` — build plus test — across every module on every push and PR.
+  testDebugUnitTest --stacktrace`, build plus test, across every module on every push and PR.
 - **No-AI-attribution gate.** `.github/workflows/no-ai-attribution.yml` fails a push or PR if any
   commit message carries AI/assistant attribution, mirroring a local `.githooks/commit-msg` guard so
   nothing slips through `--no-verify` or an unconfigured clone.
@@ -1500,14 +1500,14 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 **Shipped**
 - [x] 9 original leaves extracted from HireSignal / PaymentsLab / Mileway / Kursi (`result`,
       `common`, `mvi-core`, `network`, `security`, `designsystem`, `ai`, `feedback`, `location`)
-- [x] `llm-chat` — cloud LLM chat client (Gemini / OpenAI / Anthropic) (`bb33d0c`)
-- [x] `payments-api` + 19 `provider:*` gateway leaves — one contract, sandbox-honest `GatewayStatus`
-- [x] `offline-outbox` — first Room module in the monorepo, targeting watchOS alongside Android/JVM/iOS
-- [x] `bots-policy` — zero-dependency ISMCTS search shell extracted from Kursi
-- [x] Four more standalone platform-service leaves — `device-integrity` (KMP root/jailbreak check),
+- [x] `llm-chat`, cloud LLM chat client (Gemini / OpenAI / Anthropic) (`bb33d0c`)
+- [x] `payments-api` + 19 `provider:*` gateway leaves, one contract, sandbox-honest `GatewayStatus`
+- [x] `offline-outbox`, first Room module in the monorepo, targeting watchOS alongside Android/JVM/iOS
+- [x] `bots-policy`, zero-dependency ISMCTS search shell extracted from Kursi
+- [x] Four more standalone platform-service leaves, `device-integrity` (KMP root/jailbreak check),
       `settings` (encrypted key/value store), `app-shell` (location/geocoding/scanner/notifications/
       permissions/update/review/push/analytics seams), `store` (offline-first `ScreenState` +
-      `DecisionEngine` read/write helpers) — none with dependents yet
+      `DecisionEngine` read/write helpers), none with dependents yet
 - [x] CI matrix (`assemble jvmTest testAndroidHostTest testDebugUnitTest`) + no-AI-attribution check
 - [x] Consumed as a source composite build (vendored via `includeBuild`; not Maven-published)
 
@@ -1517,12 +1517,12 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 - [ ] `payments-api` → `result`'s typed `Result<D, DataError>` instead of its own `PaymentResult` shape
 - [ ] `llm-chat` wired into `ai`'s `CompositeOnDeviceLlm` fallback chain as a cloud tier
 - [ ] Move some `provider:*` leaves off `SANDBOX_READY`/`MOCK_MODE` as partner KYC access opens up
-- [ ] First real consumer for `device-integrity`, `settings`, `app-shell` and `store` — each is
+- [ ] First real consumer for `device-integrity`, `settings`, `app-shell` and `store`, each is
       shipped and unit-tested, but none has been wired into HireSignal/PaymentsLab/Mileway/Kursi yet
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Part of the [kmp-toolkit](https://cv-siddharth.vercel.app/) family;
+MIT, see [LICENSE](LICENSE). Part of the [kmp-toolkit](https://cv-siddharth.vercel.app/) family;
 convention plugins in [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic).
 [Portfolio](https://cv-siddharth.vercel.app/).
 
