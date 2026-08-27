@@ -37,6 +37,9 @@ compose-webview-multiplatform = "2.0.3"
 # which deleted an expect/actual and a hand-drawn Canvas fallback before either was written.
 vico = "3.3.0"
 zoomable = "2.13.0"
+# Multiplatform mocking. A COMPILER PLUGIN, so a Kotlin bump can break it in a way no catalogue
+# check would see - MokkeryCompatTest in :mvi-core is the canary that fails when it does.
+mokkery = "3.4.2"
 material-icons = "1.7.3"
 kotlinx-collections-immutable = "0.5.1"
 konnection = "1.4.5"
@@ -177,3 +180,4 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 # API docs for all 37 modules — aggregated into one browsable site by the root project.
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 vanniktechMavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
+mokkery = { id = "dev.mokkery", version.ref = "mokkery" }
