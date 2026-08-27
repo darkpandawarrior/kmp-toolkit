@@ -2,6 +2,10 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
     `maven-publish`
+    // Multiplatform mocking. MockK is JVM-only and cannot touch the commonMain collaborators that
+    // hold this toolkit's logic. Mokkery is a compiler plugin, so MokkeryCompatTest exists to fail
+    // loudly on the next Kotlin bump rather than silently miscompiling.
+    alias(libs.plugins.mokkery)
 }
 
 

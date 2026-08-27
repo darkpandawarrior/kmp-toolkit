@@ -17,6 +17,19 @@ interface ConnectivityChecker {
      * (no push updates) — override for a real observer. [KonnectionConnectivityChecker] does.
      */
     fun observeIsOnline(): Flow<Boolean> = flowOf(isOnline())
+
+    /**
+     * Whether [observeIsOnline] is a real push observer or the single-shot default above.
+     *
+     * This exists for one consumer contract: `offline-outbox` drains on the [observeIsOnline] Flow
+     * when this is true, and keeps its timer retry when it is false. Without the distinction the
+     * outbox cannot tell a live signal from one value that never changes, and on a platform with
+     * no observer it would subscribe once and then silently stop flushing forever.
+     *
+     * Defaults to false, so a new implementation that forgets to override it degrades to the
+     * timer rather than to silence.
+     */
+    fun canObserveConnectivity(): Boolean = false
 }
 
 /**
