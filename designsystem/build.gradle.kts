@@ -54,6 +54,12 @@ kotlin {
             implementation(libs.material.icons.core)
             // StepTimeline/PayloadCard row lists.
             implementation(libs.kotlinx.collections.immutable)
+            // AdaptiveNavigationShell. Publishes android/ios/jvm/wasmJs, so it sits in commonMain
+            // rather than behind an expect/actual.
+            implementation(libs.compose.adaptive.navigation.suite)
+            // ZoomableImage. Publishes wasmJs too - checked against the module metadata, since the
+            // plan this came from said the wasm publication was contested.
+            implementation(libs.zoomable)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

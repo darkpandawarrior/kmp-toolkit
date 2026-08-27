@@ -13,4 +13,7 @@ class KonnectionConnectivityChecker : ConnectivityChecker {
     override fun isOnline(): Boolean = Konnection.instance.isConnected()
 
     override fun observeIsOnline(): Flow<Boolean> = Konnection.instance.observeHasConnection()
+
+    /** Konnection pushes real transitions, so the outbox can drop its timer retry here. */
+    override fun canObserveConnectivity(): Boolean = true
 }

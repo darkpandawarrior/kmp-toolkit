@@ -89,6 +89,10 @@ include(":payments-api")
 include(":offline-outbox")
 include(":store")
 include(":bots-policy")
+// :charts is deliberately NOT part of :designsystem - that module is consumed by Mileway's Wear
+// target and a chart library has no business in a watch build. :charts depends on :designsystem
+// for tokens; never the reverse.
+include(":charts")
 include(":provider:stripe")
 include(":provider:upi-intent")
 include(":provider:cashfree")
