@@ -1,9 +1,9 @@
 # Single source of truth for the whole kmp-toolkit monorepo — one catalog for every module,
 # so versions can never drift between siblings (the reason for consolidating the old per-repo leaves).
 [versions]
-agp = "9.5.0-alpha02"
+agp = "9.5.0-alpha03"
 detekt = "2.0.0-alpha.6"
-kotlin = "2.4.20-RC"
+kotlin = "2.4.20-RC2"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.8.0"
@@ -11,7 +11,7 @@ lifecycle = "2.11.0"
 napier = "2.7.1"
 ktor = "3.5.1"
 koin = "4.2.2"
-compose-multiplatform = "1.12.0-rc01"
+compose-multiplatform = "1.12.0"
 compose-material3 = "1.12.0-alpha03"
 compose-bom = "2026.08.00"
 core-ktx = "1.19.0"
