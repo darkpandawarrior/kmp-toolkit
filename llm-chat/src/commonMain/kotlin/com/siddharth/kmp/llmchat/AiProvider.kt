@@ -65,10 +65,11 @@ interface AiProvider {
 }
 
 /**
- * Shared descriptor for the three real HTTP cloud providers — all three stream for real via
- * `completeStream` and honor the same [AiConfig] fields identically ([AiConfig.timeoutMs] only
- * bounds [AiProvider.complete], not `completeStream` — see that override's own comment). One
- * function instead of three copies of the same literal.
+ * Shared descriptor for every real HTTP-backed provider (the three named vendors plus
+ * [HttpChatProvider]) — all of them stream for real via `completeStream` and honor the same
+ * [AiConfig] fields identically ([AiConfig.timeoutMs] only bounds [AiProvider.complete], not
+ * `completeStream` — see that override's own comment). One function instead of one copy of the
+ * same literal per provider.
  */
 internal suspend fun AiProvider.httpCloudCapabilities(): AiCapabilities =
     AiCapabilities(

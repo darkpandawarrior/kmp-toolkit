@@ -1150,6 +1150,7 @@ job.cancel()
 | `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure) }` | One increment of a `completeStream` reply |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
+| `HttpChatProvider` | `class(HttpChatConfig) : AiProvider` | Client for a caller-owned SSE chat backend (not a named vendor) speaking the same `data:`/`[DONE]` contract |
 | `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → `config.selectedProvider` first, then the rest in Anthropic → OpenAI → Gemini order → fallback, skipping any blank key. Every provider it returns is wrapped so USER messages run through the same `PromptGuard` as `ai`'s on-device seam before reaching any HTTP call |
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
 
@@ -1167,6 +1168,21 @@ blank line between events, OpenAI closing with `data: [DONE]` — behind one sha
 parser (`SseFraming.kt`); each provider still JSON-decodes its own event shape (Anthropic's
 `content_block_delta`, OpenAI's `choices[].delta.content`, Gemini's own `GeminiResponse` shape reused
 as-is since its `:streamGenerateContent?alt=sse` endpoint reuses its non-streaming reply's fields).
+
+`HttpChatProvider` is the fourth backend, for an app's *own* SSE chat endpoint rather than a named
+vendor — the thing `cv-siddharth-kmp` and HireSignal were each hand-rolling their own `data:`/
+`[DONE]` parser for. It reuses the same `parseSseFrames`, expects `{"text":"..."}` per frame, and
+takes an `HttpChatConfig(endpoint, mode?, originHeader?)`: `mode` is an app-defined string forwarded
+to the backend as-is, the SYSTEM message (if any) goes through as a dedicated `system` field rather
+than inside `messages`, and `originHeader` sets this request's `Origin` header for a backend that
+allow-lists origins on a public, keyless endpoint (a no-op on `wasmJs` — a real browser's `fetch`
+refuses to let a script override `Origin`, a forbidden header per the Fetch spec). A blank
+`endpoint` reports `AiFailure.NoKey`, the same bucket a missing vendor key uses, since `llm-chat`
+has no separate "not configured" reason.
+
+```kotlin
+val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://api.example.com/chat", mode = "resume-coach"))
+```
 
 A key a user pastes in (BYOK) needs somewhere to live between app launches that isn't a plain
 string field or an app re-inventing `SharedPreferences`. `SecureKeyStore` is that place —
