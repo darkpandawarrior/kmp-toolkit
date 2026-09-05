@@ -86,10 +86,11 @@ monorepo has since grown to **39 modules**: `llm-chat` (cloud LLM chat), the `pa
 `device-integrity`, `settings`, `app-shell`, `store`, see [Roadmap](#roadmap) for what shipped when.
 
 Every module targets exactly the platforms its own consumers need, no module claims iOS support
-it can't back up, no module ships a `wasmJs` target nobody asked for. Three deliberate inter-module
+it can't back up, no module ships a `wasmJs` target nobody asked for. Four deliberate inter-module
 spines exist, `security → common` (for `AppLog`), the `payments-api` ↔ `provider:*` gateway
-contract, and `ai → llm-chat` (for `CloudOnDeviceLlm`'s cloud fallback tier), everything else is
-standalone by design, so adopting one leaf never drags in the rest.
+contract, `ai → llm-chat` (for `CloudOnDeviceLlm`'s cloud fallback tier), and `designsystem →
+ai`/`llm-chat` (for `AiSettingsSection`, the first in-repo settings screen for either AI seam),
+everything else is standalone by design, so adopting one leaf never drags in the rest.
 
 Gradle convention plugins (the `androidKmpLibrary`, `composeCompiler` etc. plugins every
 `build.gradle.kts` here applies) live in a separate repo,
@@ -136,8 +137,8 @@ monorepo.
 | [**device-integrity**](#device-integrity) | `com.siddharth.kmp:device-integrity` | The KMP sibling of `security`'s root/jailbreak check, `DeviceIntegrity.inspect()` for non-Android-only apps | Android · JVM · iOS · Wasm | new, no dependents yet |
 | [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | new, no dependents yet |
 | [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives, tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | HireSignal (`core:designsystem`) |
-| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models / `CloudOnDeviceLlm` fallback, one seam | Android · JVM · iOS · Wasm | HireSignal (`core:ai`) |
-| [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client, Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | `ai` (`bb33d0c`, `CloudOnDeviceLlm`) |
+| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models / `CloudOnDeviceLlm` fallback, one seam | Android · JVM · iOS · Wasm | HireSignal (`core:ai`), `designsystem` (`AiSettingsSection`) |
+| [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client, Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | `ai` (`bb33d0c`, `CloudOnDeviceLlm`), `designsystem` (`AiSettingsSection`) |
 | [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Kursi |
 | [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Mileway (`feature:tracking`) |
 | [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library, location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | new, no dependents yet |
@@ -161,7 +162,17 @@ Generated from `settings.gradle.kts` and each module's `project(":x")` declarati
 graph LR
   security["security"] --> common["common"]
   auth["auth"] --> settings["settings"]
+  designsystem["designsystem"] --> result["result"]
+  designsystem["designsystem"] --> ai["ai"]
+  designsystem["designsystem"] --> llm_chat["llm-chat"]
+  ai["ai"] --> result["result"]
+  ai["ai"] --> common["common"]
+  ai["ai"] --> llm_chat["llm-chat"]
   llm_chat["llm-chat"] --> network["network"]
+  llm_chat["llm-chat"] --> result["result"]
+  llm_chat["llm-chat"] --> settings["settings"]
+  llm_chat["llm-chat"] --> settings["settings"]
+  llm_chat["llm-chat"] --> settings["settings"]
   payments_api["payments-api"] --> common["common"]
   charts["charts"] --> designsystem["designsystem"]
   provider_stripe["provider:stripe"] --> payments_api["payments-api"]
@@ -204,7 +215,7 @@ graph LR
   provider_xendit["provider:xendit"] --> network["network"]
 ```
 
-_39 modules, 43 internal dependencies._
+_39 modules, 53 internal dependencies._
 <!-- module-graph:end -->
 
 ## Family architecture
@@ -269,9 +280,11 @@ graph TD
 
 `security → common` is the only edge between two original `kmp-toolkit` leaves; `payments-api →
 common` and every `provider:* → payments-api`/`provider:* → common` edge is the newer, equally
-deliberate gateway-abstraction spine, and `ai → llm-chat` (for `CloudOnDeviceLlm`) is the third,
-added once `ai` needed a real cloud fallback rather than reinventing one. Every module outside
-those three families is standalone: dropping one into an app never drags in a sibling.
+deliberate gateway-abstraction spine; `ai → llm-chat` (for `CloudOnDeviceLlm`) is the third, added
+once `ai` needed a real cloud fallback rather than reinventing one; and `designsystem →
+ai`/`llm-chat` is the fourth, added for `AiSettingsSection` — the settings screen that reads/drives
+both AI seams' `ModelManager`/`AiProvider`/`AiCapabilities` from one place. Every module outside
+those four families is standalone: dropping one into an app never drags in a sibling.
 
 `device-integrity`, `settings`, `app-shell` and `store` are omitted from the graph above, each has
 zero edges to any other module here and no consumer app yet, so there's nothing to draw. They're
