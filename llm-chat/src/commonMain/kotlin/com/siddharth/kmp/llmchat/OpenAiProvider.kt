@@ -41,6 +41,8 @@ class OpenAiProvider(
 
     override suspend fun isAvailable() = apiKey.isNotBlank()
 
+    override suspend fun capabilities() = httpCloudCapabilities()
+
     override suspend fun complete(
         messages: List<AiMessage>,
         config: AiConfig,

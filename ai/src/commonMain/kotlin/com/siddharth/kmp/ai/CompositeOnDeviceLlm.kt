@@ -1,5 +1,6 @@
 package com.siddharth.kmp.ai
 
+import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
@@ -48,6 +49,21 @@ class CompositeOnDeviceLlm(
         val needsImage = parts.any { it is LlmPart.Image }
         return chooseBackend { !needsImage || it.supportsImage }?.generateStream(parts) ?: emptyFlow()
     }
+
+    /**
+     * Delegates to the SAME backend [generateStream] would pick — the first available one — so an
+     * app asking "what can I actually do right now" gets the answer for the backend it would really
+     * run against, not a generic composite-wide guess. No backend available reads the same as
+     * [generate]'s empty-chain case: [AiFailure.NotSupportedOnPlatform].
+     */
+    override suspend fun capabilities(): AiCapabilities =
+        chooseBackend { true }?.capabilities()
+            ?: AiCapabilities(
+                streaming = false,
+                multimodal = false,
+                honoredConfigFields = emptySet(),
+                unavailableReason = AiFailure.NotSupportedOnPlatform,
+            )
 
     private fun chooseBackend(accepts: (OnDeviceLlm) -> Boolean): OnDeviceLlm? =
         backends.firstOrNull { it.isAvailable() && accepts(it) }
