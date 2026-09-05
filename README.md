@@ -1079,13 +1079,42 @@ when (val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summ
 }
 ```
 
+Token-by-token, so a reply renders as it arrives and cancelling the collecting coroutine (a Stop
+button, a dismissed screen) actually tears down the in-flight request instead of letting it run to
+completion in the background:
+
+```kotlin
+val job = launch {
+    provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "Summarize this JD"))).collect { chunk ->
+        when (chunk) {
+            is AiChunk.Token -> append(chunk.text)
+            is AiChunk.Failed -> showReason(chunk.reason)
+        }
+    }
+}
+// Stop button:
+job.cancel()
+```
+
 | Member | Signature | What it does |
 |---|---|---|
-| `AiProvider` | `interface { complete(messages, config): AiResult<String>; isAvailable(): Boolean }` | The single seam every backend implements |
+| `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean }` | The single seam every backend implements |
+| `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure) }` | One increment of a `completeStream` reply |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
-| `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API |
+| `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
 | `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → `config.selectedProvider` first, then the rest in Anthropic → OpenAI → Gemini order → fallback, skipping any blank key |
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
+
+`AiConfig.timeoutMs` (default 5s, same ceiling as before but now caller-configurable) bounds
+`complete()`. `completeStream()` deliberately has no such ceiling — a legitimately long reply keeps
+producing tokens well past any single-call deadline; cancelling the collecting coroutine is what
+ends a stream (and the provider's billing for it) early, not a timer.
+
+All three providers' streaming endpoints frame their reply the same way — SSE `data:` lines, a
+blank line between events, OpenAI closing with `data: [DONE]` — behind one shared `parseSseFrames`
+parser (`SseFraming.kt`); each provider still JSON-decodes its own event shape (Anthropic's
+`content_block_delta`, OpenAI's `choices[].delta.content`, Gemini's own `GeminiResponse` shape reused
+as-is since its `:streamGenerateContent?alt=sse` endpoint reuses its non-streaming reply's fields).
 
 `llm-chat` deliberately reuses `:network`'s internal `httpClientEngine()` factory rather than its
 `createHttpClient()` wrapper, the retry/backoff and 30s timeout in `network`'s wrapper would change
