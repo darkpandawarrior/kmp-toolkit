@@ -1004,6 +1004,12 @@ first success, or the last backend's failure reason if none produced one. Your f
 prompt-building and output-parsing stay in your app; this carries only the plumbing to *run* a
 prompt.
 
+Every prompt/part `CompositeOnDeviceLlm` sends to a backend is run through `PromptGuard` (in
+`:result`) first — delimited, escaped, with the output contract restated right after the payload
+— so a JD, receipt, or chat message that says "ignore previous instructions" reaches the model as
+inert data. This is unconditional: there's no flag to opt out, and `JobSummarizer` below gets it
+for free even though it never separates its own instructions from the untrusted `jd` string.
+
 `generateStream(prompt): Flow<String>` is the token-by-token variant, so a UI can render a reply as
 it arrives and a Stop action actually cancels the model instead of leaving it computing in the
 background. ML Kit GenAI and MediaPipe stream for real (partial results as the model produces
@@ -1112,7 +1118,7 @@ job.cancel()
 | `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure) }` | One increment of a `completeStream` reply |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
-| `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → `config.selectedProvider` first, then the rest in Anthropic → OpenAI → Gemini order → fallback, skipping any blank key |
+| `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → `config.selectedProvider` first, then the rest in Anthropic → OpenAI → Gemini order → fallback, skipping any blank key. Every provider it returns is wrapped so USER messages run through the same `PromptGuard` as `ai`'s on-device seam before reaching any HTTP call |
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
 
 `AiConfig.timeoutMs` (default 5s, same ceiling as before but now caller-configurable) bounds
