@@ -1,9 +1,11 @@
 package com.siddharth.kmp.ai
 
+import com.siddharth.kmp.result.AiFailure
+import com.siddharth.kmp.result.AiResult
+import com.siddharth.kmp.result.Result
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 /**
  * [LlmPart.Image] structural equality (ByteArray has no content-aware equals of its own, so the
@@ -13,15 +15,15 @@ import kotlin.test.assertNull
  */
 class LlmPartTest {
     private class TextOnlyBackend(
-        private val output: String?,
+        private val output: String,
     ) : OnDeviceLlm {
         var calls = 0
 
         override fun isAvailable() = true
 
-        override suspend fun generate(prompt: String): String? {
+        override suspend fun generate(prompt: String): AiResult<String> {
             calls++
-            return output
+            return Result.Success(output)
         }
     }
 
@@ -42,7 +44,7 @@ class LlmPartTest {
     fun default_generate_parts_maps_single_text_part_onto_generate_string() =
         runTest {
             val backend = TextOnlyBackend(output = "answer")
-            assertEquals("answer", backend.generate(listOf(LlmPart.Text("prompt"))))
+            assertEquals(Result.Success("answer"), backend.generate(listOf(LlmPart.Text("prompt"))))
             assertEquals(1, backend.calls)
         }
 
@@ -50,7 +52,10 @@ class LlmPartTest {
     fun default_generate_parts_declines_when_an_image_part_is_present() =
         runTest {
             val backend = TextOnlyBackend(output = "answer")
-            assertNull(backend.generate(listOf(LlmPart.Image(byteArrayOf(1)), LlmPart.Text("prompt"))))
+            assertEquals(
+                Result.Failure(AiFailure.NotSupportedOnPlatform),
+                backend.generate(listOf(LlmPart.Image(byteArrayOf(1)), LlmPart.Text("prompt"))),
+            )
             assertEquals(0, backend.calls)
         }
 }

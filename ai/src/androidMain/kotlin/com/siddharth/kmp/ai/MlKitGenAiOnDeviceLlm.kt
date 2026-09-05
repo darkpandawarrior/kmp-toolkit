@@ -9,6 +9,9 @@ import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.ImagePart
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
+import com.siddharth.kmp.result.AiFailure
+import com.siddharth.kmp.result.AiResult
+import com.siddharth.kmp.result.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
@@ -33,11 +36,11 @@ class MlKitGenAiOnDeviceLlm(
     // ImagePart(byte[]) is a direct constructor on this API — no manual Bitmap decode needed here.
     override val supportsImage: Boolean = true
 
-    override suspend fun generate(prompt: String): String? = generate(listOf(LlmPart.Text(prompt)))
+    override suspend fun generate(prompt: String): AiResult<String> = generate(listOf(LlmPart.Text(prompt)))
 
-    override suspend fun generate(parts: List<LlmPart>): String? {
-        if (!isAvailable()) return null
-        return runCatching { runGeneration(parts) }.getOrNull()
+    override suspend fun generate(parts: List<LlmPart>): AiResult<String> {
+        if (!isAvailable()) return Result.Failure(AiFailure.NotSupportedOnPlatform)
+        return runCatching { runGeneration(parts) }.getOrElse { Result.Failure(AiFailure.EmptyReply) }
     }
 
     override fun generateStream(prompt: String): Flow<String> = generateStream(listOf(LlmPart.Text(prompt)))
@@ -55,15 +58,11 @@ class MlKitGenAiOnDeviceLlm(
             // On-device model hiccup mid-stream — degrade to whatever already emitted.
         }
 
-    private suspend fun runGeneration(parts: List<LlmPart>): String? {
-        if (model.checkStatus() != FeatureStatus.AVAILABLE) return null
-        val request = buildRequest(parts) ?: return null
-        return model
-            .generateContent(request)
-            .candidates
-            .firstOrNull()
-            ?.text
-            ?.takeIf { it.isNotBlank() }
+    private suspend fun runGeneration(parts: List<LlmPart>): AiResult<String> {
+        if (model.checkStatus() != FeatureStatus.AVAILABLE) return Result.Failure(AiFailure.ModelNotResident)
+        val request = buildRequest(parts) ?: return Result.Failure(AiFailure.NotSupportedOnPlatform)
+        val text = model.generateContent(request).candidates.firstOrNull()?.text
+        return if (text.isNullOrBlank()) Result.Failure(AiFailure.EmptyReply) else Result.Success(text)
     }
 
     // generateContentRequest() is NOT vararg on this API — it's two fixed overloads, TextPart-only
