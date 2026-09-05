@@ -3,6 +3,9 @@ package com.siddharth.kmp.ai
 import android.content.Context
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
+import com.siddharth.kmp.result.AiFailure
+import com.siddharth.kmp.result.AiResult
+import com.siddharth.kmp.result.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -13,8 +16,8 @@ import kotlinx.coroutines.withContext
 // AICore doesn't reach.
 //
 // [isAvailable] gates on the model file existing; [generate] builds a fresh LlmInference per call and
-// closes it (the task is CPU/GPU-bound, so it runs off the main thread). Any failure returns null so
-// the composite falls through to the heuristic tier.
+// closes it (the task is CPU/GPU-bound, so it runs off the main thread). Any failure returns a typed
+// AiFailure so the composite falls through to the next backend (or the caller's heuristic tier).
 class MediaPipeOnDeviceLlm(
     private val context: Context,
     private val modelManager: MediaPipeModelManager,
@@ -22,29 +25,31 @@ class MediaPipeOnDeviceLlm(
 ) : OnDeviceLlm {
     override fun isAvailable(): Boolean = modelManager.isReady()
 
-    override suspend fun generate(prompt: String): String? {
-        if (!isAvailable()) return null
-        return withContext(Dispatchers.Default) {
-            runCatching {
-                val options =
-                    LlmInference.LlmInferenceOptions
-                        .builder()
-                        .setModelPath(modelManager.modelFile().absolutePath)
-                        .setMaxTokens(config?.maxTokens ?: MAX_TOKENS)
-                        .apply {
-                            // setMaxTopK is the load-time ceiling a session's topK must stay under.
-                            config?.topK?.let { setMaxTopK(it) }
-                            config?.accelerator?.let { setPreferredBackend(it.toBackend()) }
-                        }
-                        .build()
-                val inference = LlmInference.createFromOptions(context, options)
-                try {
-                    inference.runPrompt(prompt)?.takeIf { it.isNotBlank() }
-                } finally {
-                    inference.close()
-                }
-            }.getOrNull()
-        }
+    override suspend fun generate(prompt: String): AiResult<String> {
+        if (!isAvailable()) return Result.Failure(AiFailure.ModelNotResident)
+        val text =
+            withContext(Dispatchers.Default) {
+                runCatching {
+                    val options =
+                        LlmInference.LlmInferenceOptions
+                            .builder()
+                            .setModelPath(modelManager.modelFile().absolutePath)
+                            .setMaxTokens(config?.maxTokens ?: MAX_TOKENS)
+                            .apply {
+                                // setMaxTopK is the load-time ceiling a session's topK must stay under.
+                                config?.topK?.let { setMaxTopK(it) }
+                                config?.accelerator?.let { setPreferredBackend(it.toBackend()) }
+                            }
+                            .build()
+                    val inference = LlmInference.createFromOptions(context, options)
+                    try {
+                        inference.runPrompt(prompt)?.takeIf { it.isNotBlank() }
+                    } finally {
+                        inference.close()
+                    }
+                }.getOrNull()
+            }
+        return text?.let { Result.Success(it) } ?: Result.Failure(AiFailure.EmptyReply)
     }
 
     // No sampler override → the simple one-shot path. Otherwise a session carries topK/topP/temperature

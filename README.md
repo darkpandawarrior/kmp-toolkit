@@ -996,21 +996,24 @@ Models on iOS 26, nothing at all on desktop), each has its own residency/availab
 of them can just fail. The domain code that *uses* the model shouldn't know or care which one ran.
 
 `ai` collapses all of that behind one seam: `OnDeviceLlm`, `isAvailable()` + `suspend fun
-generate(prompt): String?`. `generate` returns `null` on any miss (no model resident, declined,
-failed), so your caller degrades to its own heuristic tier instead of throwing. A
-`CompositeOnDeviceLlm` chains backends in preference order and returns the first non-null answer.
-Your feature-specific prompt-building and output-parsing stay in your app; this carries only the
-plumbing to *run* a prompt.
+generate(prompt): AiResult<String>`. `generate` carries a typed [`AiFailure`](#llm-chat) on any
+miss — `ModelNotResident` (not downloaded yet) reads differently from `NotSupportedOnPlatform`
+(this device never can) — so your caller can say the right thing instead of guessing why an empty
+string came back. A `CompositeOnDeviceLlm` chains backends in preference order and returns the
+first success, or the last backend's failure reason if none produced one. Your feature-specific
+prompt-building and output-parsing stay in your app; this carries only the plumbing to *run* a
+prompt.
 
 ```kotlin
 import com.siddharth.kmp.ai.onDeviceLlmModule
 import com.siddharth.kmp.ai.OnDeviceLlm
+import com.siddharth.kmp.result.getOrNull
 
 startKoin { modules(onDeviceLlmModule(), myFeatureModule) }
 
 class JobSummarizer(private val llm: OnDeviceLlm) {
     suspend fun summarize(jd: String): String =
-        llm.generate("Summarize this job description in one line:\n$jd")
+        llm.generate("Summarize this job description in one line:\n$jd").getOrNull()
             ?: heuristicSummary(jd) // graceful fallback — never throws
 }
 ```
@@ -1019,22 +1022,24 @@ Compose your own backend order (e.g. add a remote tier) with `CompositeOnDeviceL
 
 ```kotlin
 val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myRemoteTier))
-// isAvailable() is true if ANY backend is; generate() returns the first non-null result.
+// isAvailable() is true if ANY backend is; generate() returns the first success, or the last
+// backend's AiFailure if every backend declined or errored.
 ```
 
 | Member | Signature | What it does |
 |---|---|---|
-| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): String? }` | The single seam, text in, text out, `null` on any miss |
-| `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) |
-| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first non-null wins |
+| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String> }` | The single seam, text in, typed result out |
+| `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) — fails `NotSupportedOnPlatform` |
+| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason |
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
 | `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo> }` | On-demand model download/residency status |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
-`ai` is standalone, depends only on coroutines + Koin (and, on Android, the ML Kit GenAI +
-MediaPipe SDKs). Your domain "intelligence" layer (prompt templates, output parsing, heuristics)
+`ai` is standalone, depends only on coroutines + Koin + `:result` (for `AiResult`/`AiFailure` — a
+zero-dependency module, so this pulls in nothing else) and, on Android, the ML Kit GenAI +
+MediaPipe SDKs. Your domain "intelligence" layer (prompt templates, output parsing, heuristics)
 stays in your app and consumes this seam. HireSignal's `core:ai` builds `JobIntelligence` on top.
 
 | Target | Backend |
@@ -1046,27 +1051,38 @@ stays in your app and consumes this seam. HireSignal's `core:ai` builds `JobInte
 ## llm-chat
 
 Every app that wants cloud LLM chat re-solves the same problem: three different HTTP APIs
-(Anthropic, OpenAI, Gemini), three different auth headers and request shapes, and a fallback order
-when a key is missing or a provider errors. `llm-chat` collapses that behind one `AiProvider` seam
-`complete(messages, config) -> String` plus `isAvailable()`.
+(Anthropic, OpenAI, Gemini), three different auth headers and request shapes, a fallback order
+when a key is missing, and — the part that used to be invisible — a dozen different ways for a
+call to fail that all looked like the same blank string. `llm-chat` collapses that behind one
+`AiProvider` seam: `complete(messages, config) -> AiResult<String>` plus `isAvailable()`.
+
+`AiResult<T>` is `com.siddharth.kmp.result.Result<T, AiFailure>` — the generic typed-result already
+in `:result` — with `AiFailure` naming why a call didn't produce text: `NoKey`, `Unauthorized`,
+`RateLimited`, `Timeout`, `Network`, `EmptyReply` (plus `ModelNotResident`/`NotSupportedOnPlatform`,
+which only the on-device seam in [`ai`](#ai) returns). A 401 no longer looks like an empty reply.
 
 ```kotlin
 import com.siddharth.kmp.llmchat.buildProviderChain
 import com.siddharth.kmp.llmchat.firstAvailable
 import com.siddharth.kmp.llmchat.AiMessage
 import com.siddharth.kmp.llmchat.AiProviderConfig
+import com.siddharth.kmp.result.Result
 
 val chain = buildProviderChain(
     config = AiProviderConfig(anthropicKey = key1, openAiKey = key2, geminiKey = key3),
     fallback = myHeuristicProvider,
 )
 val provider = firstAvailable(chain, fallback = myHeuristicProvider)
-val reply = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summarize this JD")))
+when (val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summarize this JD")))) {
+    is Result.Success -> render(result.data)
+    is Result.Failure -> showReason(result.error) // e.g. "rate limited, try in a minute"
+}
 ```
 
 | Member | Signature | What it does |
 |---|---|---|
-| `AiProvider` | `interface { complete(messages, config): String; isAvailable(): Boolean }` | The single seam every backend implements |
+| `AiProvider` | `interface { complete(messages, config): AiResult<String>; isAvailable(): Boolean }` | The single seam every backend implements |
+| `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API |
 | `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → Anthropic → OpenAI → Gemini → fallback, skipping any blank key |
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
@@ -1074,8 +1090,8 @@ val reply = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summarize t
 `llm-chat` deliberately reuses `:network`'s internal `httpClientEngine()` factory rather than its
 `createHttpClient()` wrapper, the retry/backoff and 30s timeout in `network`'s wrapper would change
 these providers' existing fire-and-forget request behavior, so the module brings its own
-`ktor-client-core`/`content-negotiation` setup on top of the shared engine. Targets: Android, JVM,
-iOS, `wasmJs`. Newest module in the repo (commit `bb33d0c`), no dependents yet.
+`ktor-client-core`/`content-negotiation` setup on top of the shared engine, plus `:result` for
+`AiResult`/`AiFailure`. Targets: Android, JVM, iOS, `wasmJs`. No dependents yet.
 
 ## feedback
 
