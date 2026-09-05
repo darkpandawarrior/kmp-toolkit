@@ -66,6 +66,7 @@ class AnthropicProvider(
                                 maxTokens = config.maxTokens,
                                 system = system.ifBlank { null },
                                 messages = userMessages,
+                                temperature = config.temperature.toDouble(),
                             ),
                         )
                     }
@@ -96,6 +97,7 @@ private data class AnthropicRequest(
     @SerialName("max_tokens") val maxTokens: Int,
     val system: String?,
     val messages: List<AnthropicMessage>,
+    val temperature: Double,
 )
 
 @Serializable

@@ -63,7 +63,7 @@ class GeminiProvider(
             withTimeout(5_000) {
                 val response =
                     client.post(BASE_URL) {
-                        parameter("key", apiKey)
+                        header("x-goog-api-key", apiKey)
                         contentType(ContentType.Application.Json)
                         setBody(
                             GeminiRequest(

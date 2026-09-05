@@ -1084,7 +1084,7 @@ when (val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summ
 | `AiProvider` | `interface { complete(messages, config): AiResult<String>; isAvailable(): Boolean }` | The single seam every backend implements |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API |
-| `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → Anthropic → OpenAI → Gemini → fallback, skipping any blank key |
+| `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → `config.selectedProvider` first, then the rest in Anthropic → OpenAI → Gemini order → fallback, skipping any blank key |
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
 
 `llm-chat` deliberately reuses `:network`'s internal `httpClientEngine()` factory rather than its
