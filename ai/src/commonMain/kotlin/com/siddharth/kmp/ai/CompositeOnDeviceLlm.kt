@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.emptyFlow
  * Detection-ordered [OnDeviceLlm]: probes an ordered list of backends and uses the first one that
  * both reports available AND actually produces output. This is how a device escalates ML Kit
  * Gemini Nano (AICore-only) → MediaPipe Gemma (broad device coverage, downloaded on demand) →
- * (nothing → the caller's own fallback tier).
+ * [CloudOnDeviceLlm] (network fallback, appended by the caller only when a key exists) →
+ * (nothing → the caller's own heuristic fallback tier).
  *
  * The seam is unchanged: callers still see one [OnDeviceLlm]. Every prompt/text part is run through
  * [PromptGuard] here, before any backend sees it — a caller like `JobSummarizer` in the README
