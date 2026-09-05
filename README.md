@@ -1151,11 +1151,45 @@ parser (`SseFraming.kt`); each provider still JSON-decodes its own event shape (
 `content_block_delta`, OpenAI's `choices[].delta.content`, Gemini's own `GeminiResponse` shape reused
 as-is since its `:streamGenerateContent?alt=sse` endpoint reuses its non-streaming reply's fields).
 
+A key a user pastes in (BYOK) needs somewhere to live between app launches that isn't a plain
+string field or an app re-inventing `SharedPreferences`. `SecureKeyStore` is that place —
+`getKey(provider)`/`setKey(provider, apiKey)` over the same three cloud `ProviderId`s
+`AiProviderConfig` already knows — and `loadAiProviderConfig` turns whatever it holds straight into
+the config `buildProviderChain` wants:
+
+```kotlin
+import com.siddharth.kmp.llmchat.SecureKeyStore
+import com.siddharth.kmp.llmchat.loadAiProviderConfig
+import com.siddharth.kmp.llmchat.ProviderId
+
+// Android: SecureKeyStore(context); iOS/JVM: no args; wasmJs: no args (see its own caveat below).
+val keyStore = SecureKeyStore(context)
+keyStore.setKey(ProviderId.ANTHROPIC, pastedKey) // persists it; null/blank clears it
+
+val config = loadAiProviderConfig(keyStore::getKey, selectedProvider = ProviderId.ANTHROPIC)
+val chain = buildProviderChain(config, fallback = myHeuristicProvider)
+```
+
+| Member | Signature | What it does |
+|---|---|---|
+| `SecureKeyStore` | `expect class { fun getKey(provider): String?; fun setKey(provider, apiKey: String?) }` | Persists a BYOK key per cloud `ProviderId`; `setKey(provider, null)` clears it |
+| `loadAiProviderConfig` | `(getKey: (ProviderId) -> String?, selectedProvider?, useOnDevice?) -> AiProviderConfig` | Reads the three cloud keys via `getKey` (pass `store::getKey`) into a ready `AiProviderConfig` |
+
+Android backs it with `:settings`'s `EncryptedSharedPreferences` (`MasterKey.AES256_GCM`); iOS with
+its `KeychainSettings`; JVM with its AES-256-GCM-encrypted properties file — `llm-chat` adds no
+crypto of its own, only the provider-key vocabulary on top of `:settings`'s generic store.
+**`wasmJs` is the one platform this genuinely can't do securely**: there is no OS keystore inside a
+browser sandbox, so that actual persists to `window.sessionStorage` — plaintext, readable by any
+script on the page, gone when the tab closes. Fine for a demo pasting a key into the current tab;
+never the guarantee the other three platforms give, and not a substitute for a backend that holds
+the real key server-side.
+
 `llm-chat` deliberately reuses `:network`'s internal `httpClientEngine()` factory rather than its
 `createHttpClient()` wrapper, the retry/backoff and 30s timeout in `network`'s wrapper would change
 these providers' existing fire-and-forget request behavior, so the module brings its own
 `ktor-client-core`/`content-negotiation` setup on top of the shared engine, plus `:result` for
-`AiResult`/`AiFailure`. Targets: Android, JVM, iOS, `wasmJs`. No dependents yet.
+`AiResult`/`AiFailure` and (Android/iOS/JVM only) `:settings` for `SecureKeyStore`'s at-rest crypto.
+Targets: Android, JVM, iOS, `wasmJs`. Dependents: `:ai` (`CloudOnDeviceLlm`).
 
 ## feedback
 

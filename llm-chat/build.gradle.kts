@@ -40,6 +40,19 @@ kotlin {
             // :ai's OnDeviceLlm seam so both AI failure paths carry one vocabulary.
             implementation(project(":result"))
         }
+        // SecureKeyStore's Android/iOS/JVM actuals delegate to :settings' SecureSettingsFactory
+        // (EncryptedSharedPreferences / Keychain / AES-256-GCM properties file) rather than this
+        // module inventing its own per-platform crypto. wasmJs has no :settings target — its actual
+        // talks to window.sessionStorage directly, see that file's own caveat.
+        androidMain.dependencies {
+            implementation(project(":settings"))
+        }
+        iosMain.dependencies {
+            implementation(project(":settings"))
+        }
+        jvmMain.dependencies {
+            implementation(project(":settings"))
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
