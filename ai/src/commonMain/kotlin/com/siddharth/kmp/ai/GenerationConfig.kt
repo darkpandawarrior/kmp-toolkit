@@ -8,9 +8,10 @@ package com.siddharth.kmp.ai
  *  - **ML Kit GenAI (Gemini Nano)** — [topK]/[temperature]/[maxTokens] are wired per-request
  *    ([MlKitGenAiOnDeviceLlm]'s `buildRequest`); [topP]/[accelerator] have no equivalent on this API
  *    and are ignored.
- *  - **Foundation Models (iOS)** — no Swift bridge exists yet ([FoundationModelsOnDeviceLlm] is a
- *    hard stub, always unavailable), so there is no real call site to honor this on; ignored until
- *    that bridge lands. Kept uniform so a caller wires one config regardless of backend.
+ *  - **Foundation Models (iOS)** — [FoundationModelsOnDeviceLlm]'s Swift bridge (`ai/ios-bridge/`)
+ *    calls `LanguageModelSession` through a completion-handler shape that carries no
+ *    topK/topP/temperature/maxTokens knobs, so every field is ignored here too. Kept uniform so a
+ *    caller wires one config regardless of backend.
  */
 data class GenerationConfig(
     val topK: Int? = null,

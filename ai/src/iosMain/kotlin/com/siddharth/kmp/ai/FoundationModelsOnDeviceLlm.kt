@@ -1,41 +1,91 @@
 package com.siddharth.kmp.ai
 
-import com.siddharth.kmp.common.AppLog
+import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.emptyFlow
 
-// ponytail: EXPERIMENTAL stub — Apple's Foundation Models API (LanguageModelSession + @Generable) is
-// Swift-only (the FoundationModels framework exposes no C/ObjC surface Kotlin/Native can import), so
-// the real availability check + inference must be bridged from the Swift side in iosApp and injected
-// through Koin. Until that bridge exists this actual reports unavailable, so DefaultJobIntelligence
-// exercises its heuristic degrade path on every iOS device — including pre-Apple-Intelligence
-// hardware, where Foundation Models is absent anyway. Mirrors Mileway's FoundationModelsAnalyzer.
-//
-// Upgrade path: define a Kotlin interface here, implement it in Swift over LanguageModelSession
-// (gated on SystemLanguageModel.availability), and bind that impl in onDeviceLlmModule() from
-// MainViewController's Koin start.
-//
-// generateStream deliberately does NOT override the interface's single-emission default: isAvailable()
-// is hardcoded false, so generate() always fails NotSupportedOnPlatform and the default already
-// replays that as an empty flow — there's no real generation here yet to stream tokens from or
-// cancel mid-flight. When the Swift bridge lands, override generateStream the way
-// MediaPipeOnDeviceLlm.android.kt does: a session-shaped handle the Swift side can cancel, so
-// LanguageModelSession.streamResponse's partial results reach here and a collector cancelling
-// actually stops on-device generation instead of only stopping this Kotlin side from listening.
-@Unimplemented("Foundation Models has no Kotlin/Native-importable surface; needs a Swift bridge from iosApp — see above.")
-class FoundationModelsOnDeviceLlm : OnDeviceLlm {
-    // `by lazy` logs exactly once per instance, on whichever call (isAvailable/generate/capabilities)
-    // touches this backend first — no separate flag needed, Kotlin's lazy delegate is already
-    // synchronized and idempotent.
-    private val warnUnimplementedOnce by lazy {
-        AppLog.w("FoundationModelsOnDeviceLlm has no Swift bridge yet — always reporting unavailable.", tag = "OnDeviceLlm")
+/**
+ * Real actual: Apple Foundation Models, reached via a Swift class conforming to [NativeLlm] and
+ * registered into [FoundationModelsBridge] at app startup — see `ai/ios-bridge/README.md`.
+ * Kotlin/Native has no `platform.FoundationModels.*` cinterop binding (the framework's
+ * Swift-macro-driven `@Generable`/`streamResponse` surface has no ObjC-compatible shape), so this
+ * follows the same bridge mechanism Mileway already shipped for `FoundationModelsAnalyzer`/
+ * `FoundationModelsLlmGateway`: export a plain Kotlin interface to Swift as an ObjC protocol,
+ * implement it in Swift, inject the implementation through a top-level singleton at startup.
+ *
+ * Until a consumer's `AppDelegate` sets [FoundationModelsBridge.seam]'s `generator`, every method
+ * here degrades honestly (unavailable / `NotSupportedOnPlatform` / an empty stream) rather than
+ * crashing or faking success — the same behavior this class had as a hard stub, now driven by
+ * whether a bridge was actually registered instead of being permanently hardcoded.
+ */
+object FoundationModelsBridge {
+    val seam = InjectableNativeLlm()
+}
+
+class FoundationModelsOnDeviceLlm(
+    private val bridge: InjectableNativeLlm = FoundationModelsBridge.seam,
+) : OnDeviceLlm {
+    override fun isAvailable(): Boolean = bridge.isAvailable()
+
+    // GenerationConfig has no call site here — LanguageModelSession's public surface exposes no
+    // topK/topP/temperature/maxTokens knobs through this bridge's completion-handler shape (see
+    // GenerationConfig's own doc for the full per-backend picture) — so honoredConfigFields stays
+    // empty, same as before this bridge existed.
+    override suspend fun capabilities(): AiCapabilities =
+        AiCapabilities(
+            streaming = true,
+            multimodal = false,
+            honoredConfigFields = emptySet(),
+            unavailableReason = if (bridge.isAvailable()) null else AiFailure.NotSupportedOnPlatform,
+        )
+
+    override suspend fun generate(prompt: String): AiResult<String> {
+        if (!bridge.isAvailable()) return Result.Failure(AiFailure.NotSupportedOnPlatform)
+        return bridge.generate(prompt)?.let { Result.Success(it) } ?: Result.Failure(AiFailure.EmptyReply)
     }
 
-    override fun isAvailable(): Boolean {
-        warnUnimplementedOnce
-        return false
-    }
+    // Real per-token streaming through the injected bridge — cancelling the collecting coroutine
+    // calls the native NativeLlmCancelHandle, which the Swift side turns into a real Task.cancel()
+    // on LanguageModelSession.streamResponse, so a Stop tap actually stops on-device generation
+    // instead of only stopping this Kotlin side from listening. Unavailable (no bridge registered,
+    // or the registered one reports off) completes empty rather than crashing.
+    override fun generateStream(prompt: String): Flow<String> =
+        callbackFlow {
+            if (!bridge.isAvailable()) {
+                close()
+                return@callbackFlow
+            }
+            val handle =
+                bridge.generateStream(
+                    prompt,
+                    object : NativeLlmStreamCallback {
+                        override fun onPartial(text: String) {
+                            trySend(text)
+                        }
 
-    override suspend fun generate(prompt: String): AiResult<String> = Result.Failure(AiFailure.NotSupportedOnPlatform)
+                        override fun onComplete() {
+                            close()
+                        }
+
+                        override fun onError() {
+                            close()
+                        }
+                    },
+                )
+            awaitClose { handle.cancel() }
+        }
+
+    // ponytail: text-only backend (supportsImage stays the interface's `false` default), so a
+    // multi-part/image call is a hard decline — same shape generate(parts)'s inherited default
+    // already gives every other text-only backend. Upgrade only if a caller drives multimodal
+    // streaming through Foundation Models specifically once Apple exposes that.
+    override fun generateStream(parts: List<LlmPart>): Flow<String> {
+        val text = parts.singleOrNull() as? LlmPart.Text ?: return emptyFlow()
+        return generateStream(text.text)
+    }
 }

@@ -1031,9 +1031,11 @@ for free even though it never separates its own instructions from the untrusted 
 `generateStream(prompt): Flow<String>` is the token-by-token variant, so a UI can render a reply as
 it arrives and a Stop action actually cancels the model instead of leaving it computing in the
 background. ML Kit GenAI and MediaPipe stream for real (partial results as the model produces
-them, and cancelling the collector stops the in-flight generation); every other backend replays
-`generate`'s result as one emission. `CompositeOnDeviceLlm.generateStream` delegates straight to
-whichever backend it picked, so this always reaches the real thing where one exists.
+them, and cancelling the collector stops the in-flight generation); Foundation Models streams for
+real too once a consumer registers its Swift bridge (`ai/ios-bridge/README.md`) — every other
+backend (and an unbridged Foundation Models) replays `generate`'s result as one emission.
+`CompositeOnDeviceLlm.generateStream` delegates straight to whichever backend it picked, so this
+always reaches the real thing where one exists.
 
 ```kotlin
 import com.siddharth.kmp.ai.onDeviceLlmModule
@@ -1128,7 +1130,7 @@ consumes this seam. HireSignal's `core:ai` builds `JobIntelligence` on top.
 | Target | Backend |
 |---|---|
 | Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma) → your own `CloudOnDeviceLlm`, composed with fallback. `isAvailable()` is a cheap API-level floor; `capabilities()` runs the real AICore `FeatureStatus`/model-residency check and reports why when it's off |
-| iOS (`iosArm64`, `iosSimulatorArm64`) | **Foundation Models/MediaPipe unimplemented today.** Both `FoundationModelsOnDeviceLlm` and `MediaPipeOnDeviceLlm` compile and satisfy the seam but are unconditional stubs (`@Unimplemented`, logged once) — no Swift bridge exists in this repo yet, so both always report unavailable; `CloudOnDeviceLlm` works today (plain HTTP), so it's the only real backend on iOS until the bridge lands |
+| iOS (`iosArm64`, `iosSimulatorArm64`) | **Foundation Models is real, opt-in per consumer.** `FoundationModelsOnDeviceLlm` delegates to a Swift `LanguageModelSession` bridge (real per-token streaming) once your app registers one — see `ai/ios-bridge/README.md`; unregistered, it degrades to unavailable, same as before the bridge existed. `MediaPipeOnDeviceLlm` is still an unconditional stub (`@Unimplemented`, logged once) — no Swift bridge for it yet. `CloudOnDeviceLlm` works today (plain HTTP) regardless, as the fallback tier |
 | JVM / Desktop | `UnavailableOnDeviceLlm` by default; append your own `CloudOnDeviceLlm` for a real answer |
 | `wasmJs` (web) | `UnavailableOnDeviceLlm` by default — same as JVM, no on-device model in a browser; append your own `CloudOnDeviceLlm` (its `AiProvider`s reach every cloud vendor's HTTP API fine from `wasmJs`) |
 
