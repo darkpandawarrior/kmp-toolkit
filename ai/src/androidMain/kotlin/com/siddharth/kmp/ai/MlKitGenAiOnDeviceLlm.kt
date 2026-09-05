@@ -9,6 +9,7 @@ import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.ImagePart
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
+import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
@@ -41,6 +42,22 @@ class MlKitGenAiOnDeviceLlm(
     override suspend fun generate(parts: List<LlmPart>): AiResult<String> {
         if (!isAvailable()) return Result.Failure(AiFailure.NotSupportedOnPlatform)
         return runCatching { runGeneration(parts) }.getOrElse { Result.Failure(AiFailure.EmptyReply) }
+    }
+
+    // Replaces the isAvailable() SDK-level floor with the SAME real AICore residency check
+    // runGeneration() already gates on: a caller reading only isAvailable() (Build.VERSION.SDK_INT
+    // >= O) gets a false positive on any API-26+ device that simply isn't AICore-eligible or hasn't
+    // downloaded Gemini Nano yet. capabilities() is where that gets corrected — isAvailable() itself
+    // stays the documented cheap/synchronous floor (this SDK's real check is suspend).
+    override suspend fun capabilities(): AiCapabilities {
+        val reason =
+            when {
+                !isAvailable() -> AiFailure.NotSupportedOnPlatform
+                runCatching { model.checkStatus() }.getOrNull() != FeatureStatus.AVAILABLE -> AiFailure.ModelNotResident
+                else -> null
+            }
+        // ML Kit GenAI ignores GenerationConfig entirely (the OS owns decoding) — see GenerationConfig's kdoc.
+        return AiCapabilities(streaming = true, multimodal = true, honoredConfigFields = emptySet(), unavailableReason = reason)
     }
 
     override fun generateStream(prompt: String): Flow<String> = generateStream(listOf(LlmPart.Text(prompt)))

@@ -3,6 +3,7 @@ package com.siddharth.kmp.ai
 import android.content.Context
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
 import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
+import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
@@ -29,6 +30,16 @@ class MediaPipeOnDeviceLlm(
     private val config: GenerationConfig? = null,
 ) : OnDeviceLlm {
     override fun isAvailable(): Boolean = modelManager.isReady()
+
+    // All of topK/topP/temperature/maxTokens/accelerator are wired — see buildInferenceOptions()/
+    // buildSessionOptions() below, the only backend that honors GenerationConfig's full shape.
+    override suspend fun capabilities(): AiCapabilities =
+        AiCapabilities(
+            streaming = true,
+            multimodal = false,
+            honoredConfigFields = setOf("topK", "topP", "temperature", "maxTokens", "accelerator"),
+            unavailableReason = if (isAvailable()) null else AiFailure.ModelNotResident,
+        )
 
     override suspend fun generate(prompt: String): AiResult<String> {
         if (!isAvailable()) return Result.Failure(AiFailure.ModelNotResident)
