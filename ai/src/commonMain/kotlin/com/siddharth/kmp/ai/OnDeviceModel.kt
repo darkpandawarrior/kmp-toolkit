@@ -98,8 +98,19 @@ interface ModelManager {
     /** Observe one model's state (drives the download-progress UI). */
     fun observe(modelId: String): Flow<ModelInfo>
 
-    /** Start (or resume) downloading [modelId]. Suspends until it completes or fails. */
-    suspend fun download(modelId: String)
+    /**
+     * Start (or resume) downloading [modelId]. Suspends until it completes or fails.
+     *
+     * [licenseAcknowledged] must be `true` for a manifest entry with [ModelManifestEntry.requiresLicenseAck]
+     * set — the settings screen shows the license and sets this only after the user accepts; an
+     * implementation that manages a gated model declines (state [ModelDownloadState.FAILED]) rather
+     * than starting the transfer when this is left `false`. Default `false` is deliberately the safe
+     * side: a caller must opt IN to "already acknowledged", never accidentally skip the gate.
+     */
+    suspend fun download(
+        modelId: String,
+        licenseAcknowledged: Boolean = false,
+    )
 
     /** Remove a downloaded model from app-private storage. */
     suspend fun delete(modelId: String)
@@ -111,7 +122,10 @@ object NoModelManager : ModelManager {
 
     override fun observe(modelId: String): Flow<ModelInfo> = flowOf(ModelInfo(modelId, modelId, 0, ModelDownloadState.ABSENT))
 
-    override suspend fun download(modelId: String) = Unit
+    override suspend fun download(
+        modelId: String,
+        licenseAcknowledged: Boolean,
+    ) = Unit
 
     override suspend fun delete(modelId: String) = Unit
 }

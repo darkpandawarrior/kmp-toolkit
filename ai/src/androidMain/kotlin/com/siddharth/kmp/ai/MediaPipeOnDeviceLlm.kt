@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 // ponytail: EXPERIMENTAL — com.google.mediapipe:tasks-genai (LLM Inference, Gemma 3 1B/Gemma-3n).
@@ -21,18 +23,31 @@ import kotlinx.coroutines.withContext
 // behind the OnDeviceLlm seam (after ML Kit Gemini Nano) — it covers the far larger set of devices
 // AICore doesn't reach.
 //
-// [isAvailable] gates on the model file existing; [generate] builds a fresh LlmInference per call and
-// closes it (the task is CPU/GPU-bound, so it runs off the main thread). Any failure returns a typed
-// AiFailure so the composite falls through to the next backend (or the caller's heuristic tier).
+// [isAvailable] gates on the model file existing. [generate]/[generateStream] REUSE one LlmInference
+// (the multi-second full model-weight load from disk) across calls — see [getOrCreateInferenceLocked]
+// — so only the first prompt after process start pays that cost; each call still gets its own fresh
+// LlmInferenceSession (cheap), so no conversation context leaks between unrelated generate() calls.
+// `lock` (a Mutex, not `synchronized`) serializes every actual inference: tasks-genai supports exactly
+// one in-flight generation per LlmInference, so a second caller must queue behind the first rather
+// than race the native session — and Mutex.withLock/lock/unlock are suspend-safe, unlike a monitor.
+// ponytail: the cached LlmInference is never proactively evicted while idle (no LRU/idle-timeout), so
+// the ~500MB-class model stays resident in memory for the rest of the process once first used — the
+// same trade the composite already makes by keeping this whole class alive as a Koin single. Add an
+// idle-close timer only if that footprint measurably matters on low-RAM devices.
 class MediaPipeOnDeviceLlm(
     private val context: Context,
     private val modelManager: MediaPipeModelManager,
     private val config: GenerationConfig? = null,
 ) : OnDeviceLlm {
+    private val lock = Mutex()
+    private var cached: CachedInference? = null
+
     override fun isAvailable(): Boolean = modelManager.isReady()
 
     // All of topK/topP/temperature/maxTokens/accelerator are wired — see buildInferenceOptions()/
-    // buildSessionOptions() below, the only backend that honors GenerationConfig's full shape.
+    // buildSessionOptions() below. ML Kit GenAI also honors topK/temperature/maxTokens now (see
+    // MlKitGenAiOnDeviceLlm), but topP/accelerator have no per-request equivalent in that API — this
+    // is still the only backend that honors GenerationConfig's FULL shape.
     override suspend fun capabilities(): AiCapabilities =
         AiCapabilities(
             streaming = true,
@@ -41,19 +56,25 @@ class MediaPipeOnDeviceLlm(
             unavailableReason = if (isAvailable()) null else AiFailure.ModelNotResident,
         )
 
-    override suspend fun generate(prompt: String): AiResult<String> {
+    override suspend fun generate(prompt: String): AiResult<String> = generateText(prompt)
+
+    // Multimodal entry point: Gemma 3 1B is text-only (supportsImage stays the interface's `false`
+    // default), so an image part is a hard decline rather than a silent drop. Every LlmPart.Text is
+    // joined — same join CompositeOnDeviceLlm/generateStream(parts) already use below — instead of
+    // the OnDeviceLlm default, which accepts only a single Text part and fails everything else.
+    override suspend fun generate(parts: List<LlmPart>): AiResult<String> {
+        if (parts.any { it is LlmPart.Image }) return Result.Failure(AiFailure.NotSupportedOnPlatform)
+        return generateText(parts.filterIsInstance<LlmPart.Text>().joinToString("\n") { it.text })
+    }
+
+    private suspend fun generateText(prompt: String): AiResult<String> {
         if (!isAvailable()) return Result.Failure(AiFailure.ModelNotResident)
         val text =
             withContext(Dispatchers.Default) {
-                runCatching {
-                    val inference = LlmInference.createFromOptions(context, buildInferenceOptions())
-                    try {
-                        inference.runPrompt(prompt)?.takeIf { it.isNotBlank() }
-                    } finally {
-                        inference.close()
-                    }
-                }.getOrNull()
-            }
+                lock.withLock {
+                    runCatching { getOrCreateInferenceLocked().runPrompt(prompt) }.getOrNull()
+                }
+            }?.takeIf { it.isNotBlank() }
         return text?.let { Result.Success(it) } ?: Result.Failure(AiFailure.EmptyReply)
     }
 
@@ -72,15 +93,16 @@ class MediaPipeOnDeviceLlm(
                 close()
                 return@callbackFlow
             }
-            var inference: LlmInference? = null
+            // Held for the whole streamed generation (not just session setup) — released in
+            // awaitClose below, whichever way this flow ends (done, failure, or the collector
+            // cancelling). See the class-level comment for why this must serialize with generateText.
+            lock.lock()
             var session: LlmInferenceSession? = null
             // runCatching (not a catch block) — matches generate()'s own handling of this same SDK
             // below, and there's no suspension point in here for a real CancellationException to
             // reach anyway (every call is a plain synchronous/native one, not a suspend fun).
             runCatching {
-                val newInference = LlmInference.createFromOptions(context, buildInferenceOptions())
-                inference = newInference
-                val newSession = LlmInferenceSession.createFromOptions(newInference, buildSessionOptions())
+                val newSession = LlmInferenceSession.createFromOptions(getOrCreateInferenceLocked(), buildSessionOptions())
                 session = newSession
                 newSession.addQueryChunk(text)
                 newSession.generateResponseAsync { partial, done ->
@@ -97,9 +119,28 @@ class MediaPipeOnDeviceLlm(
             awaitClose {
                 session?.cancelGenerateResponseAsync()
                 session?.close()
-                inference?.close()
+                lock.unlock()
             }
         }.flowOn(Dispatchers.Default)
+
+    /**
+     * Must be called while holding [lock]. Reuses the cached [LlmInference] — the expensive,
+     * multi-second full model-weight load from disk — across calls instead of rebuilding it every
+     * generate()/generateStream(); only rebuilds when the backing model FILE actually changed
+     * (deleted + re-downloaded via [ModelManager.delete]/[ModelManager.download], or swapped for a
+     * different manifest entry), detected via a cheap path+mtime+length signature rather than
+     * hashing the whole ~500MB file on every call.
+     */
+    private fun getOrCreateInferenceLocked(): LlmInference {
+        val file = modelManager.modelFile()
+        val signature = ModelSignature(file.absolutePath, file.lastModified(), file.length())
+        cached?.let {
+            if (it.signature == signature) return it.inference
+            it.inference.close()
+        }
+        return LlmInference.createFromOptions(context, buildInferenceOptions())
+            .also { cached = CachedInference(it, signature) }
+    }
 
     private fun buildInferenceOptions(): LlmInference.LlmInferenceOptions =
         LlmInference.LlmInferenceOptions
@@ -135,6 +176,10 @@ class MediaPipeOnDeviceLlm(
             session.close()
         }
     }
+
+    private data class ModelSignature(val path: String, val lastModified: Long, val length: Long)
+
+    private class CachedInference(val inference: LlmInference, val signature: ModelSignature)
 
     private companion object {
         const val MAX_TOKENS = 512

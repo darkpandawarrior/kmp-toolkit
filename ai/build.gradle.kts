@@ -54,5 +54,13 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
         }
+        // ResumableModelDownloader is plain JDK (HttpURLConnection/File) with no Android framework
+        // dependency, so its Range/resume/gzip-reject behavior is verified here against a real
+        // com.sun.net.httpserver.HttpServer (JDK, no new test dependency) rather than mocked.
+        getByName("androidHostTest") {
+            dependencies {
+                implementation(libs.junit)
+            }
+        }
     }
 }

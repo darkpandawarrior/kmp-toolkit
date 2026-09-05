@@ -5,8 +5,12 @@ package com.siddharth.kmp.ai
  * backend's own default alone". Backends apply what their engine exposes and ignore the rest:
  *  - **MediaPipe (Gemma)** — [maxTokens] + [accelerator] + the [topK] ceiling are load-time options;
  *    the [topK]/[topP]/[temperature] sampler is applied per inference session.
- *  - **ML Kit GenAI (Gemini Nano)** and **Foundation Models (iOS)** — the OS owns decoding, so the
- *    config is accepted and ignored. Kept uniform so a caller wires one config regardless of backend.
+ *  - **ML Kit GenAI (Gemini Nano)** — [topK]/[temperature]/[maxTokens] are wired per-request
+ *    ([MlKitGenAiOnDeviceLlm]'s `buildRequest`); [topP]/[accelerator] have no equivalent on this API
+ *    and are ignored.
+ *  - **Foundation Models (iOS)** — no Swift bridge exists yet ([FoundationModelsOnDeviceLlm] is a
+ *    hard stub, always unavailable), so there is no real call site to honor this on; ignored until
+ *    that bridge lands. Kept uniform so a caller wires one config regardless of backend.
  */
 data class GenerationConfig(
     val topK: Int? = null,

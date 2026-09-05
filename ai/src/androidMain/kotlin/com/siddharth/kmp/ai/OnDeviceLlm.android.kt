@@ -16,9 +16,9 @@ actual fun onDeviceLlmModule(): Module =
         single<OnDeviceLlm> {
             CompositeOnDeviceLlm(
                 listOf(
-                    MlKitGenAiOnDeviceLlm(androidContext()),
-                    // getOrNull(): the app opts into sampler/accelerator tuning by defining a
-                    // single<GenerationConfig>; absent one, MediaPipe keeps its built-in defaults.
+                    // getOrNull(): the app opts into topK/temperature/maxTokens tuning by defining a
+                    // single<GenerationConfig>; absent one, both backends keep their own defaults.
+                    MlKitGenAiOnDeviceLlm(androidContext(), getOrNull<GenerationConfig>()),
                     MediaPipeOnDeviceLlm(androidContext(), get(), getOrNull<GenerationConfig>()),
                 ),
             )

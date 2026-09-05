@@ -60,6 +60,17 @@ class ResumableModelDownloader(
 
             try {
                 val code = conn.responseCode
+                // Accept-Encoding: identity only ASKS — a server (or a transparent proxy) can still
+                // answer with Content-Encoding: gzip anyway. Setting our own Accept-Encoding already
+                // disables HttpURLConnection's transparent auto-gunzip, so conn.inputStream would be
+                // the raw (still-compressed) bytes; writing those straight into the model file at the
+                // requested byte offset is exactly the silent corruption the class comment above warns
+                // about. Reject before any write/rename so an existing valid .tmp is left untouched
+                // for a retry, instead of a corrupt file that still passes isReady()'s exists+size check.
+                val encoding = conn.contentEncoding
+                check(encoding == null || encoding.equals("identity", ignoreCase = true)) {
+                    "server ignored Accept-Encoding: identity (Content-Encoding: $encoding) — refusing a transfer that would corrupt the model file"
+                }
                 val resuming = code == HttpURLConnection.HTTP_PARTIAL && existing > 0
                 val startOffset = if (resuming) existing else 0L
                 // Server ignored the Range (200 with a stale .tmp) → discard the partial and start clean.

@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Read-only network-type check: MediaPipeModelManager's wifi-only guard reads whether the
+         active network is metered before it will start a model download. Normal/install-time
+         permission — no runtime prompt, auto-merged into every consuming app's manifest. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+</manifest>
