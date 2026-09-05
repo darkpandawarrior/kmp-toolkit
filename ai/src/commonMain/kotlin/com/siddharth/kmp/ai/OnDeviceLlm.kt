@@ -43,7 +43,8 @@ interface OnDeviceLlm {
     /**
      * Streaming variant of [generate]. Default replays the single-shot result as one emission so
      * every existing actual keeps working with zero changes; backends with native token streaming
-     * (ML Kit GenAI) override this directly.
+     * (ML Kit GenAI, MediaPipe) override this directly. [CompositeOnDeviceLlm] overrides both
+     * overloads too, so streaming through it reaches whichever backend it picked, not this default.
      */
     fun generateStream(prompt: String): Flow<String> = generateStream(listOf(LlmPart.Text(prompt)))
 

@@ -1004,6 +1004,13 @@ first success, or the last backend's failure reason if none produced one. Your f
 prompt-building and output-parsing stay in your app; this carries only the plumbing to *run* a
 prompt.
 
+`generateStream(prompt): Flow<String>` is the token-by-token variant, so a UI can render a reply as
+it arrives and a Stop action actually cancels the model instead of leaving it computing in the
+background. ML Kit GenAI and MediaPipe stream for real (partial results as the model produces
+them, and cancelling the collector stops the in-flight generation); every other backend replays
+`generate`'s result as one emission. `CompositeOnDeviceLlm.generateStream` delegates straight to
+whichever backend it picked, so this always reaches the real thing where one exists.
+
 ```kotlin
 import com.siddharth.kmp.ai.onDeviceLlmModule
 import com.siddharth.kmp.ai.OnDeviceLlm
@@ -1028,9 +1035,9 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myR
 
 | Member | Signature | What it does |
 |---|---|---|
-| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String> }` | The single seam, text in, typed result out |
+| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String>; fun generateStream(prompt: String): Flow<String> }` | The single seam, text in, typed result (or token stream) out |
 | `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) — fails `NotSupportedOnPlatform` |
-| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason |
+| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason. `generateStream` delegates to the chosen backend's own stream, not a single-emission replay |
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
 | `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo> }` | On-demand model download/residency status |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
