@@ -138,6 +138,7 @@ monorepo.
 | [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | new, no dependents yet |
 | [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives, tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | HireSignal (`core:designsystem`) |
 | [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models / `CloudOnDeviceLlm` fallback, one seam | Android · JVM · iOS · Wasm | HireSignal (`core:ai`), `designsystem` (`AiSettingsSection`) |
+| [**ai-testing**](#ai) | `com.siddharth.kmp:ai-testing` | `FakeOnDeviceLlm`/`RecordingLlm` — scriptable `OnDeviceLlm` test doubles, no model/device needed | Android · JVM · iOS · Wasm | `ai`'s own tests; any app testing its own AI branching |
 | [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client, Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | `ai` (`bb33d0c`, `CloudOnDeviceLlm`), `designsystem` (`AiSettingsSection`) |
 | [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Kursi |
 | [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Mileway (`feature:tracking`) |
@@ -1080,6 +1081,29 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, clo
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
+**Testing your own AI branching** — `ai-testing` (`com.siddharth.kmp:ai-testing`) publishes
+`FakeOnDeviceLlm` (scriptable success/failure/chunked-stream replies) and `RecordingLlm` (wraps
+another `OnDeviceLlm` and records every call — the prompt or parts, in order — for a test to assert
+against) so your `JobSummarizer`-shaped class can be tested without a real model or device:
+
+```kotlin
+import com.siddharth.kmp.ai.testing.FakeOnDeviceLlm
+import com.siddharth.kmp.result.AiFailure
+
+val llm = FakeOnDeviceLlm().apply { enqueueFailure(AiFailure.ModelNotResident) }
+val summary = JobSummarizer(llm).summarize(jd) // exercises the heuristicSummary fallback path
+```
+
+On Android, `ai` itself carries `androidDeviceTest` coverage (`MlKitGenAiOnDeviceLlmTest`,
+`MediaPipeOnDeviceLlmTest`) that runs the *real* ML Kit GenAI / MediaPipe backends against a real
+`Context` on a connected device or emulator — `./gradlew :ai:connectedAndroidDeviceTest` — proving
+they decline honestly (a typed `AiFailure`, never a crash) rather than only compiling.
+
+| Member | Signature | What it does |
+|---|---|---|
+| `FakeOnDeviceLlm` | `class : OnDeviceLlm` | Scriptable test double — `enqueueSuccess`/`enqueueFailure`/`enqueueStreamChunks`; the last queued entry repeats once the queue is drained |
+| `RecordingLlm` | `class(delegate: OnDeviceLlm = FakeOnDeviceLlm()) : OnDeviceLlm` | Wraps a backend and records every `generate`/`generateStream` call (`calls`, `lastPrompt`) for assertions, then forwards to `delegate` |
+
 `StructuredOutput` and `KeywordClassifier` are seam-agnostic — `ask`'s `generate` parameter is a
 plain `suspend (String) -> AiResult<String>`, so it takes `onDeviceLlm::generate` or an `:llm-chat`
 `AiProvider` wrapped the same way, one classifier for both AI seams:
@@ -1623,6 +1647,7 @@ kmp-toolkit/
 ├── settings/                # SecureSettingsFactory (encrypted key/value) — Android · JVM · iOS
 ├── designsystem/            # DesignTokens, ThemeController, MarkdownText — Android · iOS · Wasm
 ├── ai/                      # OnDeviceLlm seam — Android · JVM · iOS
+├── ai-testing/              # FakeOnDeviceLlm/RecordingLlm test doubles — Android · JVM · iOS · Wasm
 ├── llm-chat/                # Cloud-LLM chat client (Gemini/OpenAI/Anthropic) — Android · JVM · iOS · Wasm
 ├── feedback/                # SoundPlayer, HapticManager — Android · JVM · iOS · Wasm
 ├── location/                # KalmanSmoother, PathSimplifier — Android · JVM · iOS · Wasm
