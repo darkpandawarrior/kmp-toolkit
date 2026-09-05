@@ -9,9 +9,9 @@ apps, never designed as a "platform" up front. 37 modules today, from a typed `R
 19-provider payment-gateway abstraction, each targeting exactly the platforms its real consumers need.
 
 **Adoption is uneven, on purpose and by accident both.** Measured across the four consuming apps
-(Mileway, PaymentsLab, HireSignal, Kursi): `common`, `mvi-core` and `network` are used by all four;
+(Doori, PaymentsLab-KMP, Candidai, Gaddi): `common`, `mvi-core` and `network` are used by all four;
 `security` and `ai` by three; `designsystem` by two. The rest have one consumer or none, the 19
-payment-gateway leaves serve PaymentsLab alone by design, while `device-integrity` and `store` are
+payment-gateway leaves serve PaymentsLab-KMP alone by design, while `device-integrity` and `store` are
 extractions still waiting for their first. Treat this as a staging ground where a few modules are
 proven across four apps and others are candidates, rather than a uniformly battle-tested platform.
 
@@ -25,7 +25,7 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 **[Why](#why-kmp-toolkit)** · **[Highlights](#highlights)** · **[Modules](#modules)** · **[Architecture](#family-architecture)** · **[Tech stack](#tech-stack)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)** · **[API reference](https://darkpandawarrior.github.io/kmp-toolkit/)**
 
-**Case study:** [The KMP family](https://cv-siddharth.vercel.app/project/kmp-family) &nbsp;·&nbsp; **Siblings:** [HireSignal](https://github.com/darkpandawarrior/HireSignal) &nbsp;·&nbsp; [PaymentsLab](https://github.com/darkpandawarrior/PaymentsLab) &nbsp;·&nbsp; [Mileway](https://github.com/darkpandawarrior/Mileway) &nbsp;·&nbsp; [Kursi](https://github.com/darkpandawarrior/Kursi) &nbsp;·&nbsp; **Shared build logic:** [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
+**Case study:** [The KMP family](https://cv-siddharth.vercel.app/project/kmp-family) &nbsp;·&nbsp; **Siblings:** [Candidai](https://github.com/darkpandawarrior/Candidai) &nbsp;·&nbsp; [PaymentsLab-KMP](https://github.com/darkpandawarrior/PaymentsLab-KMP) &nbsp;·&nbsp; [Doori](https://github.com/darkpandawarrior/Doori) &nbsp;·&nbsp; [Gaddi](https://github.com/darkpandawarrior/Gaddi) &nbsp;·&nbsp; **Shared build logic:** [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
 
 </div>
 
@@ -76,8 +76,8 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 `kmp-toolkit` started as a monorepo consolidation of eight leaf libraries that had begun life as
 separate repos, each extracted from a production app the moment its logic was needed a second time
-`mvi-core` out of Mileway's `core:ui`, `security` out of PaymentsLab's `core:security`, `network`
-and `designsystem` and `ai` out of HireSignal's `core:*` modules, `feedback` out of Kursi. None of
+`mvi-core` out of Doori's `core:ui`, `security` out of PaymentsLab-KMP's `core:security`, `network`
+and `designsystem` and `ai` out of Candidai's `core:*` modules, `feedback` out of Gaddi. None of
 them were designed up front as a "platform", each is the smallest reusable slice of a real screen,
 published once the second consumer showed up. `location` joined right after the merge, and the
 monorepo has since grown to **39 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
@@ -111,9 +111,9 @@ monorepo.
   wrapper, a documented, deliberate choice (see the module's `build.gradle.kts` comment).
 - 🗄️ **`offline-outbox` is the first Room module in the monorepo**, its own closed `@Database`
   (Room databases can't be spliced into a host app's), targeting `watchosArm64` /
-  `watchosSimulatorArm64` / `watchosDeviceArm64` alongside Android/JVM/iOS because Mileway's
+  `watchosSimulatorArm64` / `watchosDeviceArm64` alongside Android/JVM/iOS because Doori's
   `core:data` needs the outbox on watchOS too.
-- ♟️ **`bots-policy` is a zero-dependency ISMCTS search shell**, extracted from Kursi's ai↔engine
+- ♟️ **`bots-policy` is a zero-dependency ISMCTS search shell**, extracted from Gaddi's ai↔engine
   inversion, the generic search lives here, the game-specific rollout/leaf-eval stays in the app.
 - 🔗 **One deliberate cross-leaf edge, everywhere else standalone.** `security → common` is the only
   `kmp-toolkit`-internal dependency between two original leaves; adopting one module never silently
@@ -127,23 +127,23 @@ monorepo.
 | Module | Coordinate | What it is | Platforms | Consumed by |
 |---|---|---|---|---|
 | [**result**](#result) | `com.siddharth.kmp:result` | `Result<D,E>` + `DataError`, typed, functional error handling | Android · JVM · iOS · Wasm | foundational, no consumers yet, Phase-4 adoption planned across the family |
-| [**common**](#common) | `com.siddharth.kmp:common` | `AppLog` (Napier facade) + `DispatcherProvider` + `UiText` + `Formatters` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab (via `security`) |
-| [**mvi-core**](#mvi-core) | `com.siddharth.kmp:mvi-core` | MVI ViewModel runtime, `BaseViewModel` / `StateViewModel` / `EffectEmitter` | Android · JVM · iOS · Wasm | HireSignal, PaymentsLab, Mileway, Kursi |
-| [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing, client factory, retry, 401 handling, connectivity | Android · JVM · iOS | HireSignal (`core:network`) |
-| [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening, Keystore, VAPT posture, `FLAG_SECURE` | Android only | PaymentsLab |
+| [**common**](#common) | `com.siddharth.kmp:common` | `AppLog` (Napier facade) + `DispatcherProvider` + `UiText` + `Formatters` | Android · JVM · iOS · Wasm | Candidai, PaymentsLab-KMP (via `security`) |
+| [**mvi-core**](#mvi-core) | `com.siddharth.kmp:mvi-core` | MVI ViewModel runtime, `BaseViewModel` / `StateViewModel` / `EffectEmitter` | Android · JVM · iOS · Wasm | Candidai, PaymentsLab-KMP, Doori, Gaddi |
+| [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing, client factory, retry, 401 handling, connectivity | Android · JVM · iOS | Candidai (`core:network`) |
+| [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening, Keystore, VAPT posture, `FLAG_SECURE` | Android only | PaymentsLab-KMP |
 | [**device-integrity**](#device-integrity) | `com.siddharth.kmp:device-integrity` | The KMP sibling of `security`'s root/jailbreak check, `DeviceIntegrity.inspect()` for non-Android-only apps | Android · JVM · iOS · Wasm | new, no dependents yet |
 | [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | new, no dependents yet |
-| [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives, tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | HireSignal (`core:designsystem`) |
-| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | HireSignal (`core:ai`) |
+| [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives, tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | Candidai (`core:designsystem`) |
+| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | Candidai (`core:ai`) |
 | [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client, Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | new (`bb33d0c`), no dependents yet |
-| [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Kursi |
-| [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Mileway (`feature:tracking`) |
+| [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Gaddi |
+| [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Doori (`feature:tracking`) |
 | [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library, location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | new, no dependents yet |
 | [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the 19 `provider:*` leaves |
 | [**provider:\***](#provider--19-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 19 Android-only adapters implementing `payments-api`'s contract per gateway | Android only | reference integrations |
-| [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox, its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Mileway (`core:data`) |
+| [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox, its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Doori (`core:data`) |
 | [**store**](#store) | `com.siddharth.kmp:store` | Clean-room offline-first screen-state pattern, `ScreenState`, `DecisionEngine`, `FetchPolicy`, no HTTP/store dependency | Android · JVM · iOS · Wasm | new, no dependents yet |
-| [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell, `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Kursi (ai engine) |
+| [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell, `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Gaddi (ai engine) |
 | [**secrets**](#secrets) | *(docs only, not a Gradle module)* | SOPS + age encrypted-secrets vault + alias manifest |, | reference pattern, no dependents |
 
 ### Module dependency graph
@@ -242,21 +242,21 @@ graph TD
     PAYMENTSAPI --> PROVIDERS
     COMMON --> PROVIDERS
 
-    COMMON --> HIRESIGNAL["HireSignal"]
+    COMMON --> HIRESIGNAL["Candidai"]
     NETWORK --> HIRESIGNAL
     DESIGNSYSTEM --> HIRESIGNAL
     AI --> HIRESIGNAL
     MVI --> HIRESIGNAL
 
-    COMMON --> PAYMENTSLAB["PaymentsLab"]
+    COMMON --> PAYMENTSLAB["PaymentsLab-KMP"]
     SECURITY --> PAYMENTSLAB
     MVI --> PAYMENTSLAB
     PROVIDERS --> PAYMENTSLAB
 
-    LOCATION --> MILEWAY["Mileway"]
+    LOCATION --> MILEWAY["Doori"]
     OUTBOX --> MILEWAY
 
-    MVI --> KURSI["Kursi"]
+    MVI --> KURSI["Gaddi"]
     FEEDBACK --> KURSI
     BOTS --> KURSI
 
@@ -471,7 +471,7 @@ can bind a real `Dispatchers.IO`-backed `DispatcherProvider` for blocking IO if 
 `StandardDispatchers` stays the multiplatform-safe default.
 
 `common` has no dependency on any other `kmp-toolkit` module, it only pulls in Napier and
-kotlinx-coroutines. `security` consumes it transitively for `AppLog`; HireSignal uses it app-wide.
+kotlinx-coroutines. `security` consumes it transitively for `AppLog`; Candidai uses it app-wide.
 `commonMain`-only implementation across Android (`minSdk 24` / `compileSdk 37`), JVM, iOS, and
 `wasmJs`, only Napier's own platform backends differ underneath.
 
@@ -479,9 +479,9 @@ kotlinx-coroutines. `security` consumes it transitively for `AppLog`; HireSignal
 
 ![mvi-core](docs/assets/mvi-core-banner.svg)
 
-Three small presentation-layer primitives kept getting re-copied between KMP projects (Mileway,
-PaymentsLab, Kursi) every time a new screen needed unidirectional state. `mvi-core` pulls them out
-once, extracted from Mileway's `core:ui` MVI base.
+Three small presentation-layer primitives kept getting re-copied between KMP projects (Doori,
+PaymentsLab-KMP, Gaddi) every time a new screen needed unidirectional state. `mvi-core` pulls them out
+once, extracted from Doori's `core:ui` MVI base.
 
 | Class | Use when | Depends on |
 |---|---|---|
@@ -523,8 +523,8 @@ dependencies {
 }
 ```
 
-Targets: `androidTarget`, `jvm`, `iosArm64`, `iosSimulatorArm64`, `wasmJs`, the union PaymentsLab
-and Kursi need. All three classes live in `commonMain`; `androidx.lifecycle:lifecycle-viewmodel`
+Targets: `androidTarget`, `jvm`, `iosArm64`, `iosSimulatorArm64`, `wasmJs`, the union PaymentsLab-KMP
+and Gaddi need. All three classes live in `commonMain`; `androidx.lifecycle:lifecycle-viewmodel`
 publishes for every target in that union (including `wasmJs`), so no intermediate source set split
 was needed.
 
@@ -611,7 +611,7 @@ Platform HTTP engines are wired transparently via `internal expect fun httpClien
 on Android, Darwin on iOS, CIO on JVM, `createHttpClient()`'s default argument picks the right one.
 
 `network` is standalone, no dependency on any other `kmp-toolkit` module, only Ktor and
-kotlinx-serialization. HireSignal's `core:network` module builds on it; the app layers its own typed
+kotlinx-serialization. Candidai's `core:network` module builds on it; the app layers its own typed
 API + DTOs on top. Planned: mapping `HttpRequestRetry`/`ResponseException` failures onto `result`'s
 `DataError.Network` arms, so a consumer's repository layer gets a typed `Result<D, DataError>`
 straight out of the client instead of catching `ResponseException` itself.
@@ -722,7 +722,7 @@ val saved = secureStore.getString("kmp_secure_store")
 | `securityModule(config)` | Koin module wiring the whole graph |
 
 `security` depends on `common` for `AppLog`, its only cross-family dependency, and is consumed
-today by PaymentsLab, which extracted it from its own former `core:security` module. Android only
+today by PaymentsLab-KMP, which extracted it from its own former `core:security` module. Android only
 `compileSdk 37`, `minSdk 24`; deliberate, since every defense wraps a concrete `android.*` API with
 no cross-platform equivalent.
 
@@ -953,7 +953,7 @@ wiring a screen from scratch.
 
 | Use case | Combination |
 |---|---|
-| **OTP / payment verification** (PaymentsLab) | `AdaptiveTheme` → `OtpField(isError = state.rejected)` → `ErrorState(onRetry)` on failure, `LoadingState` while verifying. Cell size and type scale follow the surface with no extra code, so the same screen is correct on a phone and a tablet. |
+| **OTP / payment verification** (PaymentsLab-KMP) | `AdaptiveTheme` → `OtpField(isError = state.rejected)` → `ErrorState(onRetry)` on failure, `LoadingState` while verifying. Cell size and type scale follow the surface with no extra code, so the same screen is correct on a phone and a tablet. |
 | **Leanback / TV carousel** | `AdaptiveTheme` auto-resolves `Tv` from `uiMode` → cards wear `Modifier.focusScale().focusable()` for the D-pad affordance → `PageIndicator` under the hero. Inset full-bleed art by `overscanPadding`; inset ordinary content by `screenPadding` (already overscan-safe). |
 | **Responsive dashboard / grid** | `AdaptiveTheme` → `LazyVerticalGrid(GridCells.Fixed(tokens.gridColumns))` → the `LoadingState` / `ErrorState` / `EmptyState` triad for the three outcomes. One screen covers phone through desktop and web. |
 | **Wear OS** | `AdaptiveTheme` auto-resolves `Watch` → `gridColumns` collapses to 1, `OtpFieldDefaults.style(cellShape = OtpCellShape.Circle)` fits a code on a wrist. |
@@ -978,7 +978,7 @@ that Robolectric and Roborazzi cannot reach, which is the point.
 
 `designsystem` depends only on Compose Multiplatform + coroutines, no other `kmp-toolkit` module.
 An app layers its own brand (palette, logo, typography) and its app-coupled components on top; those
-stay in the app, same reason `network` keeps your API and DTOs in the app. HireSignal's
+stay in the app, same reason `network` keeps your API and DTOs in the app. Candidai's
 `core:designsystem` adds `HireSignalPalette` / `HireSignalTheme` / status-colored components on top,
 brand staying in-app.
 
@@ -1035,7 +1035,7 @@ Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
 `ai` is standalone, depends only on coroutines + Koin (and, on Android, the ML Kit GenAI +
 MediaPipe SDKs). Your domain "intelligence" layer (prompt templates, output parsing, heuristics)
-stays in your app and consumes this seam. HireSignal's `core:ai` builds `JobIntelligence` on top.
+stays in your app and consumes this seam. Candidai's `core:ai` builds `JobIntelligence` on top.
 
 | Target | Backend |
 |---|---|
@@ -1168,7 +1168,7 @@ Every target genuinely produces sound or haptics, nothing is a silent stub by de
 | **wasmJs** (web) | Web Audio oscillator beep via a `@JsFun` bridge, degrades silently pre-user-gesture or without `AudioContext` | `navigator.vibrate` where supported; silent no-op on desktop browsers |
 
 `feedback` has no dependency on another `kmp-toolkit` module, `commonMain` only reaches for
-`kotlinx-coroutines-core`. It's consumed by Kursi, the family's KMP card game.
+`kotlinx-coroutines-core`. It's consumed by Gaddi, the family's KMP card game.
 
 ## location
 
@@ -1206,7 +1206,7 @@ locationUpdates.collect { fix ->
 | `DynamicIntervalCalculator` | `object` | Battery-vs-density GPS polling interval from `IntervalInputs` |
 | `TrackingQualityScorer` | `object` | Live fix-quality score from `QualityInputs` |
 
-`location` depends on no other `kmp-toolkit` module and no third-party library. Consumed by Mileway's
+`location` depends on no other `kmp-toolkit` module and no third-party library. Consumed by Doori's
 `feature:tracking`.
 
 ## app-shell
@@ -1215,7 +1215,7 @@ A handful of device capabilities have no single go-to KMP library, location trac
 geocoding, document scanning, local notifications, runtime permissions, in-app update/review, push
 tokens, analytics, so every app either forks its own `expect`/`actual` seam per capability or pulls
 in a different third-party library for each one. `app-shell` is that seam, extracted from the same
-lineage as Mileway's `core:platform` (the `AndroidLocationTracker` implementation is the same fused-
+lineage as Doori's `core:platform` (the `AndroidLocationTracker` implementation is the same fused-
 location + `Task.await()` code that module carried unconditionally on both its build flavors,
 relocated here as-is).
 
@@ -1333,10 +1333,10 @@ room { schemaDirectory("$projectDir/schemas") }
 ```
 
 Targets: Android, JVM, iOS, **and watchOS** (`watchosArm64`, `watchosSimulatorArm64`,
-`watchosDeviceArm64`), Mileway's `core:data` re-exports the outbox through `commonMain` and targets
+`watchosDeviceArm64`), Doori's `core:data` re-exports the outbox through `commonMain` and targets
 watchOS too, so this module has to match that target set, sharing `appleMain` actuals between iOS and
 watchOS. Depends on Room `2.8.4` + `sqlite-bundled` (Android) and kotlinx-serialization; no other
-`kmp-toolkit` module. Consumed by Mileway (`core:data`).
+`kmp-toolkit` module. Consumed by Doori (`core:data`).
 
 ## store
 
@@ -1380,7 +1380,7 @@ dependents yet.
 ## bots-policy
 
 A zero-dependency ISMCTS (Information Set Monte Carlo Tree Search) search shell, extracted from
-Kursi's ai↔engine inversion: the generic search primitives (`Policy`, `GameRules`, `Ismcts`,
+Gaddi's ai↔engine inversion: the generic search primitives (`Policy`, `GameRules`, `Ismcts`,
 `SearchBudget`) live here, and the game-specific rollout policy / leaf evaluation / determinization
 stays in the consuming app, this module never sees a card, a coin, or a Coup-specific rule.
 
@@ -1400,7 +1400,7 @@ plugins {
 | `SearchBudget` | data | Iteration/time budget controlling how long a search runs |
 
 `bots-policy` has zero third-party or cross-module dependencies, genuinely `commonMain`-only Kotlin,
-no coroutine or platform surface. Targets: Android, JVM, iOS, `wasmJs`. Consumed by Kursi's AI
+no coroutine or platform surface. Targets: Android, JVM, iOS, `wasmJs`. Consumed by Gaddi's AI
 engine.
 
 ## secrets
@@ -1498,12 +1498,12 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 ## Roadmap
 
 **Shipped**
-- [x] 9 original leaves extracted from HireSignal / PaymentsLab / Mileway / Kursi (`result`,
+- [x] 9 original leaves extracted from Candidai / PaymentsLab-KMP / Doori / Gaddi (`result`,
       `common`, `mvi-core`, `network`, `security`, `designsystem`, `ai`, `feedback`, `location`)
 - [x] `llm-chat`, cloud LLM chat client (Gemini / OpenAI / Anthropic) (`bb33d0c`)
 - [x] `payments-api` + 19 `provider:*` gateway leaves, one contract, sandbox-honest `GatewayStatus`
 - [x] `offline-outbox`, first Room module in the monorepo, targeting watchOS alongside Android/JVM/iOS
-- [x] `bots-policy`, zero-dependency ISMCTS search shell extracted from Kursi
+- [x] `bots-policy`, zero-dependency ISMCTS search shell extracted from Gaddi
 - [x] Four more standalone platform-service leaves, `device-integrity` (KMP root/jailbreak check),
       `settings` (encrypted key/value store), `app-shell` (location/geocoding/scanner/notifications/
       permissions/update/review/push/analytics seams), `store` (offline-first `ScreenState` +
@@ -1518,7 +1518,7 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 - [ ] `llm-chat` wired into `ai`'s `CompositeOnDeviceLlm` fallback chain as a cloud tier
 - [ ] Move some `provider:*` leaves off `SANDBOX_READY`/`MOCK_MODE` as partner KYC access opens up
 - [ ] First real consumer for `device-integrity`, `settings`, `app-shell` and `store`, each is
-      shipped and unit-tested, but none has been wired into HireSignal/PaymentsLab/Mileway/Kursi yet
+      shipped and unit-tested, but none has been wired into Candidai/PaymentsLab-KMP/Doori/Gaddi yet
 
 ## License
 
@@ -1531,10 +1531,10 @@ convention plugins in [kmp-build-logic](https://github.com/darkpandawarrior/kmp-
 <div align="center">
 
 [**Portfolio**](https://cv-siddharth.vercel.app/) ·
-[HireSignal](https://github.com/darkpandawarrior/HireSignal) ·
-[PaymentsLab](https://github.com/darkpandawarrior/PaymentsLab) ·
-[Mileway](https://github.com/darkpandawarrior/Mileway) ·
-[Kursi](https://github.com/darkpandawarrior/Kursi) ·
+[Candidai](https://github.com/darkpandawarrior/Candidai) ·
+[PaymentsLab-KMP](https://github.com/darkpandawarrior/PaymentsLab-KMP) ·
+[Doori](https://github.com/darkpandawarrior/Doori) ·
+[Gaddi](https://github.com/darkpandawarrior/Gaddi) ·
 [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
 
 </div>
