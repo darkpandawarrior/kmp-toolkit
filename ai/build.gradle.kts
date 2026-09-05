@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.kotlinSerialization)
     `maven-publish`
 }
 
@@ -24,6 +25,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
+            // StructuredOutput<T>'s tolerant JSON parse of a model reply — same dependency
+            // :llm-chat already carries for its own response parsing, wired here for :ai's use.
+            implementation(libs.kotlinx.serialization.json)
             // aiModule wiring: the on-device LLM tier is bound per platform via onDeviceLlmModule().
             implementation(libs.koin.core)
             // AiResult<T>/AiFailure — shared with :llm-chat so both AI seams report failures the
