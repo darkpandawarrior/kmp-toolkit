@@ -113,8 +113,9 @@ monorepo.
   (Room databases can't be spliced into a host app's), targeting `watchosArm64` /
   `watchosSimulatorArm64` / `watchosDeviceArm64` alongside Android/JVM/iOS because Mileway's
   `core:data` needs the outbox on watchOS too.
-- ♟️ **`bots-policy` is a zero-dependency ISMCTS search shell**, extracted from Kursi's ai↔engine
-  inversion, the generic search lives here, the game-specific rollout/leaf-eval stays in the app.
+- ♟️ **`bots-policy` is an ISMCTS search shell**, extracted from Kursi's ai↔engine inversion, the
+  generic search lives here, the game-specific rollout/leaf-eval stays in the app; `search()` is a
+  cancellable `suspend fun` (kotlinx-coroutines-core is its one dependency).
 - 🔗 **One deliberate cross-leaf edge, everywhere else standalone.** `security → common` is the only
   `kmp-toolkit`-internal dependency between two original leaves; adopting one module never silently
   drags in a sibling. `device-integrity`, `settings`, `app-shell` and `store` are the same story
@@ -143,7 +144,7 @@ monorepo.
 | [**provider:\***](#provider--19-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 19 Android-only adapters implementing `payments-api`'s contract per gateway | Android only | reference integrations |
 | [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox, its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Mileway (`core:data`) |
 | [**store**](#store) | `com.siddharth.kmp:store` | Clean-room offline-first screen-state pattern, `ScreenState`, `DecisionEngine`, `FetchPolicy`, no HTTP/store dependency | Android · JVM · iOS · Wasm | new, no dependents yet |
-| [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell, `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Kursi (ai engine) |
+| [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell, `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, cancellable `search()` | Android · JVM · iOS · Wasm | Kursi (ai engine) |
 | [**secrets**](#secrets) | *(docs only, not a Gradle module)* | SOPS + age encrypted-secrets vault + alias manifest |, | reference pattern, no dependents |
 
 ### Module dependency graph
@@ -1444,13 +1445,14 @@ dependents yet.
 
 ## bots-policy
 
-A zero-dependency ISMCTS (Information Set Monte Carlo Tree Search) search shell, extracted from
-Kursi's ai↔engine inversion: the generic search primitives (`Policy`, `GameRules`, `Ismcts`,
-`SearchBudget`) live here, and the game-specific rollout policy / leaf evaluation / determinization
-stays in the consuming app, this module never sees a card, a coin, or a Coup-specific rule.
+An ISMCTS (Information Set Monte Carlo Tree Search) search shell, extracted from Kursi's ai↔engine
+inversion: the generic search primitives (`Policy`, `GameRules`, `Ismcts`, `SearchBudget`) live
+here, and the game-specific rollout policy / leaf evaluation / determinization stays in the
+consuming app, this module never sees a card, a coin, or a Coup-specific rule.
 
 ```kotlin
-// module build.gradle.kts — no dependencies beyond kotlin("test") in commonTest
+// module build.gradle.kts — kotlinx-coroutines-core in commonMain (search() is a cancellable
+// suspend fun), plus kotlin("test") in commonTest
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
@@ -1464,9 +1466,13 @@ plugins {
 | `Ismcts` | `class` | The information-set MCTS search loop itself |
 | `SearchBudget` | data | Iteration/time budget controlling how long a search runs |
 
-`bots-policy` has zero third-party or cross-module dependencies, genuinely `commonMain`-only Kotlin,
-no coroutine or platform surface. Targets: Android, JVM, iOS, `wasmJs`. Consumed by Kursi's AI
-engine.
+`Ismcts.search()` is a `suspend fun`: it calls `ensureActive()` once per iteration, so cancelling
+the calling coroutine (a player moves on, a screen leaves composition) stops the search at the next
+iteration boundary instead of burning the full budget. An `onSearchError: (Throwable) -> Unit`
+callback (default no-op) receives every non-cancellation determinization/iteration failure, so a
+rules bug that always throws is visible instead of silently producing a near-empty root.
+`bots-policy` has one dependency, kotlinx-coroutines-core, no other third-party or cross-module
+surface. Targets: Android, JVM, iOS, `wasmJs`. Consumed by Kursi's AI engine.
 
 ## secrets
 
