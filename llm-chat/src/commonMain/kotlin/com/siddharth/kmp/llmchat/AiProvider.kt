@@ -1,5 +1,6 @@
 package com.siddharth.kmp.llmchat
 
+import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
@@ -46,7 +47,36 @@ interface AiProvider {
         }
 
     suspend fun isAvailable(): Boolean
+
+    /**
+     * Honest self-report for a capability-aware caller: whether this backend genuinely streams
+     * tokens and accepts images, which [AiConfig] fields it actually reads, and — when it can't run
+     * — the real [AiFailure] reason instead of a bare `false`. Default answer is conservative (no
+     * streaming, no honored config) and blames a missing key, matching every real provider's own
+     * [isAvailable] gate; a provider whose unavailability means something else overrides this.
+     */
+    suspend fun capabilities(): AiCapabilities =
+        AiCapabilities(
+            streaming = false,
+            multimodal = false,
+            honoredConfigFields = emptySet(),
+            unavailableReason = if (isAvailable()) null else AiFailure.NoKey,
+        )
 }
+
+/**
+ * Shared descriptor for the three real HTTP cloud providers — all three stream for real via
+ * `completeStream` and honor the same [AiConfig] fields identically ([AiConfig.timeoutMs] only
+ * bounds [AiProvider.complete], not `completeStream` — see that override's own comment). One
+ * function instead of three copies of the same literal.
+ */
+internal suspend fun AiProvider.httpCloudCapabilities(): AiCapabilities =
+    AiCapabilities(
+        streaming = true,
+        multimodal = false,
+        honoredConfigFields = setOf("maxTokens", "temperature", "timeoutMs"),
+        unavailableReason = if (isAvailable()) null else AiFailure.NoKey,
+    )
 
 /** One increment of a [AiProvider.completeStream] reply. */
 sealed interface AiChunk {

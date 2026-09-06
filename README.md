@@ -1041,18 +1041,20 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myR
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
 | `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo> }` | On-demand model download/residency status |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
+| `capabilities()` | `suspend fun OnDeviceLlm.(): AiCapabilities` | Honest machine-readable descriptor: real streaming/multimodal support, which `GenerationConfig` fields this backend actually reads, and — when unavailable — the real `AiFailure` reason instead of a bare `false` |
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
-`ai` is standalone, depends only on coroutines + Koin + `:result` (for `AiResult`/`AiFailure` — a
-zero-dependency module, so this pulls in nothing else) and, on Android, the ML Kit GenAI +
-MediaPipe SDKs. Your domain "intelligence" layer (prompt templates, output parsing, heuristics)
-stays in your app and consumes this seam. HireSignal's `core:ai` builds `JobIntelligence` on top.
+`ai` is standalone, depends only on coroutines + Koin + `:result` (for `AiResult`/`AiFailure`/
+`AiCapabilities`) + `:common` (for its `AppLog` facade, used only by the iOS stubs' one-time
+warning) and, on Android, the ML Kit GenAI + MediaPipe SDKs. Your domain "intelligence" layer
+(prompt templates, output parsing, heuristics) stays in your app and consumes this seam.
+HireSignal's `core:ai` builds `JobIntelligence` on top.
 
 | Target | Backend |
 |---|---|
-| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback |
-| iOS | Foundation Models seam (`iosArm64`, `iosSimulatorArm64`) |
+| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback. `isAvailable()` is a cheap API-level floor; `capabilities()` runs the real AICore `FeatureStatus`/model-residency check and reports why when it's off |
+| iOS (`iosArm64`, `iosSimulatorArm64`) | **Unimplemented today.** Both `FoundationModelsOnDeviceLlm` and `MediaPipeOnDeviceLlm` compile and satisfy the seam but are unconditional stubs (`@Unimplemented`, logged once) — no Swift bridge exists in this repo yet, so both always report unavailable and the heuristic tier upstream answers instead |
 | JVM / Desktop | `UnavailableOnDeviceLlm`, the heuristic tier upstream always answers |
 
 ## llm-chat
@@ -1105,7 +1107,8 @@ job.cancel()
 
 | Member | Signature | What it does |
 |---|---|---|
-| `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean }` | The single seam every backend implements |
+| `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean; capabilities(): AiCapabilities }` | The single seam every backend implements |
+| `capabilities()` | `suspend fun AiProvider.(): AiCapabilities` | Which `AiConfig` fields this provider actually honors, whether it streams/accepts images, and the real reason it's unavailable — no need to read provider source to learn a field silently no-ops |
 | `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure) }` | One increment of a `completeStream` reply |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
@@ -1116,6 +1119,10 @@ job.cancel()
 `complete()`. `completeStream()` deliberately has no such ceiling — a legitimately long reply keeps
 producing tokens well past any single-call deadline; cancelling the collecting coroutine is what
 ends a stream (and the provider's billing for it) early, not a timer.
+
+All three providers honor `maxTokens`/`temperature`/`timeoutMs` identically — `capabilities()`
+reports `honoredConfigFields = {"maxTokens", "temperature", "timeoutMs"}` for each, so a caller
+never has to open `AnthropicProvider`/`OpenAiProvider`/`GeminiProvider` source to check.
 
 All three providers' streaming endpoints frame their reply the same way — SSE `data:` lines, a
 blank line between events, OpenAI closing with `data: [DONE]` — behind one shared `parseSseFrames`

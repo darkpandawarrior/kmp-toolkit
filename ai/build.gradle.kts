@@ -25,6 +25,9 @@ kotlin {
             // AiResult<T>/AiFailure — shared with :llm-chat so both AI seams report failures the
             // same way; :result is otherwise dependency-free, so this pulls in nothing else.
             implementation(project(":result"))
+            // AppLog: the one-time "unimplemented backend" warning on the iOS stubs reuses the
+            // existing Napier facade rather than this module inventing its own logging shim.
+            implementation(project(":common"))
         }
         androidMain.dependencies {
             implementation(libs.koin.android)

@@ -1,5 +1,6 @@
 package com.siddharth.kmp.ai
 
+import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
@@ -26,6 +27,22 @@ interface OnDeviceLlm {
 
     /** True when this backend accepts an [LlmPart.Image] in [generate]. False = text-only. */
     val supportsImage: Boolean get() = false
+
+    /**
+     * Honest self-report for a capability-aware caller: whether this backend genuinely streams
+     * tokens and accepts images, which [GenerationConfig] fields it reads, and — when it can't run
+     * — the real [AiFailure] reason instead of a bare `false`. Default answer is conservative
+     * (no streaming, no honored config) and derives [AiCapabilities.unavailableReason] from
+     * [isAvailable] alone; a backend with a more specific gate (model residency, OS feature status)
+     * overrides this to report why.
+     */
+    suspend fun capabilities(): AiCapabilities =
+        AiCapabilities(
+            streaming = false,
+            multimodal = supportsImage,
+            honoredConfigFields = emptySet(),
+            unavailableReason = if (isAvailable()) null else AiFailure.NotSupportedOnPlatform,
+        )
 
     /** Runs [prompt] on-device. Success carries the model's text; failure names why via [AiFailure]. */
     suspend fun generate(prompt: String): AiResult<String>
