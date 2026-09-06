@@ -1,98 +1,122 @@
 package com.siddharth.kmp.ai
 
+import com.siddharth.kmp.result.AiFailure
+import com.siddharth.kmp.result.AiResult
+import com.siddharth.kmp.result.Result
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Detection-ordered on-device fallback (ai-engineering.md §7): ML Kit Gemini Nano → MediaPipe Gemma
- * → (null → the heuristic tier answers upstream). The composite must skip unavailable backends, use
- * the first one that actually produces output, and return null when every backend declines.
+ * Detection-ordered on-device fallback: ML Kit Gemini Nano → MediaPipe Gemma → (the caller's
+ * heuristic tier). The composite must skip unavailable backends, use the first one that actually
+ * produces output, and surface the LAST backend's failure reason when every backend declines.
  */
 class CompositeOnDeviceLlmTest {
     private class FakeBackend(
         val name: String,
         private val available: Boolean,
-        private val output: String?,
+        private val result: AiResult<String>,
     ) : OnDeviceLlm {
         var calls = 0
 
         override fun isAvailable() = available
 
-        override suspend fun generate(prompt: String): String? {
+        override suspend fun generate(prompt: String): AiResult<String> {
             calls++
-            return output
+            return result
         }
     }
 
     @Test
     fun skips_unavailable_and_uses_first_available_producing_output() =
         runTest {
-            val mlkit = FakeBackend("mlkit", available = false, output = "nano")
-            val mediapipe = FakeBackend("mediapipe", available = true, output = "gemma")
+            val mlkit = FakeBackend("mlkit", available = false, result = Result.Success("nano"))
+            val mediapipe = FakeBackend("mediapipe", available = true, result = Result.Success("gemma"))
             val composite = CompositeOnDeviceLlm(listOf(mlkit, mediapipe))
 
             assertTrue(composite.isAvailable())
-            assertEquals("gemma", composite.generate("prompt"))
+            assertEquals(Result.Success("gemma"), composite.generate("prompt"))
             assertEquals(0, mlkit.calls, "unavailable backend must not be invoked")
             assertEquals(1, mediapipe.calls)
         }
 
     @Test
-    fun falls_through_when_an_available_backend_yields_null() =
+    fun falls_through_when_an_available_backend_fails() =
         runTest {
-            val first = FakeBackend("mlkit", available = true, output = null)
-            val second = FakeBackend("mediapipe", available = true, output = "gemma")
+            val first = FakeBackend("mlkit", available = true, result = Result.Failure(AiFailure.ModelNotResident))
+            val second = FakeBackend("mediapipe", available = true, result = Result.Success("gemma"))
             val composite = CompositeOnDeviceLlm(listOf(first, second))
 
-            assertEquals("gemma", composite.generate("prompt"))
+            assertEquals(Result.Success("gemma"), composite.generate("prompt"))
             assertEquals(1, first.calls)
             assertEquals(1, second.calls)
         }
 
     @Test
-    fun returns_null_when_no_backend_is_available() =
+    fun surfaces_last_backends_failure_reason_when_every_backend_fails() =
         runTest {
             val composite =
                 CompositeOnDeviceLlm(
                     listOf(
-                        FakeBackend("mlkit", available = false, output = "x"),
-                        FakeBackend("mediapipe", available = false, output = "y"),
+                        FakeBackend("mlkit", available = true, result = Result.Failure(AiFailure.ModelNotResident)),
+                        FakeBackend("mediapipe", available = true, result = Result.Failure(AiFailure.EmptyReply)),
+                    ),
+                )
+            assertEquals(Result.Failure(AiFailure.EmptyReply), composite.generate("prompt"))
+        }
+
+    @Test
+    fun returns_notSupportedOnPlatform_when_no_backend_is_available() =
+        runTest {
+            val composite =
+                CompositeOnDeviceLlm(
+                    listOf(
+                        FakeBackend("mlkit", available = false, result = Result.Success("x")),
+                        FakeBackend("mediapipe", available = false, result = Result.Success("y")),
                     ),
                 )
             assertFalse(composite.isAvailable())
-            assertNull(composite.generate("prompt"))
+            assertEquals(Result.Failure(AiFailure.NotSupportedOnPlatform), composite.generate("prompt"))
+        }
+
+    @Test
+    fun returns_notSupportedOnPlatform_for_an_empty_backend_list() =
+        runTest {
+            val composite = CompositeOnDeviceLlm(emptyList())
+            assertEquals(Result.Failure(AiFailure.NotSupportedOnPlatform), composite.generate("prompt"))
         }
 
     private class FakeMultimodalBackend(
         private val available: Boolean,
         override val supportsImage: Boolean,
-        private val output: String?,
+        private val result: AiResult<String>,
     ) : OnDeviceLlm {
         var calls = 0
 
+        override suspend fun generate(prompt: String): AiResult<String> = generate(listOf(LlmPart.Text(prompt)))
+
         override fun isAvailable() = available
 
-        override suspend fun generate(prompt: String): String? = generate(listOf(LlmPart.Text(prompt)))
-
-        override suspend fun generate(parts: List<LlmPart>): String? {
+        override suspend fun generate(parts: List<LlmPart>): AiResult<String> {
             calls++
-            return output
+            return result
         }
     }
 
     @Test
     fun skips_text_only_backends_when_an_image_part_is_present() =
         runTest {
-            val textOnly = FakeMultimodalBackend(available = true, supportsImage = false, output = "should-not-win")
-            val multimodal = FakeMultimodalBackend(available = true, supportsImage = true, output = "image-ok")
+            val textOnly =
+                FakeMultimodalBackend(available = true, supportsImage = false, result = Result.Success("should-not-win"))
+            val multimodal =
+                FakeMultimodalBackend(available = true, supportsImage = true, result = Result.Success("image-ok"))
             val composite = CompositeOnDeviceLlm(listOf(textOnly, multimodal))
 
             val parts = listOf(LlmPart.Image(byteArrayOf(1)), LlmPart.Text("describe"))
-            assertEquals("image-ok", composite.generate(parts))
+            assertEquals(Result.Success("image-ok"), composite.generate(parts))
             assertEquals(0, textOnly.calls, "text-only backend must be skipped when an image part is present")
             assertEquals(1, multimodal.calls)
         }

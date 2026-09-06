@@ -36,6 +36,9 @@ kotlin {
             // per-platform ktor engine deps of its own — :network already declares OkHttp/Darwin/
             // CIO/Js on its own source sets and they ride the runtime classpath transitively.
             implementation(project(":network"))
+            // AiResult<T>/AiFailure — the typed outcome AiProvider.complete() returns, shared with
+            // :ai's OnDeviceLlm seam so both AI failure paths carry one vocabulary.
+            implementation(project(":result"))
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

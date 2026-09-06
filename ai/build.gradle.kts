@@ -22,6 +22,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             // aiModule wiring: the on-device LLM tier is bound per platform via onDeviceLlmModule().
             implementation(libs.koin.core)
+            // AiResult<T>/AiFailure — shared with :llm-chat so both AI seams report failures the
+            // same way; :result is otherwise dependency-free, so this pulls in nothing else.
+            implementation(project(":result"))
         }
         androidMain.dependencies {
             implementation(libs.koin.android)
