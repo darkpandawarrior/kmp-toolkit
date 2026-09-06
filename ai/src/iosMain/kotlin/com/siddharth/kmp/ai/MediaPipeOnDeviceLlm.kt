@@ -1,7 +1,11 @@
 package com.siddharth.kmp.ai
 
-// ponytail: EXPERIMENTAL stub — the SECOND iOS on-device backend behind the OnDeviceLlm seam
-// (ai-engineering.md §7): Apple Foundation Models → **MediaPipe Gemma** → heuristic. MediaPipe LLM
+import com.siddharth.kmp.result.AiFailure
+import com.siddharth.kmp.result.AiResult
+import com.siddharth.kmp.result.Result
+
+// ponytail: EXPERIMENTAL stub — the SECOND iOS on-device backend behind the OnDeviceLlm seam:
+// Apple Foundation Models → **MediaPipe Gemma** → the caller's heuristic tier. MediaPipe LLM
 // Inference ships as an iOS CocoaPod (MediaPipeTasksGenAI, Swift/ObjC) with no C surface Kotlin/Native
 // can import, so the real availability check + inference must be bridged from the iosApp Swift layer
 // and injected through Koin — exactly like FoundationModelsOnDeviceLlm. Until that bridge exists this
@@ -18,5 +22,5 @@ package com.siddharth.kmp.ai
 class MediaPipeOnDeviceLlm : OnDeviceLlm {
     override fun isAvailable(): Boolean = false
 
-    override suspend fun generate(prompt: String): String? = null
+    override suspend fun generate(prompt: String): AiResult<String> = Result.Failure(AiFailure.NotSupportedOnPlatform)
 }

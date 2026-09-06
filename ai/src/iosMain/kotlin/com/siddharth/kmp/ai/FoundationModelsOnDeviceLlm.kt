@@ -1,5 +1,9 @@
 package com.siddharth.kmp.ai
 
+import com.siddharth.kmp.result.AiFailure
+import com.siddharth.kmp.result.AiResult
+import com.siddharth.kmp.result.Result
+
 // ponytail: EXPERIMENTAL stub — Apple's Foundation Models API (LanguageModelSession + @Generable) is
 // Swift-only (the FoundationModels framework exposes no C/ObjC surface Kotlin/Native can import), so
 // the real availability check + inference must be bridged from the Swift side in iosApp and injected
@@ -13,5 +17,5 @@ package com.siddharth.kmp.ai
 class FoundationModelsOnDeviceLlm : OnDeviceLlm {
     override fun isAvailable(): Boolean = false
 
-    override suspend fun generate(prompt: String): String? = null
+    override suspend fun generate(prompt: String): AiResult<String> = Result.Failure(AiFailure.NotSupportedOnPlatform)
 }
