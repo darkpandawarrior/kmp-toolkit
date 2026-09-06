@@ -9,10 +9,13 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -45,16 +48,10 @@ class AnthropicProvider(
     ): AiResult<String> {
         if (apiKey.isBlank()) return Result.Failure(AiFailure.NoKey)
 
-        val system = messages.firstOrNull { it.role == AiMessage.Role.SYSTEM }?.content ?: ""
-        val userMessages =
-            messages
-                .filter { it.role != AiMessage.Role.SYSTEM }
-                .map { AnthropicMessage(role = it.role.toAnthropicRole(), content = it.content) }
+        val (system, userMessages) = buildAnthropicPayload(messages)
 
         return try {
-            // ponytail: fixed 5s ceiling, not derived from AiConfig — add a per-call timeout there
-            // if a real completion legitimately needs longer.
-            withTimeout(5_000) {
+            withTimeout(config.timeoutMs) {
                 val response =
                     client.post(BASE_URL) {
                         header("x-api-key", apiKey)
@@ -64,7 +61,7 @@ class AnthropicProvider(
                             AnthropicRequest(
                                 model = MODEL,
                                 maxTokens = config.maxTokens,
-                                system = system.ifBlank { null },
+                                system = system,
                                 messages = userMessages,
                                 temperature = config.temperature.toDouble(),
                             ),
@@ -83,6 +80,78 @@ class AnthropicProvider(
         }
     }
 
+    override fun completeStream(
+        messages: List<AiMessage>,
+        config: AiConfig,
+    ): Flow<AiChunk> =
+        // channelFlow, not flow: client.preparePost(...).execute { } runs its block on the HTTP
+        // engine's own dispatcher, a different coroutine context than the one collecting this flow.
+        // A plain `flow { }` builder enforces same-context emission and throws
+        // ("Flow invariant is violated") the moment that context differs — channelFlow's `send` is
+        // built for exactly this cross-context-emission shape.
+        channelFlow {
+            if (apiKey.isBlank()) {
+                send(AiChunk.Failed(AiFailure.NoKey))
+                return@channelFlow
+            }
+            val (system, userMessages) = buildAnthropicPayload(messages)
+
+            // ponytail: no withTimeout wrapping the whole stream — a legitimately long reply keeps
+            // producing tokens well past a single-call deadline. Stop cancelling the collecting
+            // coroutine is what ends the request (and the provider's billing for it) early; add a
+            // stall-timeout on individual reads if a hung-but-still-open connection needs detecting.
+            try {
+                client
+                    .preparePost(BASE_URL) {
+                        header("x-api-key", apiKey)
+                        header("anthropic-version", ANTHROPIC_VERSION)
+                        contentType(ContentType.Application.Json)
+                        setBody(
+                            AnthropicRequest(
+                                model = MODEL,
+                                maxTokens = config.maxTokens,
+                                system = system,
+                                messages = userMessages,
+                                temperature = config.temperature.toDouble(),
+                                stream = true,
+                            ),
+                        )
+                    }.execute { response ->
+                        response.status.toAiFailureOrNull()?.let {
+                            send(AiChunk.Failed(it))
+                            return@execute
+                        }
+                        var emittedAny = false
+                        parseSseFrames(response.bodyAsChannel().asLineFlow()).collect { payload ->
+                            val text =
+                                runCatching { sseJson.decodeFromString<AnthropicStreamEvent>(payload) }
+                                    .getOrNull()
+                                    ?.takeIf { it.type == "content_block_delta" }
+                                    ?.delta
+                                    ?.text
+                            if (!text.isNullOrEmpty()) {
+                                emittedAny = true
+                                send(AiChunk.Token(text))
+                            }
+                        }
+                        if (!emittedAny) send(AiChunk.Failed(AiFailure.EmptyReply))
+                    }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                send(AiChunk.Failed(AiFailure.Network))
+            }
+        }
+
+    private fun buildAnthropicPayload(messages: List<AiMessage>): Pair<String?, List<AnthropicMessage>> {
+        val system = messages.firstOrNull { it.role == AiMessage.Role.SYSTEM }?.content?.ifBlank { null }
+        val userMessages =
+            messages
+                .filter { it.role != AiMessage.Role.SYSTEM }
+                .map { AnthropicMessage(role = it.role.toAnthropicRole(), content = it.content) }
+        return system to userMessages
+    }
+
     private fun AiMessage.Role.toAnthropicRole() =
         when (this) {
             AiMessage.Role.USER -> "user"
@@ -98,6 +167,7 @@ private data class AnthropicRequest(
     val system: String?,
     val messages: List<AnthropicMessage>,
     val temperature: Double,
+    val stream: Boolean = false,
 )
 
 @Serializable
@@ -114,4 +184,21 @@ private data class AnthropicResponse(
 @Serializable
 private data class AnthropicContent(
     val text: String,
+)
+
+/**
+ * One `data:` payload from Anthropic's streaming response. Anthropic's stream carries several
+ * event `type`s (`message_start`, `content_block_delta`, `message_stop`, `ping`, ...); only
+ * `content_block_delta` carries reply text, in `delta.text`. `ignoreUnknownKeys` (configured on
+ * this file's [Json]) lets every other event shape decode into this same type with `delta = null`.
+ */
+@Serializable
+private data class AnthropicStreamEvent(
+    val type: String,
+    val delta: AnthropicStreamDelta? = null,
+)
+
+@Serializable
+private data class AnthropicStreamDelta(
+    val text: String? = null,
 )

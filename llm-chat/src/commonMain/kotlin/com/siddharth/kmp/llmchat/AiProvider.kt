@@ -2,9 +2,12 @@ package com.siddharth.kmp.llmchat
 
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
+import com.siddharth.kmp.result.Result
 import com.siddharth.kmp.result.getOrNull
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 /** A cloud (or on-device) chat-completion backend — one turn in, one text reply out. */
 interface AiProvider {
@@ -21,7 +24,37 @@ interface AiProvider {
         config: AiConfig = AiConfig(),
     ): AiResult<String>
 
+    /**
+     * Token-by-token variant of [complete] — so a UI can render the reply as it arrives and a Stop
+     * action actually cancels the in-flight request (cancelling the collecting coroutine tears down
+     * the underlying HTTP call) instead of leaving it running to completion in the background.
+     *
+     * Default replays [complete]'s result as a single [AiChunk] so any existing implementer keeps
+     * compiling unchanged; the three real HTTP-backed providers override this with true SSE
+     * streaming. Never throws for an ordinary provider-side failure — ends the flow with
+     * [AiChunk.Failed] instead, same as [complete] returning [Result.Failure].
+     */
+    fun completeStream(
+        messages: List<AiMessage>,
+        config: AiConfig = AiConfig(),
+    ): Flow<AiChunk> =
+        flow {
+            when (val result = complete(messages, config)) {
+                is Result.Success -> emit(AiChunk.Token(result.data))
+                is Result.Failure -> emit(AiChunk.Failed(result.error))
+            }
+        }
+
     suspend fun isAvailable(): Boolean
+}
+
+/** One increment of a [AiProvider.completeStream] reply. */
+sealed interface AiChunk {
+    /** A piece of the model's reply text, in generation order. */
+    data class Token(val text: String) : AiChunk
+
+    /** The stream ended in failure — before, or after, some [Token]s already emitted. */
+    data class Failed(val reason: AiFailure) : AiChunk
 }
 
 /**
@@ -50,6 +83,8 @@ data class AiMessage(
 data class AiConfig(
     val maxTokens: Int = 256,
     val temperature: Float = 0.7f,
+    /** Deadline for one [AiProvider.complete] call. Was a hardcoded 5s in every provider. */
+    val timeoutMs: Long = 5_000,
 )
 
 /**
