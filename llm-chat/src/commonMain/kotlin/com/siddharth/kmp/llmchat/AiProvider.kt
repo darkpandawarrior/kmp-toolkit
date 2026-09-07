@@ -84,8 +84,22 @@ sealed interface AiChunk {
     /** A piece of the model's reply text, in generation order. */
     data class Token(val text: String) : AiChunk
 
-    /** The stream ended in failure — before, or after, some [Token]s already emitted. */
-    data class Failed(val reason: AiFailure) : AiChunk
+    /**
+     * The stream ended in failure — before, or after, some [Token]s already emitted.
+     *
+     * @param detail the server's own error text, when the transport carried one (e.g. an HTTP
+     *   error body's message) — `null` for a bucket with no such text (a timeout, a local
+     *   cancellation, a bare non-2xx with no parseable body). Never a substitute for [reason]:
+     *   a UI branches on [reason], and may additionally show [detail] as a footnote.
+     * @param retryAfterSeconds the server-advised wait, from a `Retry-After` header, when present.
+     *   Only ever set alongside [reason] `== `[AiFailure.RateLimited] in practice, but not
+     *   constrained to that — a caller should treat `null` as "no guidance", not "wait forever".
+     */
+    data class Failed(
+        val reason: AiFailure,
+        val detail: String? = null,
+        val retryAfterSeconds: Int? = null,
+    ) : AiChunk
 }
 
 /**

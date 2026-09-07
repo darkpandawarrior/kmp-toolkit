@@ -5,6 +5,7 @@ import com.siddharth.kmp.result.Result
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockEngineConfig
 import io.ktor.client.engine.mock.respond
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.TextContent
@@ -29,6 +30,24 @@ private fun sseMockEngine(vararg sseLines: String, status: HttpStatusCode = Http
                     content = sseLines.joinToString("\n"),
                     status = status,
                     headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            }
+        },
+    )
+
+private fun errorMockEngine(status: HttpStatusCode, body: String, retryAfter: String? = null) =
+    MockEngine(
+        MockEngineConfig().apply {
+            dispatcher = Dispatchers.Unconfined
+            addHandler {
+                respond(
+                    content = body,
+                    status = status,
+                    headers =
+                        Headers.build {
+                            append(HttpHeaders.ContentType, "application/json")
+                            retryAfter?.let { append(HttpHeaders.RetryAfter, it) }
+                        },
                 )
             }
         },
@@ -216,6 +235,133 @@ class HttpChatProviderTest {
         runTest {
             assertFalse(HttpChatProvider(HttpChatConfig(endpoint = "")).isAvailable())
             assertTrue(HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat")).isAvailable())
+        }
+
+    @Test
+    fun request_carriesRoute_omittedWhenNotConfigured() =
+        runTest {
+            val (engine, lastRequest) = capturingSseMockEngine("""data: {"text":"hi"}""")
+            val provider =
+                HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat", route = "/jobs/42"), engine = engine)
+
+            provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+
+            assertTrue(lastRequest()!!.body.contains(""""route":"/jobs/42""""))
+        }
+
+    @Test
+    fun request_omitsRoute_whenNotConfigured() =
+        runTest {
+            val (engine, lastRequest) = capturingSseMockEngine("""data: {"text":"hi"}""")
+            val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat"), engine = engine)
+
+            provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+
+            assertFalse(lastRequest()!!.body.contains("\"route\""))
+        }
+
+    @Test
+    fun completeStream_forbidden_carriesServerDetail() =
+        runTest {
+            val engine = errorMockEngine(HttpStatusCode.Forbidden, """{"error":"origin not allowed"}""")
+            val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat"), engine = engine)
+
+            val chunks = provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "hi"))).toList()
+
+            assertEquals(
+                listOf(AiChunk.Failed(AiFailure.Unauthorized, detail = "origin not allowed")),
+                chunks,
+            )
+        }
+
+    @Test
+    fun completeStream_rateLimited_carriesRetryAfterSeconds() =
+        runTest {
+            val engine = errorMockEngine(HttpStatusCode.TooManyRequests, """{"error":"slow down"}""", retryAfter = "42")
+            val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat"), engine = engine)
+
+            val chunks = provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "hi"))).toList()
+
+            assertEquals(
+                listOf(AiChunk.Failed(AiFailure.RateLimited, detail = "slow down", retryAfterSeconds = 42)),
+                chunks,
+            )
+        }
+
+    @Test
+    fun completeStream_errorBody_notJson_fallsBackToRawBodyAsDetail() =
+        runTest {
+            val engine = errorMockEngine(HttpStatusCode.InternalServerError, "upstream on fire")
+            val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat"), engine = engine)
+
+            val chunks = provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "hi"))).toList()
+
+            assertEquals(listOf(AiChunk.Failed(AiFailure.Network, detail = "upstream on fire")), chunks)
+        }
+
+    @Test
+    fun completeStream_missingDoneSentinel_succeedsByDefault() =
+        runTest {
+            // requireDoneSentinel defaults to false — [DONE] stays optional unless a caller opts in.
+            val engine = sseMockEngine("""data: {"text":"Hel"}""", """data: {"text":"lo"}""")
+            val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat"), engine = engine)
+
+            val chunks = provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "hi"))).toList()
+
+            assertEquals(listOf(AiChunk.Token("Hel"), AiChunk.Token("lo")), chunks)
+        }
+
+    @Test
+    fun completeStream_requireDoneSentinel_missingDone_afterSomeTokens_reportsFailed() =
+        runTest {
+            val engine = sseMockEngine("""data: {"text":"Hel"}""", """data: {"text":"lo"}""")
+            val provider =
+                HttpChatProvider(
+                    HttpChatConfig(endpoint = "https://example.test/chat", requireDoneSentinel = true),
+                    engine = engine,
+                )
+
+            val chunks = provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "hi"))).toList()
+
+            assertEquals(
+                listOf(
+                    AiChunk.Token("Hel"),
+                    AiChunk.Token("lo"),
+                    AiChunk.Failed(AiFailure.Network, detail = "Stream closed before the completion signal (5 chars received)"),
+                ),
+                chunks,
+            )
+        }
+
+    @Test
+    fun completeStream_requireDoneSentinel_presentDone_succeeds() =
+        runTest {
+            val engine = sseMockEngine("""data: {"text":"Hello"}""", "data: [DONE]")
+            val provider =
+                HttpChatProvider(
+                    HttpChatConfig(endpoint = "https://example.test/chat", requireDoneSentinel = true),
+                    engine = engine,
+                )
+
+            val chunks = provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "hi"))).toList()
+
+            assertEquals(listOf(AiChunk.Token("Hello")), chunks)
+        }
+
+    @Test
+    fun completeStream_requireDoneSentinel_emptyStream_stillReportsEmptyReply_notCutOff() =
+        runTest {
+            // Zero tokens takes precedence over the missing-[DONE] check — same bucket as before.
+            val engine = sseMockEngine("")
+            val provider =
+                HttpChatProvider(
+                    HttpChatConfig(endpoint = "https://example.test/chat", requireDoneSentinel = true),
+                    engine = engine,
+                )
+
+            val chunks = provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "hi"))).toList()
+
+            assertEquals(listOf(AiChunk.Failed(AiFailure.EmptyReply)), chunks)
         }
 
     @Test
