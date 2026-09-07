@@ -24,5 +24,8 @@ dependencies {
     // Google-Pay-via-Stripe path (Google Pay rides Stripe as the gateway of record).
     implementation(libs.stripe.paymentsheet)
     implementation(libs.play.services.wallet)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
