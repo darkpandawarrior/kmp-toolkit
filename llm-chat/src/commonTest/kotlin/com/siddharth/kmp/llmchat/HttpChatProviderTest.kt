@@ -161,6 +161,31 @@ class HttpChatProviderTest {
         }
 
     @Test
+    fun request_omitsModeKey_whenNotConfigured() =
+        runTest {
+            val (engine, lastRequest) = capturingSseMockEngine("""data: {"text":"hi"}""")
+            val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat"), engine = engine)
+
+            provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+
+            val body = lastRequest()!!.body
+            assertFalse(body.contains(""""mode""""), body)
+        }
+
+    @Test
+    fun request_carriesModeKey_whenConfigured() =
+        runTest {
+            val (engine, lastRequest) = capturingSseMockEngine("""data: {"text":"hi"}""")
+            val provider =
+                HttpChatProvider(HttpChatConfig(endpoint = "https://example.test/chat", mode = "jd"), engine = engine)
+
+            provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+
+            val body = lastRequest()!!.body
+            assertTrue(body.contains(""""mode":"jd""""), body)
+        }
+
+    @Test
     fun request_sendsOriginHeader_whenConfigured() =
         runTest {
             val (engine, lastRequest) = capturingSseMockEngine("""data: {"text":"hi"}""")
