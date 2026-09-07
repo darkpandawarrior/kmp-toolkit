@@ -20,6 +20,14 @@ kotlin {
         compileSdk = 37
         minSdk = 26
         withHostTest {}
+        // Device-verifies MlKitGenAiOnDeviceLlm/MediaPipeOnDeviceLlm against the real Android SDKs
+        // (real Context, real filesystem, real ML Kit/MediaPipe client) instead of only compiling
+        // against them. Source set is "androidDeviceTest" (this plugin's actual default name for
+        // what AGP's older `com.android.library` called `androidTest`) — its default sourceSetTree
+        // does NOT pull in commonTest, so kotlin-test is declared directly below instead.
+        withDeviceTest {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
     }
 
     sourceSets {
@@ -60,6 +68,18 @@ kotlin {
         getByName("androidHostTest") {
             dependencies {
                 implementation(libs.junit)
+            }
+        }
+        // MlKitGenAiOnDeviceLlmTest/MediaPipeOnDeviceLlmTest: real Context via
+        // androidx.test.core, run through androidx.test.runner's AndroidJUnitRunner. No fakes here
+        // — the whole point is exercising the actual ML Kit/MediaPipe SDK calls on a real device.
+        getByName("androidDeviceTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.androidx.test.runner)
+                implementation(libs.androidx.test.core)
+                implementation(libs.androidx.test.ext.junit)
             }
         }
     }

@@ -1602,6 +1602,7 @@ kmp-toolkit/
 ├── settings/                # SecureSettingsFactory (encrypted key/value) — Android · JVM · iOS
 ├── designsystem/            # DesignTokens, ThemeController, MarkdownText — Android · iOS · Wasm
 ├── ai/                      # OnDeviceLlm seam — Android · JVM · iOS
+├── ai-testing/              # FakeOnDeviceLlm/RecordingLlm test doubles — Android · JVM · iOS · Wasm
 ├── llm-chat/                # Cloud-LLM chat client (Gemini/OpenAI/Anthropic) — Android · JVM · iOS · Wasm
 ├── feedback/                # SoundPlayer, HapticManager — Android · JVM · iOS · Wasm
 ├── location/                # KalmanSmoother, PathSimplifier — Android · JVM · iOS · Wasm
