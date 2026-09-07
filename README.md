@@ -1061,6 +1061,8 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, clo
 | `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo> }` | On-demand model download/residency status |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
 | `capabilities()` | `suspend fun OnDeviceLlm.(): AiCapabilities` | Honest machine-readable descriptor: real streaming/multimodal support, which `GenerationConfig` fields this backend actually reads, and — when unavailable — the real `AiFailure` reason instead of a bare `false` |
+| `StructuredOutput<T>` | `class(serializer: KSerializer<T>) { suspend fun ask(prompt, generate): AiResult<T> }` | Typed field extraction instead of a regex scrape: embeds a schema hint, tolerantly parses the reply as JSON (strips a ```` ```json ```` fence if present), retries once with the model's own bad reply on a parse miss, else a typed `AiFailure` |
+| `KeywordClassifier<T>` | `class(categories: Map<T, List<String>>) { fun classify(text): T? }` | Buckets free text into one of a fixed set of categories by keyword hits — no model call, for the "bucket this" cases too simple to justify a round trip |
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
