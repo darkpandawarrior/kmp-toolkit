@@ -1,5 +1,7 @@
 package com.siddharth.kmp.llmchat
 
+import com.siddharth.kmp.result.AiFailure
+import com.siddharth.kmp.result.Result
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockEngineConfig
 import io.ktor.client.engine.mock.respond
@@ -24,8 +26,23 @@ private class FakeProvider(
     override suspend fun complete(
         messages: List<AiMessage>,
         config: AiConfig,
-    ) = id
+    ): Result<String, AiFailure> = Result.Success(id)
 }
+
+// MockEngine defaults to dispatching its response on Dispatchers.IO — a real dispatcher invisible
+// to runTest's virtual clock. That races complete()'s internal withTimeout(5_000): the scheduler
+// sees no pending work on the test dispatcher and advances straight to the timeout before the mock
+// response lands. Dispatchers.Unconfined keeps the mock's coroutine on the calling thread instead,
+// so it resolves before control ever returns to the scheduler.
+private fun mockEngine(status: HttpStatusCode, body: String) =
+    MockEngine(
+        MockEngineConfig().apply {
+            dispatcher = Dispatchers.Unconfined
+            addHandler {
+                respond(content = body, status = status, headers = headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        },
+    )
 
 class LlmChatSmokeTest {
     @Test
@@ -64,39 +81,133 @@ class LlmChatSmokeTest {
         }
 
     @Test
-    fun anthropicProvider_complete_parsesMockedResponse() =
-        runTest {
-            // MockEngine defaults to dispatching its response on Dispatchers.IO — a real dispatcher
-            // invisible to runTest's virtual clock. That races complete()'s internal
-            // withTimeout(5_000): the scheduler sees no pending work on the test dispatcher and
-            // advances straight to the timeout before the mock response lands. Dispatchers.Unconfined
-            // keeps the mock's coroutine on the calling thread instead, so it resolves before
-            // control ever returns to the scheduler.
-            val engine =
-                MockEngine(
-                    MockEngineConfig().apply {
-                        dispatcher = Dispatchers.Unconfined
-                        addHandler {
-                            respond(
-                                content = """{"content":[{"text":"hello"}]}""",
-                                status = HttpStatusCode.OK,
-                                headers = headersOf(HttpHeaders.ContentType, "application/json"),
-                            )
-                        }
-                    },
-                )
-            val provider = AnthropicProvider(apiKey = "test-key", engine = engine)
-
-            val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
-
-            assertEquals("hello", result)
-        }
-
-    @Test
     fun cloudProviders_areUnavailable_withBlankApiKey() =
         runTest {
             assertTrue(!AnthropicProvider("").isAvailable())
             assertTrue(!OpenAiProvider("").isAvailable())
             assertTrue(!GeminiProvider("").isAvailable())
+        }
+
+    @Test
+    fun cloudProviders_complete_returnsNoKey_withBlankApiKey() =
+        runTest {
+            assertEquals(Result.Failure(AiFailure.NoKey), AnthropicProvider("").complete(emptyList()))
+            assertEquals(Result.Failure(AiFailure.NoKey), OpenAiProvider("").complete(emptyList()))
+            assertEquals(Result.Failure(AiFailure.NoKey), GeminiProvider("").complete(emptyList()))
+        }
+
+    @Test
+    fun anthropicProvider_complete_parsesMockedResponse() =
+        runTest {
+            val provider =
+                AnthropicProvider(
+                    apiKey = "test-key",
+                    engine = mockEngine(HttpStatusCode.OK, """{"content":[{"text":"hello"}]}"""),
+                )
+
+            val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+
+            assertEquals(Result.Success("hello"), result)
+        }
+
+    @Test
+    fun anthropicProvider_complete_mapsUnauthorized() =
+        runTest {
+            val provider =
+                AnthropicProvider(apiKey = "bad-key", engine = mockEngine(HttpStatusCode.Unauthorized, """{}"""))
+
+            assertEquals(Result.Failure(AiFailure.Unauthorized), provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi"))))
+        }
+
+    @Test
+    fun anthropicProvider_complete_mapsRateLimited() =
+        runTest {
+            val provider =
+                AnthropicProvider(apiKey = "test-key", engine = mockEngine(HttpStatusCode.TooManyRequests, """{}"""))
+
+            assertEquals(Result.Failure(AiFailure.RateLimited), provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi"))))
+        }
+
+    @Test
+    fun anthropicProvider_complete_mapsEmptyReply() =
+        runTest {
+            val provider =
+                AnthropicProvider(apiKey = "test-key", engine = mockEngine(HttpStatusCode.OK, """{"content":[]}"""))
+
+            assertEquals(Result.Failure(AiFailure.EmptyReply), provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi"))))
+        }
+
+    @Test
+    fun anthropicProvider_complete_mapsServerErrorToNetwork() =
+        runTest {
+            val provider =
+                AnthropicProvider(
+                    apiKey = "test-key",
+                    engine = mockEngine(HttpStatusCode.InternalServerError, """{"error":"boom"}"""),
+                )
+
+            assertEquals(Result.Failure(AiFailure.Network), provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi"))))
+        }
+
+    @Test
+    fun openAiProvider_complete_parsesMockedResponse() =
+        runTest {
+            val provider =
+                OpenAiProvider(
+                    apiKey = "test-key",
+                    engine =
+                        mockEngine(
+                            HttpStatusCode.OK,
+                            """{"choices":[{"message":{"role":"assistant","content":"hello"}}]}""",
+                        ),
+                )
+
+            val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+
+            assertEquals(Result.Success("hello"), result)
+        }
+
+    @Test
+    fun openAiProvider_complete_mapsUnauthorized() =
+        runTest {
+            val provider =
+                OpenAiProvider(apiKey = "bad-key", engine = mockEngine(HttpStatusCode.Unauthorized, """{}"""))
+
+            assertEquals(Result.Failure(AiFailure.Unauthorized), provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi"))))
+        }
+
+    @Test
+    fun geminiProvider_complete_parsesMockedResponse() =
+        runTest {
+            val provider =
+                GeminiProvider(
+                    apiKey = "test-key",
+                    engine =
+                        mockEngine(
+                            HttpStatusCode.OK,
+                            """{"candidates":[{"content":{"parts":[{"text":"hello"}]}}]}""",
+                        ),
+                )
+
+            val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+
+            assertEquals(Result.Success("hello"), result)
+        }
+
+    @Test
+    fun geminiProvider_complete_mapsRateLimited() =
+        runTest {
+            val provider =
+                GeminiProvider(apiKey = "test-key", engine = mockEngine(HttpStatusCode.TooManyRequests, """{}"""))
+
+            assertEquals(Result.Failure(AiFailure.RateLimited), provider.complete(listOf(AiMessage(AiMessage.Role.USER, "hi"))))
+        }
+
+    @Test
+    fun completeOrBlank_collapsesFailureToEmptyString() =
+        runTest {
+            @Suppress("DEPRECATION")
+            val text = AnthropicProvider("").completeOrBlank(listOf(AiMessage(AiMessage.Role.USER, "hi")))
+            assertEquals("", text)
         }
 }
