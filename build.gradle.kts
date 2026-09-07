@@ -115,7 +115,7 @@ subprojects {
 
 // Single source of truth for the toolkit version. Declared here because the Central block below
 // captures it at configuration time, before the `subprojects` block further down assigns it.
-val toolkitVersion = "1.0.0"
+val toolkitVersion = "2.0.0"
 
 // ── Maven Central ─────────────────────────────────────────────────────────────
 // A curated first wave only. These four are the genuinely reusable, dependency-light modules;
