@@ -9,6 +9,10 @@ kotlin {
     jvm()
     iosArm64()
     iosSimulatorArm64()
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
 
     android {
         namespace = "com.siddharth.kmp.ai"
@@ -28,6 +32,9 @@ kotlin {
             // AppLog: the one-time "unimplemented backend" warning on the iOS stubs reuses the
             // existing Napier facade rather than this module inventing its own logging shim.
             implementation(project(":common"))
+            // CloudOnDeviceLlm wraps an :llm-chat AiProvider chain as the cloud fallback tier — the
+            // same AiResult/AiFailure vocabulary :result already gives both seams, now shared code too.
+            implementation(project(":llm-chat"))
         }
         androidMain.dependencies {
             implementation(libs.koin.android)
