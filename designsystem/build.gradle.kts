@@ -60,6 +60,13 @@ kotlin {
             // ZoomableImage. Publishes wasmJs too - checked against the module metadata, since the
             // plan this came from said the wasm publication was contested.
             implementation(libs.zoomable)
+            // AiSettingsSection: on-device model management (:ai) and cloud provider/key rows
+            // (:llm-chat) both report through :result's AiResult/AiFailure/AiCapabilities, which
+            // this module now needs directly too (same targets as :ai/:llm-chat, so no new
+            // per-platform actual is needed here).
+            implementation(project(":result"))
+            implementation(project(":ai"))
+            implementation(project(":llm-chat"))
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
