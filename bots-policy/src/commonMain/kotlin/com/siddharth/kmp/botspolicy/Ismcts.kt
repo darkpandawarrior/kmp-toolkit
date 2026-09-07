@@ -1,5 +1,8 @@
 package com.siddharth.kmp.botspolicy
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlin.math.ln
 import kotlin.math.sqrt
 
@@ -51,29 +54,43 @@ class Ismcts<State, Move, View, Actor>(
      * iteration; a thrown exception from it is treated as a free retry (does not consume an
      * iteration) — the caller is expected to advance its own RNG before rethrowing, mirroring a
      * failed-sample retry. [elapsedMillis] is polled against [SearchBudget.maxMillis].
+     *
+     * A `suspend` function: cancelling the calling coroutine (a player moves on, a screen leaves
+     * composition) stops the loop at the next iteration boundary via [ensureActive] instead of
+     * burning the full budget. [onSearchError] receives every determinization/iteration failure
+     * that isn't a cancellation — a rules bug that always throws is now visible instead of
+     * silently producing a near-empty root; the default is a no-op so existing callers that don't
+     * care still compile.
      */
-    fun search(
+    suspend fun search(
         determinize: () -> State,
         legal: List<Move>,
         viewer: Actor,
         rolloutHorizon: Int,
         elapsedMillis: () -> Long,
+        onSearchError: (Throwable) -> Unit = {},
     ): SearchNode<Move> {
         val root = SearchNode<Move>(null)
         for (m in legal) root.children.getOrPut(m) { SearchNode(m) }
 
         var iterations = 0
         while (iterations < budget.maxIterations && elapsedMillis() < budget.maxMillis) {
+            coroutineContext.ensureActive()
             val detState =
                 try {
                     determinize()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
+                    onSearchError(e)
                     continue // failed determinization — free retry, doesn't consume an iteration
                 }
             try {
                 iterate(root, detState, viewer, rolloutHorizon)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                // ignore — bad determinization mid-tree; continue
+                onSearchError(e) // bad determinization mid-tree; continue
             }
             iterations++
         }

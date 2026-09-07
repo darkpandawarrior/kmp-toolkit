@@ -1,5 +1,6 @@
 package com.siddharth.kmp.ai
 
+import com.siddharth.kmp.common.AppLog
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
@@ -19,8 +20,17 @@ import com.siddharth.kmp.result.Result
 // Upgrade path: define a Kotlin interface here, implement it in Swift over MediaPipeTasksGenAI's
 // LlmInference (gated on the model file being resident via a downloader with user consent + wifi-only
 // default), and bind that impl in onDeviceLlmModule() from MainViewController's Koin start.
+@Unimplemented("MediaPipeTasksGenAI ships as a Swift/ObjC-only CocoaPod; needs a Swift bridge from iosApp — see above.")
 class MediaPipeOnDeviceLlm : OnDeviceLlm {
-    override fun isAvailable(): Boolean = false
+    // `by lazy` logs exactly once per instance — see FoundationModelsOnDeviceLlm for why.
+    private val warnUnimplementedOnce by lazy {
+        AppLog.w("MediaPipeOnDeviceLlm (iOS) has no Swift bridge yet — always reporting unavailable.", tag = "OnDeviceLlm")
+    }
+
+    override fun isAvailable(): Boolean {
+        warnUnimplementedOnce
+        return false
+    }
 
     override suspend fun generate(prompt: String): AiResult<String> = Result.Failure(AiFailure.NotSupportedOnPlatform)
 }

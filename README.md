@@ -1004,6 +1004,19 @@ first success, or the last backend's failure reason if none produced one. Your f
 prompt-building and output-parsing stay in your app; this carries only the plumbing to *run* a
 prompt.
 
+Every prompt/part `CompositeOnDeviceLlm` sends to a backend is run through `PromptGuard` (in
+`:result`) first — delimited, escaped, with the output contract restated right after the payload
+— so a JD, receipt, or chat message that says "ignore previous instructions" reaches the model as
+inert data. This is unconditional: there's no flag to opt out, and `JobSummarizer` below gets it
+for free even though it never separates its own instructions from the untrusted `jd` string.
+
+`generateStream(prompt): Flow<String>` is the token-by-token variant, so a UI can render a reply as
+it arrives and a Stop action actually cancels the model instead of leaving it computing in the
+background. ML Kit GenAI and MediaPipe stream for real (partial results as the model produces
+them, and cancelling the collector stops the in-flight generation); every other backend replays
+`generate`'s result as one emission. `CompositeOnDeviceLlm.generateStream` delegates straight to
+whichever backend it picked, so this always reaches the real thing where one exists.
+
 ```kotlin
 import com.siddharth.kmp.ai.onDeviceLlmModule
 import com.siddharth.kmp.ai.OnDeviceLlm
@@ -1028,12 +1041,13 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myR
 
 | Member | Signature | What it does |
 |---|---|---|
-| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String> }` | The single seam, text in, typed result out |
+| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String>; fun generateStream(prompt: String): Flow<String> }` | The single seam, text in, typed result (or token stream) out |
 | `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) — fails `NotSupportedOnPlatform` |
-| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason |
+| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason. `generateStream` delegates to the chosen backend's own stream, not a single-emission replay |
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
 | `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo> }` | On-demand model download/residency status |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
+| `capabilities()` | `suspend fun OnDeviceLlm.(): AiCapabilities` | Honest machine-readable descriptor: real streaming/multimodal support, which `GenerationConfig` fields this backend actually reads, and — when unavailable — the real `AiFailure` reason instead of a bare `false` |
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
@@ -1044,8 +1058,8 @@ stays in your app and consumes this seam. Candidai's `core:ai` builds `JobIntell
 
 | Target | Backend |
 |---|---|
-| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback |
-| iOS | Foundation Models seam (`iosArm64`, `iosSimulatorArm64`) |
+| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback. `isAvailable()` is a cheap API-level floor; `capabilities()` runs the real AICore `FeatureStatus`/model-residency check and reports why when it's off |
+| iOS (`iosArm64`, `iosSimulatorArm64`) | **Unimplemented today.** Both `FoundationModelsOnDeviceLlm` and `MediaPipeOnDeviceLlm` compile and satisfy the seam but are unconditional stubs (`@Unimplemented`, logged once) — no Swift bridge exists in this repo yet, so both always report unavailable and the heuristic tier upstream answers instead |
 | JVM / Desktop | `UnavailableOnDeviceLlm`, the heuristic tier upstream always answers |
 
 ## llm-chat
@@ -1079,13 +1093,47 @@ when (val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, "Summ
 }
 ```
 
+Token-by-token, so a reply renders as it arrives and cancelling the collecting coroutine (a Stop
+button, a dismissed screen) actually tears down the in-flight request instead of letting it run to
+completion in the background:
+
+```kotlin
+val job = launch {
+    provider.completeStream(listOf(AiMessage(AiMessage.Role.USER, "Summarize this JD"))).collect { chunk ->
+        when (chunk) {
+            is AiChunk.Token -> append(chunk.text)
+            is AiChunk.Failed -> showReason(chunk.reason)
+        }
+    }
+}
+// Stop button:
+job.cancel()
+```
+
 | Member | Signature | What it does |
 |---|---|---|
-| `AiProvider` | `interface { complete(messages, config): AiResult<String>; isAvailable(): Boolean }` | The single seam every backend implements |
+| `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean; capabilities(): AiCapabilities }` | The single seam every backend implements |
+| `capabilities()` | `suspend fun AiProvider.(): AiCapabilities` | Which `AiConfig` fields this provider actually honors, whether it streams/accepts images, and the real reason it's unavailable — no need to read provider source to learn a field silently no-ops |
+| `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure) }` | One increment of a `completeStream` reply |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
-| `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API |
-| `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → Anthropic → OpenAI → Gemini → fallback, skipping any blank key |
+| `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
+| `buildProviderChain` | `(config, fallback, onDevice?) -> List<AiProvider>` | On-device (if supplied) → `config.selectedProvider` first, then the rest in Anthropic → OpenAI → Gemini order → fallback, skipping any blank key. Every provider it returns is wrapped so USER messages run through the same `PromptGuard` as `ai`'s on-device seam before reaching any HTTP call |
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
+
+`AiConfig.timeoutMs` (default 5s, same ceiling as before but now caller-configurable) bounds
+`complete()`. `completeStream()` deliberately has no such ceiling — a legitimately long reply keeps
+producing tokens well past any single-call deadline; cancelling the collecting coroutine is what
+ends a stream (and the provider's billing for it) early, not a timer.
+
+All three providers honor `maxTokens`/`temperature`/`timeoutMs` identically — `capabilities()`
+reports `honoredConfigFields = {"maxTokens", "temperature", "timeoutMs"}` for each, so a caller
+never has to open `AnthropicProvider`/`OpenAiProvider`/`GeminiProvider` source to check.
+
+All three providers' streaming endpoints frame their reply the same way — SSE `data:` lines, a
+blank line between events, OpenAI closing with `data: [DONE]` — behind one shared `parseSseFrames`
+parser (`SseFraming.kt`); each provider still JSON-decodes its own event shape (Anthropic's
+`content_block_delta`, OpenAI's `choices[].delta.content`, Gemini's own `GeminiResponse` shape reused
+as-is since its `:streamGenerateContent?alt=sse` endpoint reuses its non-streaming reply's fields).
 
 `llm-chat` deliberately reuses `:network`'s internal `httpClientEngine()` factory rather than its
 `createHttpClient()` wrapper, the retry/backoff and 30s timeout in `network`'s wrapper would change
@@ -1401,7 +1449,8 @@ Gaddi's ai↔engine inversion: the generic search primitives (`Policy`, `GameRul
 stays in the consuming app, this module never sees a card, a coin, or a Coup-specific rule.
 
 ```kotlin
-// module build.gradle.kts — no dependencies beyond kotlin("test") in commonTest
+// module build.gradle.kts — kotlinx-coroutines-core in commonMain (search() is a cancellable
+// suspend fun), plus kotlin("test") in commonTest
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
