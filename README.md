@@ -1367,7 +1367,7 @@ job.cancel()
 |---|---|---|
 | `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean; capabilities(): AiCapabilities }` | The single seam every backend implements |
 | `capabilities()` | `suspend fun AiProvider.(): AiCapabilities` | Which `AiConfig` fields this provider actually honors, whether it streams/accepts images, and the real reason it's unavailable — no need to read provider source to learn a field silently no-ops |
-| `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure) }` | One increment of a `completeStream` reply |
+| `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure, detail: String? = null, retryAfterSeconds: Int? = null) }` | One increment of a `completeStream` reply. `detail`/`retryAfterSeconds` are only ever non-null from `HttpChatProvider` today (the server's own error text, and a `Retry-After` header) |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
 | `HttpChatProvider` | `class(HttpChatConfig) : AiProvider` | Client for a caller-owned SSE chat backend (not a named vendor) speaking the same `data:`/`[DONE]` contract |
@@ -1391,24 +1391,39 @@ as-is since its `:streamGenerateContent?alt=sse` endpoint reuses its non-streami
 
 `HttpChatProvider` is the fourth backend, for an app's *own* SSE chat endpoint rather than a named
 vendor — the thing `cv-siddharth-kmp` and Candidai were each hand-rolling their own `data:`/
-`[DONE]` parser for. It reuses the same `parseSseFrames`, expects `{"text":"..."}` per frame, and
-takes an `HttpChatConfig(endpoint, mode?, originHeader?)`: `mode` is an app-defined string forwarded
-to the backend as-is, the SYSTEM message (if any) goes through as a dedicated `system` field rather
-than inside `messages`, and `originHeader` sets this request's `Origin` header for a backend that
-allow-lists origins on a public, keyless endpoint (a no-op on `wasmJs` — a real browser's `fetch`
-refuses to let a script override `Origin`, a forbidden header per the Fetch spec). A blank
+`[DONE]` parser for. It expects `{"text":"..."}` per frame, and takes an `HttpChatConfig(endpoint,
+mode?, route?, originHeader?, requireDoneSentinel = false)`: `mode` and `route` are each an
+app-defined string forwarded to the backend as-is (which persona/prompt-pack, and which
+screen/page — respectively), the SYSTEM message (if any) goes through as a dedicated `system` field
+rather than inside `messages`, and `originHeader` sets this request's `Origin` header for a backend
+that allow-lists origins on a public, keyless endpoint (a no-op on `wasmJs` — a real browser's
+`fetch` refuses to let a script override `Origin`, a forbidden header per the Fetch spec). A blank
 `endpoint` reports `AiFailure.NoKey`, the same bucket a missing vendor key uses, since `llm-chat`
 has no separate "not configured" reason.
 
-The request body is `{"messages":[...],"system"?,"mode"?,"maxTokens","temperature"}`. `system` and
-`mode` are each **omitted** from the JSON when `null` rather than sent as `"mode": null` — the
-request `Json` sets `explicitNulls = false` — so a backend validating `mode` against a closed
-allowlist (e.g. exactly `"compose"` / `"jd"`, with the key's absence meaning ordinary chat) can 400
-an unrecognized `mode` without also 400ing every caller that never sets one.
+The request body is `{"messages":[...],"system"?,"mode"?,"route"?,"maxTokens","temperature"}`.
+`system`, `mode` and `route` are each **omitted** from the JSON when `null` rather than sent as
+`"mode": null` — the request `Json` sets `explicitNulls = false` — so a backend validating `mode`
+against a closed allowlist (e.g. exactly `"compose"` / `"jd"`, with the key's absence meaning
+ordinary chat) can 400 an unrecognized `mode` without also 400ing every caller that never sets one.
 
 ```kotlin
 val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://api.example.com/chat", mode = "resume-coach"))
 ```
+
+A non-2xx response's own body and headers reach the caller instead of being discarded: `AiChunk.
+Failed.detail` is the server's `{"error": "..."}` message (or the raw body, if it isn't that shape),
+and `retryAfterSeconds` is a numeric `Retry-After` header, when the backend sent one — so a UI can
+show the server's own wording on a 403, or a real countdown on a 429, instead of a generic bucket
+label.
+
+By default a stream that emits some tokens and then simply closes (no `data: [DONE]`) still reads
+as success, because `[DONE]` is optional in this contract — some backends never send it and just
+close cleanly. Set `requireDoneSentinel = true` for a backend whose contract *does* guarantee
+`[DONE]` as the terminal event (cv-siddharth's `/api/chat`, for one): a stream that closes early —
+tokens arrived, then the connection dropped before `[DONE]` — is then reported as `AiChunk.
+Failed(AiFailure.Network, detail = "Stream closed before the completion signal (N chars received)")`
+instead of silently reading as a complete reply.
 
 A key a user pastes in (BYOK) needs somewhere to live between app launches that isn't a plain
 string field or an app re-inventing `SharedPreferences`. `SecureKeyStore` is that place —
