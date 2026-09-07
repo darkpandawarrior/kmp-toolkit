@@ -27,7 +27,11 @@ import kotlinx.serialization.json.Json
  *   reports [AiFailure.NoKey] for that, same bucket the three vendor providers use for a missing
  *   key, since this provider has no separate "no endpoint" reason in the shared [AiFailure] enum.
  * @param mode an app-defined string forwarded to the backend as-is (e.g. which persona/prompt-pack
- *   to use). `llm-chat` doesn't know or validate the values — the backend does.
+ *   to use). `llm-chat` doesn't know or validate the values — the backend does. `null` (the
+ *   default) means the `"mode"` key is left off the request body entirely, not sent as
+ *   `"mode": null` — a backend with a closed mode allowlist can then treat "no mode" and "an
+ *   unrecognized mode" differently, e.g. defaulting the former to ordinary chat and 400ing the
+ *   latter.
  * @param originHeader sent as this request's `Origin` header when non-null, for a backend that
  *   allow-lists origins as a lightweight check on a public, keyless chat endpoint. Native engines
  *   (OkHttp/Darwin/CIO) send whatever is set here; a real browser (wasmJs) refuses to let a script
@@ -47,6 +51,12 @@ data class HttpChatConfig(
  * decodes as [HttpChatStreamEvent]; the backend is expected to emit `{"text":"..."}` per token and
  * close the stream (optionally preceded by a `data: [DONE]` line, which [parseSseFrames] already
  * discards) rather than any vendor-specific event shape.
+ *
+ * Request body: `{"messages":[{"role":"user"|"assistant","content":"..."}],"system"?,"mode"?,
+ * "maxTokens","temperature"}`. `system` and `mode` are each omitted entirely when absent
+ * (`explicitNulls = false` on the request's [Json]) rather than sent as `"system": null` / `"mode":
+ * null` — required for a backend that validates `mode` against a closed allowlist and would 400 a
+ * literal `null`.
  */
 class HttpChatProvider(
     private val httpConfig: HttpChatConfig,
@@ -58,7 +68,11 @@ class HttpChatProvider(
     private val client by lazy {
         HttpClient(engine) {
             install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
+                // explicitNulls = false: an unset HttpChatRequest.mode/system must be OMITTED from
+                // the wire, not sent as `"mode": null` — a backend with a closed mode allowlist
+                // (e.g. exactly "compose" | "jd", chat being the absent case) 400s on any `mode`
+                // key it doesn't recognize, null included.
+                json(Json { ignoreUnknownKeys = true; explicitNulls = false })
             }
         }
     }

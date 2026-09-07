@@ -1400,6 +1400,12 @@ refuses to let a script override `Origin`, a forbidden header per the Fetch spec
 `endpoint` reports `AiFailure.NoKey`, the same bucket a missing vendor key uses, since `llm-chat`
 has no separate "not configured" reason.
 
+The request body is `{"messages":[...],"system"?,"mode"?,"maxTokens","temperature"}`. `system` and
+`mode` are each **omitted** from the JSON when `null` rather than sent as `"mode": null` — the
+request `Json` sets `explicitNulls = false` — so a backend validating `mode` against a closed
+allowlist (e.g. exactly `"compose"` / `"jd"`, with the key's absence meaning ordinary chat) can 400
+an unrecognized `mode` without also 400ing every caller that never sets one.
+
 ```kotlin
 val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://api.example.com/chat", mode = "resume-coach"))
 ```
