@@ -86,9 +86,10 @@ monorepo has since grown to **39 modules**: `llm-chat` (cloud LLM chat), the `pa
 `device-integrity`, `settings`, `app-shell`, `store`, see [Roadmap](#roadmap) for what shipped when.
 
 Every module targets exactly the platforms its own consumers need, no module claims iOS support
-it can't back up, no module ships a `wasmJs` target nobody asked for. Two deliberate inter-module
-spines exist, `security → common` (for `AppLog`) and the `payments-api` ↔ `provider:*` gateway
-contract, everything else is standalone by design, so adopting one leaf never drags in the rest.
+it can't back up, no module ships a `wasmJs` target nobody asked for. Three deliberate inter-module
+spines exist, `security → common` (for `AppLog`), the `payments-api` ↔ `provider:*` gateway
+contract, and `ai → llm-chat` (for `CloudOnDeviceLlm`'s cloud fallback tier), everything else is
+standalone by design, so adopting one leaf never drags in the rest.
 
 Gradle convention plugins (the `androidKmpLibrary`, `composeCompiler` etc. plugins every
 `build.gradle.kts` here applies) live in a separate repo,
@@ -238,6 +239,7 @@ graph TD
     COMMON --> SECURITY
     RESULT -.->|"Phase-4 adoption planned"| NETWORK
     NETWORK --> LLMCHAT
+    LLMCHAT --> AI
     COMMON --> PAYMENTSAPI
     PAYMENTSAPI --> PROVIDERS
     COMMON --> PROVIDERS
@@ -266,8 +268,9 @@ graph TD
 
 `security → common` is the only edge between two original `kmp-toolkit` leaves; `payments-api →
 common` and every `provider:* → payments-api`/`provider:* → common` edge is the newer, equally
-deliberate gateway-abstraction spine. Every module outside those two families is standalone:
-dropping one into an app never drags in a sibling.
+deliberate gateway-abstraction spine, and `ai → llm-chat` (for `CloudOnDeviceLlm`) is the third,
+added once `ai` needed a real cloud fallback rather than reinventing one. Every module outside
+those three families is standalone: dropping one into an app never drags in a sibling.
 
 `device-integrity`, `settings`, `app-shell` and `store` are omitted from the graph above, each has
 zero edges to any other module here and no consumer app yet, so there's nothing to draw. They're
@@ -1031,10 +1034,19 @@ class JobSummarizer(private val llm: OnDeviceLlm) {
 }
 ```
 
-Compose your own backend order (e.g. add a remote tier) with `CompositeOnDeviceLlm`:
+Compose your own backend order (e.g. add a remote tier) with `CompositeOnDeviceLlm`. `CloudOnDeviceLlm`
+is the ready-made remote tier — it wraps an `:llm-chat` `AiProvider` chain as an `OnDeviceLlm`, so
+desktop, web, and any device with neither Gemini Nano nor Foundation Models still gets a real answer
+through the same seam. `buildProviderChain` already drops any provider with a blank key, so
+`CloudOnDeviceLlm(chain).isAvailable()` — and so the composite's own `isAvailable()` — is naturally
+`false` when the caller configured no key at all:
 
 ```kotlin
-val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myRemoteTier))
+import com.siddharth.kmp.ai.CloudOnDeviceLlm
+import com.siddharth.kmp.llmchat.buildProviderChain
+
+val cloudTier = CloudOnDeviceLlm(buildProviderChain(providerConfig, fallback = myOfflineFallback))
+val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, cloudTier))
 // isAvailable() is true if ANY backend is; generate() returns the first success, or the last
 // backend's AiFailure if every backend declined or errored.
 ```
@@ -1044,6 +1056,7 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myR
 | `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String>; fun generateStream(prompt: String): Flow<String> }` | The single seam, text in, typed result (or token stream) out |
 | `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) — fails `NotSupportedOnPlatform` |
 | `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason. `generateStream` delegates to the chosen backend's own stream, not a single-emission replay |
+| `CloudOnDeviceLlm` | `class(providers: List<AiProvider>, config: AiConfig = AiConfig())` | `OnDeviceLlm` backed by an `:llm-chat` provider chain — cloud as the fallback tier. `isAvailable()` is `providers.isNotEmpty()`; `generate`/`generateStream` try each available provider in order, real SSE token streaming included |
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
 | `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo> }` | On-demand model download/residency status |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
@@ -1058,9 +1071,10 @@ stays in your app and consumes this seam. Candidai's `core:ai` builds `JobIntell
 
 | Target | Backend |
 |---|---|
-| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback. `isAvailable()` is a cheap API-level floor; `capabilities()` runs the real AICore `FeatureStatus`/model-residency check and reports why when it's off |
-| iOS (`iosArm64`, `iosSimulatorArm64`) | **Unimplemented today.** Both `FoundationModelsOnDeviceLlm` and `MediaPipeOnDeviceLlm` compile and satisfy the seam but are unconditional stubs (`@Unimplemented`, logged once) — no Swift bridge exists in this repo yet, so both always report unavailable and the heuristic tier upstream answers instead |
-| JVM / Desktop | `UnavailableOnDeviceLlm`, the heuristic tier upstream always answers |
+| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma) → your own `CloudOnDeviceLlm`, composed with fallback. `isAvailable()` is a cheap API-level floor; `capabilities()` runs the real AICore `FeatureStatus`/model-residency check and reports why when it's off |
+| iOS (`iosArm64`, `iosSimulatorArm64`) | **Foundation Models/MediaPipe unimplemented today.** Both `FoundationModelsOnDeviceLlm` and `MediaPipeOnDeviceLlm` compile and satisfy the seam but are unconditional stubs (`@Unimplemented`, logged once) — no Swift bridge exists in this repo yet, so both always report unavailable; `CloudOnDeviceLlm` works today (plain HTTP), so it's the only real backend on iOS until the bridge lands |
+| JVM / Desktop | `UnavailableOnDeviceLlm` by default; append your own `CloudOnDeviceLlm` for a real answer |
+| `wasmJs` (web) | `UnavailableOnDeviceLlm` by default — same as JVM, no on-device model in a browser; append your own `CloudOnDeviceLlm` (its `AiProvider`s reach every cloud vendor's HTTP API fine from `wasmJs`) |
 
 ## llm-chat
 
@@ -1575,12 +1589,14 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
       `DecisionEngine` read/write helpers), none with dependents yet
 - [x] CI matrix (`assemble jvmTest testAndroidHostTest testDebugUnitTest`) + no-AI-attribution check
 - [x] Consumed as a source composite build (vendored via `includeBuild`; not Maven-published)
+- [x] `llm-chat` wired into `ai`'s `CompositeOnDeviceLlm` fallback chain as a cloud tier
+      (`CloudOnDeviceLlm`), plus a `wasmJs` target on `ai` so web can wire a real, cloud-backed
+      `OnDeviceLlm` instead of hand-maintaining an always-false stub
 
 **Exploring**
 - [ ] Route `network`'s `HttpRequestRetry`/`ResponseException` failures onto `result`'s
       `DataError.Network` arms, so `result` stops being a foundation with zero consumers
 - [ ] `payments-api` → `result`'s typed `Result<D, DataError>` instead of its own `PaymentResult` shape
-- [ ] `llm-chat` wired into `ai`'s `CompositeOnDeviceLlm` fallback chain as a cloud tier
 - [ ] Move some `provider:*` leaves off `SANDBOX_READY`/`MOCK_MODE` as partner KYC access opens up
 - [ ] First real consumer for `device-integrity`, `settings`, `app-shell` and `store`, each is
       shipped and unit-tested, but none has been wired into Candidai/PaymentsLab-KMP/Doori/Gaddi yet
