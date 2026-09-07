@@ -5,13 +5,15 @@
 ### A Kotlin Multiplatform toolkit, a family of small, focused, production-grade libraries extracted from real apps.
 
 A single monorepo housing every small, reusable KMP library I've pulled out of my own production
-apps, never designed as a "platform" up front. 37 modules today, from a typed `Result` primitive to a
+apps, never designed as a "platform" up front. 40 modules today, from a typed `Result` primitive to a
 19-provider payment-gateway abstraction, each targeting exactly the platforms its real consumers need.
 
 **Adoption is uneven, on purpose and by accident both.** Measured across the four consuming apps
-(Doori, PaymentsLab-KMP, Candidai, Gaddi): `common`, `mvi-core` and `network` are used by all four;
-`security` and `ai` by three; `designsystem` by two. The rest have one consumer or none, the 19
-payment-gateway leaves serve PaymentsLab-KMP alone by design, while `device-integrity` and `store` are
+(Doori, PaymentsLab-KMP, Candidai, Gaddi) by actual imports, not just declared substitutions:
+`common`, `mvi-core`, `network`, `ai` and `result` are used by all four; `security` by three (all but
+Gaddi); `designsystem` and `llm-chat` by three (all but Doori). The rest have one consumer or none:
+`ai-testing`, `settings` and `app-shell` are Doori-only so far, the 19 payment-gateway leaves serve
+PaymentsLab-KMP alone by design, while `device-integrity`, `store`, `auth`, `netlog` and `charts` are
 extractions still waiting for their first. Treat this as a staging ground where a few modules are
 proven across four apps and others are candidates, rather than a uniformly battle-tested platform.
 
@@ -20,12 +22,12 @@ proven across four apps and others are candidates, rather than a uniformly battl
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20--RC-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20MP-1.12.0--rc01-4285F4?logo=jetpackcompose&logoColor=white)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20JVM%20%7C%20Wasm%20%7C%20watchOS-4285F4)
-![Modules](https://img.shields.io/badge/modules-36-0EA5E9)
+![Modules](https://img.shields.io/badge/modules-40-0EA5E9)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 **[Why](#why-kmp-toolkit)** · **[Highlights](#highlights)** · **[Modules](#modules)** · **[Architecture](#family-architecture)** · **[Tech stack](#tech-stack)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)** · **[API reference](https://darkpandawarrior.github.io/kmp-toolkit/)**
 
-**Case study:** [The KMP family](https://cv-siddharth.vercel.app/project/kmp-family) &nbsp;·&nbsp; **Siblings:** [Candidai](https://github.com/darkpandawarrior/Candidai) &nbsp;·&nbsp; [PaymentsLab-KMP](https://github.com/darkpandawarrior/PaymentsLab-KMP) &nbsp;·&nbsp; [Doori](https://github.com/darkpandawarrior/Doori) &nbsp;·&nbsp; [Gaddi](https://github.com/darkpandawarrior/Gaddi) &nbsp;·&nbsp; **Shared build logic:** [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
+**Case study:** [The KMP family](https://cv-siddharth.vercel.app/project/kmp-family) &nbsp;·&nbsp; **Siblings:** [Candidai](https://github.com/darkpandawarrior/Candidai) &nbsp;·&nbsp; [PaymentsLab-KMP](https://github.com/darkpandawarrior/PaymentsLab-KMP) &nbsp;·&nbsp; [Doori](https://github.com/darkpandawarrior/Doori) &nbsp;·&nbsp; [Gaddi](https://github.com/darkpandawarrior/Gaddi) &nbsp;·&nbsp; [kmp-app-template](https://github.com/darkpandawarrior/kmp-app-template) &nbsp;·&nbsp; **Shared build logic:** [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
 
 </div>
 
@@ -48,8 +50,12 @@ proven across four apps and others are candidates, rather than a uniformly battl
 - [security](#security)
 - [device-integrity](#device-integrity)
 - [settings](#settings)
+- [auth](#auth)
+- [netlog](#netlog)
 - [designsystem](#designsystem)
+- [charts](#charts)
 - [ai](#ai)
+- [ai-testing](#ai-testing)
 - [llm-chat](#llm-chat)
 - [feedback](#feedback)
 - [location](#location)
@@ -67,9 +73,9 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 </details>
 
-> **At a glance**, **39-module** monorepo: **20 core/leaf modules** (9 original extractions +
+> **At a glance**, **40-module** monorepo: **21 core/leaf modules** (9 original extractions +
 > `llm-chat` / `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` /
-> `app-shell` / `store` + `auth` / `netlog` / `charts`) and **19** `provider:*` payment-gateway leaves, each published
+> `app-shell` / `store` + `auth` / `netlog` / `charts` + `ai-testing`) and **19** `provider:*` payment-gateway leaves, each published
 > independently under `com.siddharth.kmp:<name>`. *Numbers verified against `settings.gradle.kts`.*
 
 ## Why kmp-toolkit
@@ -80,10 +86,11 @@ separate repos, each extracted from a production app the moment its logic was ne
 and `designsystem` and `ai` out of Candidai's `core:*` modules, `feedback` out of Gaddi. None of
 them were designed up front as a "platform", each is the smallest reusable slice of a real screen,
 published once the second consumer showed up. `location` joined right after the merge, and the
-monorepo has since grown to **39 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
+monorepo has since grown to **40 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
 19-provider payment-gateway family, `offline-outbox` (the first Room module here), `bots-policy`
-(a generic ISMCTS search shell), and four more standalone platform-service leaves
-`device-integrity`, `settings`, `app-shell`, `store`, see [Roadmap](#roadmap) for what shipped when.
+(a generic ISMCTS search shell), `ai-testing` (scriptable `OnDeviceLlm` test doubles), and seven
+more standalone/utility leaves `device-integrity`, `settings`, `app-shell`, `store`, `auth`,
+`netlog`, `charts`, see [Roadmap](#roadmap) for what shipped when.
 
 Every module targets exactly the platforms its own consumers need, no module claims iOS support
 it can't back up, no module ships a `wasmJs` target nobody asked for. Four deliberate inter-module
@@ -99,10 +106,11 @@ monorepo.
 
 ## Highlights
 
-- 🧩 **36 Gradle modules, one dependency graph.** 17 core/leaf modules (9 original + `llm-chat` /
+- 🧩 **40 Gradle modules, one dependency graph.** 21 core/leaf modules (9 original + `llm-chat` /
   `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` / `app-shell` /
-  `store`) and 19 `provider:*` payment-gateway leaves, every one published independently under
-  `com.siddharth.kmp:<name>`, and a consumer only pulls in the modules it needs.
+  `store` + `auth` / `netlog` / `charts` + `ai-testing`) and 19 `provider:*` payment-gateway leaves,
+  every one published independently under `com.siddharth.kmp:<name>`, and a consumer only pulls in
+  the modules it needs.
 - 💳 **`payments-api` + 19 providers is a real gateway-abstraction exercise, not a toy.** One
   `PaymentGateway`/`PaymentBackend` contract in `payments-api`, then a thin Android-only adapter per
   provider (`stripe`, `razorpay`, `cashfree`, `square`, `mpesa`, `wallet`, `stripe-connect`,
@@ -121,26 +129,31 @@ monorepo.
   `kmp-toolkit`-internal dependency between two original leaves; adopting one module never silently
   drags in a sibling. `device-integrity`, `settings`, `app-shell` and `store` are the same story
   zero dependencies on any other module here, so each one is a single-line, no-side-effect pull.
-- ✅ **CI runs the full multiplatform matrix on every push**: `assemble jvmTest testAndroidHostTest
-  testDebugUnitTest` across all 39 modules, plus a dedicated no-AI-attribution check workflow.
+- ✅ **CI runs the full multiplatform matrix on every push**: `assemble check` (aggregating
+  `jvmTest`/`testAndroidHostTest`/`testDebugUnitTest`/`wasmJsBrowserTest`/lint per module) across all
+  40 modules, plus a dedicated no-AI-attribution check workflow.
 
 ## Modules
 
 | Module | Coordinate | What it is | Platforms | Consumed by |
 |---|---|---|---|---|
-| [**result**](#result) | `com.siddharth.kmp:result` | `Result<D,E>` + `DataError`, typed, functional error handling | Android · JVM · iOS · Wasm | foundational, no consumers yet, Phase-4 adoption planned across the family |
-| [**common**](#common) | `com.siddharth.kmp:common` | `AppLog` (Napier facade) + `DispatcherProvider` + `UiText` + `Formatters` | Android · JVM · iOS · Wasm | Candidai, PaymentsLab-KMP (via `security`) |
-| [**mvi-core**](#mvi-core) | `com.siddharth.kmp:mvi-core` | MVI ViewModel runtime, `BaseViewModel` / `StateViewModel` / `EffectEmitter` | Android · JVM · iOS · Wasm | Candidai, PaymentsLab-KMP, Doori, Gaddi |
-| [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing, client factory, retry, 401 handling, connectivity | Android · JVM · iOS | Candidai (`core:network`) |
-| [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening, Keystore, VAPT posture, `FLAG_SECURE` | Android only | PaymentsLab-KMP |
+| [**result**](#result) | `com.siddharth.kmp:result` | `Result<D,E>` + `DataError`, typed, functional error handling | Android · JVM · iOS · Wasm | Doori, PaymentsLab-KMP, Gaddi, Candidai (all four, direct); `ai`/`llm-chat`/`designsystem`/`ai-testing` in-repo; kmp-app-template; `network`/`security` adoption of `DataError` itself still planned |
+| [**common**](#common) | `com.siddharth.kmp:common` | `AppLog` (Napier facade) + `DispatcherProvider` + `UiText` + `Formatters` | Android · JVM · iOS · Wasm | Doori, PaymentsLab-KMP, Gaddi, Candidai (all four) |
+| [**mvi-core**](#mvi-core) | `com.siddharth.kmp:mvi-core` | MVI ViewModel runtime, `BaseViewModel` / `StateViewModel` / `EffectEmitter` | Android · JVM · iOS · Wasm | Doori, PaymentsLab-KMP, Gaddi, Candidai (all four) |
+| [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing, client factory, retry, 401 handling, connectivity | Android · JVM · iOS | Doori, PaymentsLab-KMP, Gaddi, Candidai (all four) |
+| [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening, Keystore, VAPT posture, `FLAG_SECURE` | Android only | Doori, PaymentsLab-KMP, Candidai (three, not Gaddi) |
 | [**device-integrity**](#device-integrity) | `com.siddharth.kmp:device-integrity` | The KMP sibling of `security`'s root/jailbreak check, `DeviceIntegrity.inspect()` for non-Android-only apps | Android · JVM · iOS · Wasm | new, no dependents yet |
-| [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | new, no dependents yet |
-| [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives, tokens, theme controller, `MarkdownText` | Android · iOS · Wasm | Candidai (`core:designsystem`) |
-| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | Candidai (`core:ai`) |
-| [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client, Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | new (`bb33d0c`), no dependents yet |
+| [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | Doori (`stub`'s `StubModule`) |
+| [**auth**](#auth) | `com.siddharth.kmp:auth` | `TokenStore`, the one genuinely duplicated slice of app auth: an ephemeral in-memory token + a persisted one over any `Settings` | Android · JVM · iOS | new, no dependents yet |
+| [**netlog**](#netlog) | `com.siddharth.kmp:netlog` | `NetworkLogPlugin`, an in-memory Ktor client HTTP logger with credential redaction and `toCurl()` replay | Android · JVM · iOS · Wasm | new, no dependents yet |
+| [**designsystem**](#designsystem) | `com.siddharth.kmp:designsystem` | Brand-agnostic Compose Multiplatform primitives, tokens, theme controller, `MarkdownText`, `AiSettingsSection` | Android · iOS · Wasm | PaymentsLab-KMP, Gaddi, Candidai (three, not Doori) |
+| [**charts**](#charts) | `com.siddharth.kmp:charts` | `TimeSeriesChart`, one opinionated Vico line-chart wrapper over `designsystem` tokens | Android · JVM · iOS · Wasm | new, no dependents yet |
+| [**ai**](#ai) | `com.siddharth.kmp:ai` | On-device LLM abstraction, ML Kit / MediaPipe / Foundation Models, one seam | Android · JVM · iOS | Doori, PaymentsLab-KMP, Gaddi, Candidai (all four); kmp-app-template |
+| [**ai-testing**](#ai-testing) | `com.siddharth.kmp:ai-testing` | `FakeOnDeviceLlm` / `RecordingLlm`, scriptable `OnDeviceLlm` test doubles, no model or device required | Android · JVM · iOS · Wasm | Doori (`feature:agent`'s `LlmAssistantEngineTest`) |
+| [**llm-chat**](#llm-chat) | `com.siddharth.kmp:llm-chat` | Cloud-LLM chat client, Gemini / OpenAI / Anthropic behind one `AiProvider` seam | Android · JVM · iOS · Wasm | PaymentsLab-KMP, Gaddi, Candidai (three, not Doori, which only reaches it through `ai`'s `CloudOnDeviceLlm`); `designsystem` in-repo; kmp-app-template |
 | [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Gaddi |
 | [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Doori (`feature:tracking`) |
-| [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library, location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | new, no dependents yet |
+| [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library, location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | Doori (`feature:tracking`'s location/notification seams) |
 | [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the 19 `provider:*` leaves |
 | [**provider:\***](#provider--19-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 19 Android-only adapters implementing `payments-api`'s contract per gateway | Android only | reference integrations |
 | [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox, its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Doori (`core:data`) |
@@ -167,6 +180,8 @@ graph LR
   ai["ai"] --> result["result"]
   ai["ai"] --> common["common"]
   ai["ai"] --> llm_chat["llm-chat"]
+  ai_testing["ai-testing"] --> ai["ai"]
+  ai_testing["ai-testing"] --> result["result"]
   llm_chat["llm-chat"] --> network["network"]
   llm_chat["llm-chat"] --> result["result"]
   llm_chat["llm-chat"] --> settings["settings"]
@@ -214,7 +229,7 @@ graph LR
   provider_xendit["provider:xendit"] --> network["network"]
 ```
 
-_39 modules, 53 internal dependencies._
+_40 modules, 55 internal dependencies._
 <!-- module-graph:end -->
 
 ## Family architecture
@@ -249,6 +264,9 @@ graph TD
 
     COMMON --> SECURITY
     RESULT -.->|"Phase-4 adoption planned"| NETWORK
+    RESULT --> AI
+    RESULT --> LLMCHAT
+    RESULT --> DESIGNSYSTEM
     NETWORK --> LLMCHAT
     LLMCHAT --> AI
     COMMON --> PAYMENTSAPI
@@ -273,6 +291,10 @@ graph TD
     FEEDBACK --> KURSI
     BOTS --> KURSI
 
+    AI --> APPTEMPLATE["kmp-app-template"]
+    LLMCHAT --> APPTEMPLATE
+    RESULT --> APPTEMPLATE
+
     style SECURITY fill:#3DDC84,color:#000
     style COMMON fill:#F97316,color:#fff
 ```
@@ -282,21 +304,36 @@ common` and every `provider:* → payments-api`/`provider:* → common` edge is 
 deliberate gateway-abstraction spine; `ai → llm-chat` (for `CloudOnDeviceLlm`) is the third, added
 once `ai` needed a real cloud fallback rather than reinventing one; and `designsystem →
 ai`/`llm-chat` is the fourth, added for `AiSettingsSection` — the settings screen that reads/drives
-both AI seams' `ModelManager`/`AiProvider`/`AiCapabilities` from one place. Every module outside
-those four families is standalone: dropping one into an app never drags in a sibling.
+both AI seams' `ModelManager`/`AiProvider`/`AiCapabilities` from one place. `result → ai`/`llm-chat`/
+`designsystem` is real too, not planned: all three already take `AiResult`/`AiFailure`/
+`AiCapabilities` from it, `result`'s only still-planned edge is into `network` (see
+[result](#result)). Every module outside those families is standalone: dropping one into an app
+never drags in a sibling.
 
-`device-integrity`, `settings`, `app-shell` and `store` are omitted from the graph above, each has
-zero edges to any other module here and no consumer app yet, so there's nothing to draw. They're
-real, tested, standalone leaves (see the [Modules](#modules) table and their own sections below), not
-placeholders.
+`device-integrity`, `store`, `auth`, `netlog` and `charts` are omitted from the graph above, each has
+no consumer app yet (`auth` → `settings` and `charts` → `designsystem` are real internal edges all
+the same — see the generated [module dependency graph](#modules)). `settings` and `app-shell` are
+also omitted here despite Doori already consuming both (its `stub`/`feature:tracking` modules), and
+`ai-testing` (→ `ai`, `result`) is test-only tooling, not a family-architecture participant — none of
+the three add a *cross-module* edge worth drawing on this diagram. All are real, tested, standalone
+leaves (see the [Modules](#modules) table for exactly who consumes what), not placeholders.
+
+**This diagram is illustrative, not exhaustive.** It draws the four deliberate in-repo spines above
+plus a representative slice of each app's dependencies; it is not redrawn every time an app adopts
+one more leaf. The [Modules](#modules) table's "Consumed by" column, verified against each app's
+actual imports, is the accurate, current picture — Doori, PaymentsLab-KMP, Gaddi and Candidai between
+them now pull far more of the family than the boxes above show.
+
+`kmp-app-template`, the fifth consumer, pulls only `ai` / `llm-chat` / `result` — a worked example of
+the AI stack rather than a full app, wired into its Home panel's `AiModule`.
 
 ## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Language | Kotlin `2.4.20-Beta1` |
-| Build | Android Gradle Plugin `9.4.0-alpha04`, KSP `2.3.10` |
-| UI | Compose Multiplatform `1.12.0-beta01` (Material3 `1.12.0-alpha03`, BOM `2026.06.01`) |
+| Language | Kotlin `2.4.20-RC` |
+| Build | Android Gradle Plugin `9.5.0-alpha02`, KSP `2.3.11` |
+| UI | Compose Multiplatform `1.12.0-rc01` (Material3 `1.12.0-alpha03`, BOM `2026.08.00`) |
 | Networking | Ktor `3.5.1` (OkHttp / Darwin / CIO / Js engines) |
 | DI | Koin `4.2.2` |
 | Async | kotlinx-coroutines `1.11.0` |
@@ -313,7 +350,7 @@ git clone https://github.com/darkpandawarrior/kmp-toolkit.git
 cd kmp-toolkit
 
 # Build + test everything CI runs, across every module
-./gradlew assemble jvmTest testAndroidHostTest testDebugUnitTest --stacktrace
+./gradlew assemble check --stacktrace
 
 # Or scope to one module, e.g. while working on network
 ./gradlew :network:jvmTest
@@ -429,9 +466,12 @@ with its own arms (e.g. a `Validation` error) by implementing the interface dire
 | `DataError.Local` | enum | `DISK_FULL`, `NOT_FOUND`, `UNKNOWN` |
 
 `result` is standalone, zero dependencies on any other `kmp-toolkit` module, which is what makes
-it the foundation the rest of the family is meant to build on. No module consumes it yet; it ships
-first so the typed-error contract exists before `network` and `security` standardize their failure
-arms on it in a later phase, instead of each inventing its own `sealed class` per app.
+it the foundation the rest of the family is meant to build on. `ai`, `llm-chat`, `designsystem` and
+`ai-testing` all already build on it in-repo (`AiResult`/`AiFailure`/`AiCapabilities` and
+`PromptGuard`), and kmp-app-template consumes it directly for the same vocabulary in its Home AI
+panel — the first out-of-repo adopter. `network` and `security` standardizing their own failure arms
+on `DataError` is the part still in a later phase, instead of each inventing its own `sealed class`
+per app.
 
 Pure Kotlin, `commonMain`-only, `Result` and `DataError` carry no coroutine, lifecycle, or platform
 dependency, so every target (Android `minSdk 24` / `compileSdk 37`, JVM, iOS, `wasmJs` browser)
@@ -487,7 +527,8 @@ can bind a real `Dispatchers.IO`-backed `DispatcherProvider` for blocking IO if 
 `StandardDispatchers` stays the multiplatform-safe default.
 
 `common` has no dependency on any other `kmp-toolkit` module, it only pulls in Napier and
-kotlinx-coroutines. `security` consumes it transitively for `AppLog`; Candidai uses it app-wide.
+kotlinx-coroutines. `security` consumes it transitively for `AppLog`; Doori, PaymentsLab-KMP, Gaddi
+and Candidai each use it app-wide.
 `commonMain`-only implementation across Android (`minSdk 24` / `compileSdk 37`), JVM, iOS, and
 `wasmJs`, only Napier's own platform backends differ underneath.
 
@@ -496,8 +537,8 @@ kotlinx-coroutines. `security` consumes it transitively for `AppLog`; Candidai u
 ![mvi-core](docs/assets/mvi-core-banner.svg)
 
 Three small presentation-layer primitives kept getting re-copied between KMP projects (Doori,
-PaymentsLab-KMP, Gaddi) every time a new screen needed unidirectional state. `mvi-core` pulls them out
-once, extracted from Doori's `core:ui` MVI base.
+PaymentsLab-KMP, Gaddi, Candidai) every time a new screen needed unidirectional state. `mvi-core`
+pulls them out once, extracted from Doori's `core:ui` MVI base.
 
 | Class | Use when | Depends on |
 |---|---|---|
@@ -627,8 +668,9 @@ Platform HTTP engines are wired transparently via `internal expect fun httpClien
 on Android, Darwin on iOS, CIO on JVM, `createHttpClient()`'s default argument picks the right one.
 
 `network` is standalone, no dependency on any other `kmp-toolkit` module, only Ktor and
-kotlinx-serialization. Candidai's `core:network` module builds on it; the app layers its own typed
-API + DTOs on top. Planned: mapping `HttpRequestRetry`/`ResponseException` failures onto `result`'s
+kotlinx-serialization. Doori, PaymentsLab-KMP, Gaddi and Candidai's own network layers all build on
+it (Candidai's as `core:network`); each app layers its own typed API + DTOs on top. Planned: mapping
+`HttpRequestRetry`/`ResponseException` failures onto `result`'s
 `DataError.Network` arms, so a consumer's repository layer gets a typed `Result<D, DataError>`
 straight out of the client instead of catching `ResponseException` itself.
 
@@ -737,10 +779,10 @@ val saved = secureStore.getString("kmp_secure_store")
 | `PaymentCertificatePinning` | OkHttp `CertificatePinner` template, placeholder SPKI pins |
 | `securityModule(config)` | Koin module wiring the whole graph |
 
-`security` depends on `common` for `AppLog`, its only cross-family dependency, and is consumed
-today by PaymentsLab-KMP, which extracted it from its own former `core:security` module. Android only
-`compileSdk 37`, `minSdk 24`; deliberate, since every defense wraps a concrete `android.*` API with
-no cross-platform equivalent.
+`security` depends on `common` for `AppLog`, its only cross-family dependency, and is consumed today
+by Doori, PaymentsLab-KMP (which extracted it from its own former `core:security` module) and
+Candidai; Gaddi has no consumer yet. Android only, `compileSdk 37`, `minSdk 24`; deliberate, since
+every defense wraps a concrete `android.*` API with no cross-platform equivalent.
 
 ## device-integrity
 
@@ -791,8 +833,80 @@ val saved = settings.getStringOrNull("session_token")
 
 Per platform: Android backs it with `EncryptedSharedPreferences` (`MasterKey.AES256_GCM`); iOS with
 `KeychainSettings`; JVM with an AES-256-GCM-encrypted `PropertiesSettings` (key file beside the
-store, `0600` permissions). `settings` has no dependency on any other `kmp-toolkit` module. New
-addition, no dependents yet.
+store, `0600` permissions). `settings` has no dependency on any other `kmp-toolkit` module. Consumed
+today by Doori's `stub` module (`SecureSettingsFactory`); no other app has adopted it yet.
+
+## auth
+
+Two apps (Doori, PaymentsLab-KMP) each independently arrived at the same auth-token split: a
+short-lived access token that never needs to survive process death, and a longer-lived refresh or
+session token that does. `auth` extracts that one genuinely duplicated shape, `TokenStore`, and
+nothing else — no HTTP, no notion of "login", no opinion about what a token *means*, because the two
+apps' actual auth mechanics (a rotating access/refresh pair through Ktor's own `Auth { bearer { } }`
+plugin vs. a non-rotating opaque session token reacting to `:network`'s `TokenProvider`/
+`UnauthorizedHandler` seam) are both correct for their own app and neither is a subset of the other.
+
+```kotlin
+import com.siddharth.kmp.auth.TokenStore
+import com.siddharth.kmp.settings.SecureSettingsFactory
+
+val tokens = TokenStore(SecureSettingsFactory(context).create(), persistedKey = "refresh_token")
+tokens.setEphemeral(response.accessToken)   // in-memory only, gone on process death
+tokens.setPersisted(response.refreshToken)  // written through the backing Settings
+
+tokens.ephemeral.collect { token -> /* react to sign-out without polling */ }
+tokens.clear() // logout, or a refresh the server rejected
+```
+
+| Member | Signature | What it does |
+|---|---|---|
+| `TokenStore` | `class(settings: Settings, persistedKey: String)` | The two-slot token holder |
+| `.ephemeral` | `StateFlow<String?>` | In-memory secret, observable, never persisted |
+| `.persisted()` / `.setPersisted()` | `() -> String?` / `(String) -> Unit` | Read/write the persisted secret through `settings` |
+| `.clear()` | `() -> Unit` | Wipes both slots (logout, or a rejected refresh) |
+
+Depends on `multiplatform-settings` directly rather than on `:settings`, so a consumer that wants a
+`MapSettings()` fake for tests isn't forced to take the encrypted implementation. Targets: Android,
+JVM, iOS — deliberately **not** `wasmJs`: `multiplatform-settings` backs a browser target with
+`localStorage`, plaintext and script-readable, and a token store that silently degrades from
+Keystore/Keychain to that the moment a web target is added would be a security regression dressed as
+wider coverage. New addition, no dependents yet.
+
+## netlog
+
+Every app debugging a Ktor client re-invents the same debug affordance: a request/response log with
+credential redaction and a "paste this into a terminal" replay. `netlog` extracts Doori's in-memory
+version of it as a reusable Ktor client plugin.
+
+```kotlin
+import com.siddharth.kmp.netlog.NetworkLogPlugin
+import com.siddharth.kmp.netlog.NetworkLogStore
+import com.siddharth.kmp.netlog.toCurl
+
+val logs = NetworkLogStore() // in-memory ring buffer, newest first, 200 entries by default
+val client = HttpClient { install(NetworkLogPlugin(logs)) }
+
+logs.entries.collect { entries ->
+    // render a debug-only log screen; entries.first().toCurl() — Authorization/Cookie/API-key
+    // headers redacted by default
+}
+```
+
+| Member | Signature | What it does |
+|---|---|---|
+| `NetworkLogPlugin(store, readResponseBody = true)` | Ktor `ClientPlugin<Unit>` factory | Records every request/response into `store` |
+| `NetworkLogStore(capacity = 200)` | `class` | In-memory ring buffer, `entries: StateFlow<List<NetworkLogEntry>>` |
+| `NetworkLogEntry` | data class | One exchange: method, url, headers, bodies, status, duration |
+| `toCurl(redactHeaders = DEFAULT_REDACTED_HEADERS)` | `fun NetworkLogEntry.()` | Renders a copy-pasteable `curl`, sensitive headers redacted |
+
+**Install on debug builds only.** This captures request/response bodies, which on a real app means
+auth payloads and personal data; gating it is the consumer's job, since "debug" is a build concept
+this common-code module can't see. **Known limitation, not yet resolved**: `readResponseBody`
+defaults to `true`, which calls `bodyAsText()` inside the response hook — depending on the Ktor
+version/engine, that can consume the content channel before the real caller reads it. Pass
+`readResponseBody = false` if a consumer sees empty bodies after installing; everything else still
+records. `netlog` has no dependency on any other `kmp-toolkit` module, only Ktor's client-core.
+Targets: Android, JVM, iOS, `wasmJs`. New addition, no dependents yet.
 
 ## designsystem
 
@@ -992,15 +1106,77 @@ that Robolectric and Roborazzi cannot reach, which is the point.
 | `MarkdownText` | `@Composable` | Lightweight markdown → Compose renderer (headings, emphasis, lists, tables) |
 | `ComingSoonDialog` | `@Composable` | Brand-neutral placeholder dialog |
 
-`designsystem` depends only on Compose Multiplatform + coroutines, no other `kmp-toolkit` module.
-An app layers its own brand (palette, logo, typography) and its app-coupled components on top; those
-stay in the app, same reason `network` keeps your API and DTOs in the app. Candidai's
-`core:designsystem` adds `HireSignalPalette` / `HireSignalTheme` / status-colored components on top,
-brand staying in-app.
+**AI settings section.** `AiSettingsSection`, the settings screen neither AI seam shipped a UI for
+on its own: on-device model download/pause/resume/delete with progress and license gating, plus
+cloud-provider key entry with a real "test key" call. Pure render, every action is a callback, so
+it's testable via `runComposeUiTest` against a fake `AiSettingsUiState` with no live
+`ModelManager`/`AiProvider`. `AiSettingsState` wires a real `ModelManager`, the on-device `OnDeviceLlm`
+and a `SecureKeyStore`'s `getKey`/`setKey` into that state for a caller that wants the ready-made
+version, testing each provider key on demand via a caller-supplied `AiProvider` factory.
+
+```kotlin
+import com.siddharth.kmp.designsystem.ai.AiSettingsSection
+import com.siddharth.kmp.designsystem.ai.AiSettingsState
+
+val state = AiSettingsState(modelManager, manifest, onDeviceLlm, keyStore::getKey, keyStore::setKey, scope)
+AiSettingsSection(
+    uiState = state.uiState.collectAsState().value,
+    onConsentChange = state::setAiConsent,
+    onStartDownload = state::startDownload,
+    onPauseDownload = state::pauseDownload,
+    onDeleteModel = state::deleteModel,
+    onSelectProvider = state::selectProvider,
+    onProviderKeyChange = state::setProviderKey,
+    onClearProviderKey = state::clearProviderKey,
+    onTestProviderKey = state::testKey,
+)
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `AiSettingsSection` | `@Composable` | Pure render: consent toggle, on-device model cards, cloud-provider key cards |
+| `AiSettingsState` | `class(modelManager, manifest, onDeviceLlm, getKey, setKey, scope, consentStore?, providerFactory?)` | Wires a `ModelManager` + `OnDeviceLlm` + `SecureKeyStore`'s `getKey`/`setKey` into one `AiSettingsUiState` |
+| `AiConsentStore` | `interface` | Persistence seam for the AI-consent choice, same shape as `ThemeStore` |
+
+`designsystem` depends on Compose Multiplatform + coroutines, plus `:result` / `:ai` / `:llm-chat`
+for `AiSettingsSection` alone, every other composable here stays free of that dependency. An app
+layers its own brand (palette, logo, typography) and its app-coupled components on top; those stay
+in the app, same reason `network` keeps your API and DTOs in the app. Consumed today by
+PaymentsLab-KMP, Gaddi and Candidai (not Doori); Candidai's `core:designsystem` adds
+`HireSignalPalette` / `HireSignalTheme` / status-colored components on top, brand staying in-app.
 
 Targets: Android (`minSdk 24` / `compileSdk 37`), iOS (`iosArm64`, `iosSimulatorArm64`), Wasm
 (JS/browser). JVM/desktop isn't a target here (the consuming design systems don't need it); add
 `jvm()` if yours does.
+
+## charts
+
+Vico is a real, actively maintained Compose Multiplatform chart library, but it's also pre-1.0 and
+configurable to a fault. `charts` is one opinionated wrapper around it: a single `TimeSeriesChart`
+composable, and nothing else exposed, so an app never re-couples itself to `CartesianChartHost`
+directly — the exact coupling this module exists to absorb. Deliberately **not** part of
+`designsystem`: that module rides into Doori's Wear target, and a charting library has no business
+shipping to a watch build. `charts` depends on `designsystem` for tokens; never the reverse.
+
+```kotlin
+import com.siddharth.kmp.charts.TimeSeriesChart
+import com.siddharth.kmp.charts.Point
+import kotlinx.collections.immutable.toImmutableList
+
+TimeSeriesChart(data = spendByDay.map { Point(it.epochMs.toDouble(), it.amount) }.toImmutableList())
+// Empty data renders an empty chart rather than throwing — a series with no points yet on a first
+// run is a normal state, not an error.
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `Point` | `data class` | One `(x, y)` sample; neither axis is interpreted, so the same chart renders spend, volume, or a funnel |
+| `TimeSeriesChart` | `@Composable` | A single Vico line chart over an `ImmutableList<Point>` |
+
+`charts` depends on `designsystem` (for tokens) and Vico (`compose` + `compose-m3`), no other
+`kmp-toolkit` module. Targets: Android, JVM, iOS, `wasmJs` — Vico 3.3.0 publishes a real `wasmJs`
+artifact (verified against its published Gradle module metadata, not just its changelog). New
+addition, no dependents yet.
 
 ## ai
 
@@ -1084,7 +1260,10 @@ Model files are **downloaded on demand at runtime**, never shipped in the repo.
 `ai` is standalone, depends only on coroutines + Koin + `:result` (for `AiResult`/`AiFailure` — a
 zero-dependency module, so this pulls in nothing else) and, on Android, the ML Kit GenAI +
 MediaPipe SDKs. Your domain "intelligence" layer (prompt templates, output parsing, heuristics)
-stays in your app and consumes this seam. Candidai's `core:ai` builds `JobIntelligence` on top.
+stays in your app and consumes this seam. All four apps use it today: Candidai's `core:ai` builds
+`JobIntelligence` on top, Doori's `feature:agent` drives its trip-assistant LLM engine, Gaddi and
+PaymentsLab-KMP each wire their own feature on top; kmp-app-template's Home panel consumes it
+directly as a worked example.
 
 | Target | Backend |
 |---|---|
@@ -1092,6 +1271,49 @@ stays in your app and consumes this seam. Candidai's `core:ai` builds `JobIntell
 | iOS (`iosArm64`, `iosSimulatorArm64`) | **Foundation Models is real, opt-in per consumer.** `FoundationModelsOnDeviceLlm` delegates to a Swift `LanguageModelSession` bridge (real per-token streaming) once your app registers one — see `ai/ios-bridge/README.md`; unregistered, it degrades to unavailable, same as before the bridge existed. `MediaPipeOnDeviceLlm` is still an unconditional stub (`@Unimplemented`, logged once) — no Swift bridge for it yet. `CloudOnDeviceLlm` works today (plain HTTP) regardless, as the fallback tier |
 | JVM / Desktop | `UnavailableOnDeviceLlm` by default; append your own `CloudOnDeviceLlm` for a real answer |
 | `wasmJs` (web) | `UnavailableOnDeviceLlm` by default — same as JVM, no on-device model in a browser; append your own `CloudOnDeviceLlm` (its `AiProvider`s reach every cloud vendor's HTTP API fine from `wasmJs`) |
+
+**Not device-verified from this repo, honestly.** CI here runs on Ubuntu with no Android device and
+no macOS runner, so two things are unit/host-tested against fakes but have never run against the
+real hardware: ML Kit GenAI's actual Gemini Nano inference on a real AICore-class device (the
+`isAvailable()`/`capabilities()` logic is tested, the model call itself is not), and Apple's
+`LanguageModelSession` behind the Foundation Models bridge on real Apple Intelligence hardware (the
+Kotlin-side delegate-or-degrade logic is fully tested with a fake `NativeLlm`, see
+`ai/ios-bridge/README.md`). Both degrade to a clearly-typed `AiFailure`/unavailable state rather than
+crashing when the hardware isn't there, which is what's actually been proven; a consumer app is
+still the one that verifies the on-device model call itself on real hardware.
+
+## ai-testing
+
+Exercising an app's own AI-branching (a success string, a typed `AiFailure`, a chunked stream) via
+`:ai`'s real backends means either a multi-hundred-MB model download or AICore-class hardware,
+neither of which belongs in a unit test. `ai-testing` is the scriptable alternative: no real model,
+no device, just an `OnDeviceLlm` fully under the test's control.
+
+```kotlin
+import com.siddharth.kmp.ai.testing.FakeOnDeviceLlm
+import com.siddharth.kmp.ai.testing.RecordingLlm
+import com.siddharth.kmp.result.AiFailure
+
+val fake = FakeOnDeviceLlm().apply {
+    enqueueSuccess("Senior Android Engineer, 5 YOE, Kotlin/Compose")
+    enqueueFailure(AiFailure.RateLimited)
+}
+val recorder = RecordingLlm(fake) // wraps any OnDeviceLlm, records every call that reaches it
+
+val summarizer = JobSummarizer(recorder)
+summarizer.summarize(jd)
+assertEquals(jd, recorder.lastPrompt) // asserts what the CALLER actually sent, PromptGuard included
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `FakeOnDeviceLlm` | `class : OnDeviceLlm` | Scriptable via `enqueueSuccess`/`enqueueFailure`/`enqueueStreamChunks`; the last queued entry keeps repeating once the queue drains, an empty queue answers `AiFailure.EmptyReply` |
+| `RecordingLlm` | `class : OnDeviceLlm by delegate` | Wraps another `OnDeviceLlm` (a `FakeOnDeviceLlm` by default), records every `generate`/`generateStream` call for `.calls`/`.lastPrompt` assertions |
+
+`ai-testing` depends on `:ai` and `:result` via `api` (not `implementation`) so a consumer's test
+source set sees `OnDeviceLlm`/`LlmPart`/`AiResult`/`AiFailure` without a second, separate test
+dependency. No other `kmp-toolkit` module. Targets: Android, JVM, iOS, `wasmJs`. Consumed today by
+Doori's `feature:agent` (`LlmAssistantEngineTest`); no other app has adopted it yet.
 
 ## llm-chat
 
@@ -1220,7 +1442,9 @@ the real key server-side.
 these providers' existing fire-and-forget request behavior, so the module brings its own
 `ktor-client-core`/`content-negotiation` setup on top of the shared engine, plus `:result` for
 `AiResult`/`AiFailure` and (Android/iOS/JVM only) `:settings` for `SecureKeyStore`'s at-rest crypto.
-Targets: Android, JVM, iOS, `wasmJs`. Dependents: `:ai` (`CloudOnDeviceLlm`).
+Targets: Android, JVM, iOS, `wasmJs`. In-repo dependents: `:ai` (`CloudOnDeviceLlm`), `:designsystem`
+(`AiSettingsSection`). Consumed directly by PaymentsLab-KMP, Gaddi, Candidai and kmp-app-template;
+Doori only reaches it indirectly through `ai`'s own `CloudOnDeviceLlm`.
 
 ## feedback
 
@@ -1394,7 +1618,8 @@ class TrackingStarter(
 Every implementation degrades to a documented no-op rather than throwing when its backing
 key/service is absent (see `NoOpDefaults.kt`). `app-shell` has no dependency on any other
 `kmp-toolkit` module, Android pulls in Play Services location, iOS pulls in Ktor's Darwin engine
-(for the iTunes Lookup update check). Targets: Android, JVM, iOS. New addition, no dependents yet.
+(for the iTunes Lookup update check). Targets: Android, JVM, iOS. Consumed today by Doori's
+`feature:tracking` (the `LocationTracker` seam); no other app has adopted it yet.
 
 ## payments-api
 
@@ -1602,7 +1827,10 @@ kmp-toolkit/
 ├── security/                # Keystore, VAPT posture, FLAG_SECURE — Android only
 ├── device-integrity/        # KMP root/jailbreak posture check — Android · JVM · iOS · Wasm
 ├── settings/                # SecureSettingsFactory (encrypted key/value) — Android · JVM · iOS
-├── designsystem/            # DesignTokens, ThemeController, MarkdownText — Android · iOS · Wasm
+├── auth/                    # TokenStore (ephemeral + persisted) — Android · JVM · iOS
+├── netlog/                  # NetworkLogPlugin, Ktor request/response logger — Android · JVM · iOS · Wasm
+├── designsystem/            # DesignTokens, ThemeController, MarkdownText, AiSettingsSection — Android · iOS · Wasm
+├── charts/                  # TimeSeriesChart (Vico wrapper) — Android · JVM · iOS · Wasm
 ├── ai/                      # OnDeviceLlm seam — Android · JVM · iOS
 ├── ai-testing/              # FakeOnDeviceLlm/RecordingLlm test doubles — Android · JVM · iOS · Wasm
 ├── llm-chat/                # Cloud-LLM chat client (Gemini/OpenAI/Anthropic) — Android · JVM · iOS · Wasm
@@ -1632,8 +1860,9 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
   modules (`result`, `bots-policy`, `location`, `store`) test on the JVM target with `kotlin.test`;
   Android-facing modules (`security`, the `provider:*` leaves) add MockK, Turbine and Robolectric
   where a host-side Android API needs exercising.
-- **CI matrix.** `.github/workflows/ci.yml` runs `./gradlew assemble jvmTest testAndroidHostTest
-  testDebugUnitTest --stacktrace`, build plus test, across every module on every push and PR.
+- **CI matrix.** `.github/workflows/ci.yml` runs `./gradlew assemble check --stacktrace` — `check`
+  aggregates `jvmTest`/`testAndroidHostTest`/`testDebugUnitTest`/`wasmJsBrowserTest`/lint per module,
+  so it stays a superset as modules and targets are added — across every module on every push and PR.
 - **No-AI-attribution gate.** `.github/workflows/no-ai-attribution.yml` fails a push or PR if any
   commit message carries AI/assistant attribution, mirroring a local `.githooks/commit-msg` guard so
   nothing slips through `--no-verify` or an unconfigured clone.
@@ -1651,23 +1880,43 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 - [x] `payments-api` + 19 `provider:*` gateway leaves, one contract, sandbox-honest `GatewayStatus`
 - [x] `offline-outbox`, first Room module in the monorepo, targeting watchOS alongside Android/JVM/iOS
 - [x] `bots-policy`, zero-dependency ISMCTS search shell extracted from Gaddi
-- [x] Four more standalone platform-service leaves, `device-integrity` (KMP root/jailbreak check),
-      `settings` (encrypted key/value store), `app-shell` (location/geocoding/scanner/notifications/
-      permissions/update/review/push/analytics seams), `store` (offline-first `ScreenState` +
-      `DecisionEngine` read/write helpers), none with dependents yet
-- [x] CI matrix (`assemble jvmTest testAndroidHostTest testDebugUnitTest`) + no-AI-attribution check
+- [x] Seven more standalone/utility leaves, `device-integrity` (KMP root/jailbreak check),
+      `settings` (encrypted key/value store, Doori's first consumer), `app-shell`
+      (location/geocoding/scanner/notifications/permissions/update/review/push/analytics seams,
+      Doori's first consumer), `store` (offline-first `ScreenState` + `DecisionEngine` read/write
+      helpers), `auth` (`TokenStore`), `netlog` (Ktor request/response logger), `charts`
+      (`TimeSeriesChart`) — `device-integrity`, `store`, `auth`, `netlog` and `charts` have no
+      dependents yet
+- [x] CI matrix (`assemble check`, aggregating `jvmTest`/`testAndroidHostTest`/`testDebugUnitTest`/
+      `wasmJsBrowserTest`/lint) + no-AI-attribution check, with an un-shallowed-base fetch so the PR
+      scan covers only the branch
 - [x] Consumed as a source composite build (vendored via `includeBuild`; not Maven-published)
 - [x] `llm-chat` wired into `ai`'s `CompositeOnDeviceLlm` fallback chain as a cloud tier
       (`CloudOnDeviceLlm`), plus a `wasmJs` target on `ai` so web can wire a real, cloud-backed
       `OnDeviceLlm` instead of hand-maintaining an always-false stub
+- [x] The AI stack hardening wave: provider-correctness fixes, real SSE token streaming on both the
+      cloud (`llm-chat`) and on-device (`ai`) seams, unconditional `PromptGuard` on every prompt/part,
+      `SecureKeyStore` for BYOK cloud keys, `StructuredOutput<T>` typed extraction, on-device
+      hardening, the vendor-agnostic `HttpChatProvider`, `AiSettingsSection` (the first in-repo
+      settings screen for either AI seam), `ai-testing`'s `FakeOnDeviceLlm`/`RecordingLlm`, and a
+      real Swift `LanguageModelSession` bridge for `FoundationModelsOnDeviceLlm` on iOS
+- [x] `result` picked up its first real consumers: `ai`/`llm-chat`/`designsystem` in-repo
+      (`AiResult`/`AiFailure`/`AiCapabilities`), kmp-app-template out-of-repo (direct)
+- [x] 2.0.0 — the AI stack lands as a breaking public surface (see [Install](#install))
 
 **Exploring**
 - [ ] Route `network`'s `HttpRequestRetry`/`ResponseException` failures onto `result`'s
-      `DataError.Network` arms, so `result` stops being a foundation with zero consumers
+      `DataError.Network` arms, and adopt `DataError` in `security` too — `result`'s remaining two
+      planned consumers, now that `ai`/`llm-chat`/`designsystem` and kmp-app-template already use it
 - [ ] `payments-api` → `result`'s typed `Result<D, DataError>` instead of its own `PaymentResult` shape
 - [ ] Move some `provider:*` leaves off `SANDBOX_READY`/`MOCK_MODE` as partner KYC access opens up
-- [ ] First real consumer for `device-integrity`, `settings`, `app-shell` and `store`, each is
-      shipped and unit-tested, but none has been wired into Candidai/PaymentsLab-KMP/Doori/Gaddi yet
+- [ ] First real consumer for `device-integrity`, `store`, `auth`, `netlog` and `charts`, each is
+      shipped and unit-tested, but none has been wired into Candidai/PaymentsLab-KMP/Doori/Gaddi/
+      kmp-app-template yet (`settings`, `app-shell` and `ai-testing` already picked up their first,
+      Doori, see the [Modules](#modules) table)
+- [ ] A Swift bridge for `MediaPipeOnDeviceLlm` on iOS (still an unconditional stub); Gemini Nano
+      hardware and the Foundation Models bridge are both unit-tested here but neither has run on real
+      Apple Intelligence/AICore hardware from this repo — see [ai](#ai)
 
 ## License
 
@@ -1684,6 +1933,7 @@ convention plugins in [kmp-build-logic](https://github.com/darkpandawarrior/kmp-
 [PaymentsLab-KMP](https://github.com/darkpandawarrior/PaymentsLab-KMP) ·
 [Doori](https://github.com/darkpandawarrior/Doori) ·
 [Gaddi](https://github.com/darkpandawarrior/Gaddi) ·
+[kmp-app-template](https://github.com/darkpandawarrior/kmp-app-template) ·
 [kmp-build-logic](https://github.com/darkpandawarrior/kmp-build-logic)
 
 </div>
