@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.map
 // download mid-request — there's no download-progress UX yet, so pre-warming stays out of scope.
 class MlKitGenAiOnDeviceLlm(
     @Suppress("unused") private val context: Context,
+    private val config: GenerationConfig? = null,
 ) : OnDeviceLlm {
     private val model: GenerativeModel by lazy { Generation.getClient() }
 
@@ -56,8 +57,14 @@ class MlKitGenAiOnDeviceLlm(
                 runCatching { model.checkStatus() }.getOrNull() != FeatureStatus.AVAILABLE -> AiFailure.ModelNotResident
                 else -> null
             }
-        // ML Kit GenAI ignores GenerationConfig entirely (the OS owns decoding) — see GenerationConfig's kdoc.
-        return AiCapabilities(streaming = true, multimodal = true, honoredConfigFields = emptySet(), unavailableReason = reason)
+        // topK/temperature/maxTokens are wired per-request below (buildRequest) — see GenerationConfig's
+        // kdoc. topP/accelerator have no equivalent on this API's request builder and stay unhonored.
+        return AiCapabilities(
+            streaming = true,
+            multimodal = true,
+            honoredConfigFields = setOf("topK", "temperature", "maxTokens"),
+            unavailableReason = reason,
+        )
     }
 
     override fun generateStream(prompt: String): Flow<String> = generateStream(listOf(LlmPart.Text(prompt)))
@@ -86,13 +93,27 @@ class MlKitGenAiOnDeviceLlm(
     // or ImagePart+TextPart (image first, text LAST — the model reads the trailing text as the
     // instruction anchoring the preceding image). Multiple images aren't representable by either
     // overload, so that shape is declined rather than silently dropping extras.
+    //
+    // The trailing lambda is GenerateContentRequest.Builder's per-request sampler config — distinct
+    // from this SDK's client-level GenerationConfig/ModelConfig (which picks a model tier, not a
+    // sampler) — verified via javap on the resolved genai-prompt-1.0.0-beta2 API jar: setTopK/
+    // setTemperature/setMaxOutputTokens all exist there. [config]'s topP/accelerator have no
+    // equivalent here and are silently skipped, same as every other backend ignores fields its
+    // engine doesn't expose.
     private fun buildRequest(parts: List<LlmPart>): GenerateContentRequest? {
         val images = parts.filterIsInstance<LlmPart.Image>()
         if (images.size > 1) return null
         val text = parts.filterIsInstance<LlmPart.Text>().joinToString("\n") { it.text }
         val image = images.singleOrNull()
         if (image == null && text.isBlank()) return null
-        return image?.let { generateContentRequest(ImagePart(it.bytes), TextPart(text)) {} }
-            ?: generateContentRequest(TextPart(text)) {}
+        // Kotlin-compiled Builder — these are properties (var topK/temperature/maxOutputTokens),
+        // not the setTopK()/setTemperature() Java-bean methods javap's bytecode view suggests.
+        val applyConfig: GenerateContentRequest.Builder.() -> Unit = {
+            config?.topK?.let { topK = it }
+            config?.temperature?.let { temperature = it }
+            config?.maxTokens?.let { maxOutputTokens = it }
+        }
+        return image?.let { generateContentRequest(ImagePart(it.bytes), TextPart(text), applyConfig) }
+            ?: generateContentRequest(TextPart(text), applyConfig)
     }
 }
