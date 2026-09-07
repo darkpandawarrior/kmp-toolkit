@@ -1004,6 +1004,13 @@ first success, or the last backend's failure reason if none produced one. Your f
 prompt-building and output-parsing stay in your app; this carries only the plumbing to *run* a
 prompt.
 
+`generateStream(prompt): Flow<String>` is the token-by-token variant, so a UI can render a reply as
+it arrives and a Stop action actually cancels the model instead of leaving it computing in the
+background. ML Kit GenAI and MediaPipe stream for real (partial results as the model produces
+them, and cancelling the collector stops the in-flight generation); every other backend replays
+`generate`'s result as one emission. `CompositeOnDeviceLlm.generateStream` delegates straight to
+whichever backend it picked, so this always reaches the real thing where one exists.
+
 ```kotlin
 import com.siddharth.kmp.ai.onDeviceLlmModule
 import com.siddharth.kmp.ai.OnDeviceLlm
@@ -1028,12 +1035,13 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, myR
 
 | Member | Signature | What it does |
 |---|---|---|
-| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String> }` | The single seam, text in, typed result out |
+| `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String>; fun generateStream(prompt: String): Flow<String> }` | The single seam, text in, typed result (or token stream) out |
 | `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) — fails `NotSupportedOnPlatform` |
-| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason |
+| `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason. `generateStream` delegates to the chosen backend's own stream, not a single-emission replay |
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
 | `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo> }` | On-demand model download/residency status |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
+| `capabilities()` | `suspend fun OnDeviceLlm.(): AiCapabilities` | Honest machine-readable descriptor: real streaming/multimodal support, which `GenerationConfig` fields this backend actually reads, and — when unavailable — the real `AiFailure` reason instead of a bare `false` |
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
@@ -1044,8 +1052,8 @@ stays in your app and consumes this seam. Candidai's `core:ai` builds `JobIntell
 
 | Target | Backend |
 |---|---|
-| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback |
-| iOS | Foundation Models seam (`iosArm64`, `iosSimulatorArm64`) |
+| Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma), composed with fallback. `isAvailable()` is a cheap API-level floor; `capabilities()` runs the real AICore `FeatureStatus`/model-residency check and reports why when it's off |
+| iOS (`iosArm64`, `iosSimulatorArm64`) | **Unimplemented today.** Both `FoundationModelsOnDeviceLlm` and `MediaPipeOnDeviceLlm` compile and satisfy the seam but are unconditional stubs (`@Unimplemented`, logged once) — no Swift bridge exists in this repo yet, so both always report unavailable and the heuristic tier upstream answers instead |
 | JVM / Desktop | `UnavailableOnDeviceLlm`, the heuristic tier upstream always answers |
 
 ## llm-chat
@@ -1098,7 +1106,8 @@ job.cancel()
 
 | Member | Signature | What it does |
 |---|---|---|
-| `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean }` | The single seam every backend implements |
+| `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean; capabilities(): AiCapabilities }` | The single seam every backend implements |
+| `capabilities()` | `suspend fun AiProvider.(): AiCapabilities` | Which `AiConfig` fields this provider actually honors, whether it streams/accepts images, and the real reason it's unavailable — no need to read provider source to learn a field silently no-ops |
 | `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure) }` | One increment of a `completeStream` reply |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
@@ -1109,6 +1118,10 @@ job.cancel()
 `complete()`. `completeStream()` deliberately has no such ceiling — a legitimately long reply keeps
 producing tokens well past any single-call deadline; cancelling the collecting coroutine is what
 ends a stream (and the provider's billing for it) early, not a timer.
+
+All three providers honor `maxTokens`/`temperature`/`timeoutMs` identically — `capabilities()`
+reports `honoredConfigFields = {"maxTokens", "temperature", "timeoutMs"}` for each, so a caller
+never has to open `AnthropicProvider`/`OpenAiProvider`/`GeminiProvider` source to check.
 
 All three providers' streaming endpoints frame their reply the same way — SSE `data:` lines, a
 blank line between events, OpenAI closing with `data: [DONE]` — behind one shared `parseSseFrames`

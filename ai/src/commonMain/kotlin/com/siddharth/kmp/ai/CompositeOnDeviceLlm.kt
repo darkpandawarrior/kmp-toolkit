@@ -1,8 +1,11 @@
 package com.siddharth.kmp.ai
 
+import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * Detection-ordered [OnDeviceLlm]: probes an ordered list of backends and uses the first one that
@@ -25,6 +28,45 @@ class CompositeOnDeviceLlm(
         val needsImage = parts.any { it is LlmPart.Image }
         return tryBackends(accepts = { !needsImage || it.supportsImage }) { it.generate(parts) }
     }
+
+    /**
+     * Delegates to the first available (and [OnDeviceLlm.supportsImage]-accepting) backend's OWN
+     * [OnDeviceLlm.generateStream] — not the single-emission default this class would otherwise
+     * inherit — so a backend with real token streaming (ML Kit GenAI, MediaPipe) actually streams
+     * through the one [OnDeviceLlm] every app gets from `onDeviceLlmModule()`, and cancelling the
+     * collecting coroutine reaches that backend while it's mid-generation.
+     *
+     * // ponytail: no cross-backend fallback once a stream is chosen — unlike [generate], which can
+     * // retry the next backend after a clean failure, a stream that has already shown the user a
+     * // few tokens can't un-show them, so escalating mid-stream would look like a glitch, not a
+     * // fallback. Only the pre-flight choice of WHICH backend to stream from escalates. Add
+     * // real fallback (buffer until the first emission proves the backend live) if an empty/failed
+     * // stream turns out to be common enough in practice to matter.
+     */
+    override fun generateStream(prompt: String): Flow<String> = chooseBackend { true }?.generateStream(prompt) ?: emptyFlow()
+
+    override fun generateStream(parts: List<LlmPart>): Flow<String> {
+        val needsImage = parts.any { it is LlmPart.Image }
+        return chooseBackend { !needsImage || it.supportsImage }?.generateStream(parts) ?: emptyFlow()
+    }
+
+    /**
+     * Delegates to the SAME backend [generateStream] would pick — the first available one — so an
+     * app asking "what can I actually do right now" gets the answer for the backend it would really
+     * run against, not a generic composite-wide guess. No backend available reads the same as
+     * [generate]'s empty-chain case: [AiFailure.NotSupportedOnPlatform].
+     */
+    override suspend fun capabilities(): AiCapabilities =
+        chooseBackend { true }?.capabilities()
+            ?: AiCapabilities(
+                streaming = false,
+                multimodal = false,
+                honoredConfigFields = emptySet(),
+                unavailableReason = AiFailure.NotSupportedOnPlatform,
+            )
+
+    private fun chooseBackend(accepts: (OnDeviceLlm) -> Boolean): OnDeviceLlm? =
+        backends.firstOrNull { it.isAvailable() && accepts(it) }
 
     /**
      * Runs [call] against each available (and [accepts]-passing) backend in order, returning the
