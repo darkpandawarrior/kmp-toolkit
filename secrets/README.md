@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/banner.svg" alt="kmp-secrets — SOPS and age encrypted secrets vault" width="700"/>
+<img src="../docs/assets/secrets-banner.svg" alt="kmp-secrets — SOPS and age encrypted secrets vault" width="700"/>
 
 ### A standalone SOPS+age secrets vault and alias manifest — demonstrating the "vault mode" secret-resolution model, no live secrets, nothing to run in production.
 
