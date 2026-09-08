@@ -24,7 +24,7 @@ a library repo with no `:shared`/iosApp of its own to compile it against. Copy i
        export(project(":ai")) // or "com.siddharth.kmp:ai" if you consume it as a published artifact
    }
    ```
-   (Mileway's `shared/build.gradle.kts` already does this for `core:ai`/`feature:agent` — same
+   (Doori's `shared/build.gradle.kts` already does this for `core:ai`/`feature:agent` — same
    pattern, one more `export(...)` line.)
 
 2. **Copy `FoundationModelsBridge.swift`** into your Xcode project (e.g. `iosApp/iosApp/ai/`), and
