@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        consumer: [Mileway, PaymentsLab, HireSignal, Kursi]
+        consumer: [Doori, PaymentsLab-KMP, Candidai, Gaddi]
     steps:
       - name: Dispatch to ${{ matrix.consumer }}
         env:
