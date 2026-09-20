@@ -58,7 +58,7 @@ actual class BiometricAuthenticator actual constructor() {
         cancelLabel: String,
     ): BiometricResult =
         suspendCancellableCoroutine { continuation ->
-            val prompt =
+            val dialog =
                 BiometricPrompt(
                     activity,
                     ContextCompat.getMainExecutor(activity),
@@ -81,8 +81,8 @@ actual class BiometricAuthenticator actual constructor() {
                         override fun onAuthenticationFailed() = Unit
                     },
                 )
-            continuation.invokeOnCancellation { activity.runOnUiThread { prompt.cancelAuthentication() } }
-            prompt.authenticate(
+            continuation.invokeOnCancellation { activity.runOnUiThread { dialog.cancelAuthentication() } }
+            dialog.authenticate(
                 BiometricPrompt.PromptInfo.Builder()
                     .setTitle(title)
                     .setSubtitle(subtitle.takeIf { it.isNotBlank() })
