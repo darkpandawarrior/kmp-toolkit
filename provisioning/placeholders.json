@@ -84,6 +84,24 @@
       "where": "Apple Developer portal > Membership",
       "costs": "requires Apple Developer Program",
       "blocks": "Sign in with Apple, Apple Pay, all signed builds"
+    },
+    {
+      "key": "APPLE_SIWA_REDIRECT_URI",
+      "sentinel": "__PROVISION_APPLE_SIWA_REDIRECT_URI__",
+      "realFormat": "^https://.+",
+      "where": "a server endpoint YOU deploy, then registered under the Services ID > Return URLs",
+      "costs": "hosting only; the Apple side is free once the Services ID exists",
+      "blocks": "Sign in with Apple ON ANDROID (:auth androidMain)",
+      "note": "Cannot be an app link. Apple POSTs form_post to this URL when scope is requested, and Android app links cannot receive a POST body - the endpoint must accept POST and 302 to your app link. Must be https; Apple rejects http and custom schemes."
+    },
+    {
+      "key": "GOOGLE_WEB_CLIENT_ID",
+      "sentinel": "__PROVISION_GOOGLE_WEB_CLIENT_ID__",
+      "realFormat": "^[0-9]+-[a-z0-9]+\\.apps\\.googleusercontent\\.com$",
+      "where": "Google Cloud console > Credentials > OAuth 2.0 Client IDs, type WEB APPLICATION",
+      "costs": "free",
+      "blocks": "Google sign-in via Credential Manager (:auth androidMain)",
+      "note": "The WEB client ID, not the Android one. The Android client ID is accepted by GetGoogleIdOption.setServerClientId, compiles, and then fails at runtime with a generic GetCredentialException - it only binds package + SHA-1, while setServerClientId sets the ID token AUDIENCE, which is the web client."
     }
   ],
   "secretsPolicy": {
