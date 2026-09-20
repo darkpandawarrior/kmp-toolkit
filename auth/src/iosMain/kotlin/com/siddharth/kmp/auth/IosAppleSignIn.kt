@@ -154,4 +154,4 @@ private class AppleSignInDelegate(
 }
 
 @OptIn(BetaInteropApi::class)
-private fun NSData.utf8(): String? = NSString.create(data = this, encoding = NSUTF8StringEncoding) as String?
+private fun NSData.utf8(): String? = NSString.create(data = this, encoding = NSUTF8StringEncoding)?.toString()
