@@ -41,10 +41,16 @@ class GooglePayRequestBuilder(
             put(
                 "parameters",
                 buildJsonObject {
-                    put("allowedAuthMethods", buildJsonArray { config.allowedAuthMethods.forEach { add(JsonPrimitive(it)) } })
+                    put(
+                        "allowedAuthMethods",
+                        buildJsonArray { config.allowedAuthMethods.forEach { add(JsonPrimitive(it)) } },
+                    )
                     // CardNetwork's names are Google's own `allowedCardNetworks` spellings, so this
                     // is a rename-safe mapping rather than a parallel list of magic strings.
-                    put("allowedCardNetworks", buildJsonArray { config.allowedCardNetworks.forEach { add(JsonPrimitive(it.name)) } })
+                    put(
+                        "allowedCardNetworks",
+                        buildJsonArray { config.allowedCardNetworks.forEach { add(JsonPrimitive(it.name)) } },
+                    )
                     put("billingAddressRequired", false)
                 },
             )

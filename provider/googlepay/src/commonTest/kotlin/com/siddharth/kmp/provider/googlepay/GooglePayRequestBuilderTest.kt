@@ -78,7 +78,8 @@ class GooglePayRequestBuilderTest {
     fun merchantNameFlowsThroughToMerchantInfo() {
         val json = builder.paymentDataRequest(amountMinor = 100L)
 
-        assertEquals("kmp-toolkit Demo", json.getValue("merchantInfo").jsonObject.getValue("merchantName").jsonPrimitive.content)
+        val merchantInfo = json.getValue("merchantInfo").jsonObject
+        assertEquals("kmp-toolkit Demo", merchantInfo.getValue("merchantName").jsonPrimitive.content)
     }
 
     @Test

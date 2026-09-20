@@ -4,7 +4,6 @@ package com.siddharth.kmp.provider.applepay
 
 import com.siddharth.kmp.paymentsapi.CardNetwork
 import com.siddharth.kmp.paymentsapi.WalletToken
-import platform.Foundation.NSData
 import platform.Foundation.base64EncodedStringWithOptions
 import platform.PassKit.PKPayment
 import platform.PassKit.PKPaymentNetwork
@@ -58,7 +57,7 @@ internal fun fromPKPaymentNetwork(network: PKPaymentNetwork?): CardNetwork? =
  */
 internal fun PKPayment.toWalletToken(): WalletToken =
     WalletToken(
-        paymentData = (token.paymentData as NSData).base64EncodedStringWithOptions(0uL),
+        paymentData = token.paymentData.base64EncodedStringWithOptions(0uL),
         network = fromPKPaymentNetwork(token.paymentMethod.network),
         displayLabel = token.paymentMethod.displayName,
     )
