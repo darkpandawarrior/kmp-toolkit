@@ -5,6 +5,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.wallet.IsReadyToPayRequest
 import com.google.android.gms.wallet.PaymentData
 import com.google.android.gms.wallet.PaymentDataRequest
 import com.google.android.gms.wallet.PaymentsClient
@@ -18,11 +19,13 @@ import com.siddharth.kmp.paymentsapi.FailureCode
 import com.siddharth.kmp.paymentsapi.GatewayId
 import com.siddharth.kmp.paymentsapi.GatewayMeta
 import com.siddharth.kmp.paymentsapi.GatewayStatus
-import com.siddharth.kmp.paymentsapi.PaymentGateway
 import com.siddharth.kmp.paymentsapi.PaymentHost
 import com.siddharth.kmp.paymentsapi.PaymentResult
 import com.siddharth.kmp.paymentsapi.PreparedPayment
 import com.siddharth.kmp.paymentsapi.Redactor
+import com.siddharth.kmp.paymentsapi.WalletAvailability
+import com.siddharth.kmp.paymentsapi.WalletGateway
+import com.siddharth.kmp.paymentsapi.WalletMerchantConfig
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -43,10 +46,12 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class GooglePayGateway(
     private val config: GooglePayConfig = GooglePayConfig(),
-) : PaymentGateway {
+) : WalletGateway {
     private val requestBuilder = GooglePayRequestBuilder(config)
 
     override val id: GatewayId = GatewayId("googlepay")
+
+    override val merchantConfig: WalletMerchantConfig = config.merchantConfig
 
     override val meta: GatewayMeta =
         GatewayMeta(
@@ -59,6 +64,34 @@ class GooglePayGateway(
                 "Google Pay via the real Play Services Wallet API, TEST environment — a genuine " +
                     "wallet method (not a settlement gateway) tokenizing to a processor underneath.",
         )
+
+    /**
+     * Whether a Google Pay button may be drawn, asked before anything is drawn.
+     *
+     * `isReadyToPay` answers one question - can this device pay right now - and folding its `false`
+     * into the same bucket as "Play Services is missing" is what loses the difference between a user
+     * who needs to add a card and a device that can never do this at all.
+     */
+    override suspend fun availability(host: PaymentHost): WalletAvailability {
+        if (!config.isProvisioned) return WalletAvailability.NOT_CONFIGURED
+        val androidHost = host as? AndroidPaymentHost ?: return WalletAvailability.UNSUPPORTED_DEVICE
+        val request = IsReadyToPayRequest.fromJson(requestBuilder.isReadyToPayRequest().toString())
+
+        return suspendCancellableCoroutine { cont ->
+            paymentsClient(androidHost)
+                .isReadyToPay(request)
+                .addOnSuccessListener { ready ->
+                    val availability =
+                        if (ready) WalletAvailability.AVAILABLE else WalletAvailability.NO_CARDS_PROVISIONED
+                    if (cont.isActive) cont.resume(availability) { _, _, _ -> }
+                }.addOnFailureListener { exception ->
+                    // A thrown isReadyToPay means Play Services is absent or too old, not that the
+                    // wallet is empty - there is no user action that fixes it.
+                    AppLog.w("Google Pay isReadyToPay failed", exception, tag = TAG)
+                    if (cont.isActive) cont.resume(WalletAvailability.UNSUPPORTED_DEVICE) { _, _, _ -> }
+                }
+        }
+    }
 
     override suspend fun prepare(created: CreatedOrder): PreparedPayment =
         PreparedPayment(
@@ -76,14 +109,7 @@ class GooglePayGateway(
             host as? AndroidPaymentHost
                 ?: return failure(FailureCode.SDK_ERROR, "Google Pay requires an Android host")
 
-        val paymentsClient: PaymentsClient =
-            Wallet.getPaymentsClient(
-                androidHost.activity,
-                Wallet.WalletOptions
-                    .Builder()
-                    .setEnvironment(config.paymentsEnvironment)
-                    .build(),
-            )
+        val paymentsClient = paymentsClient(androidHost)
         val requestJson = requestBuilder.paymentDataRequest(prepared.amount.amountMinor)
         val request = PaymentDataRequest.fromJson(requestJson.toString())
 
@@ -130,6 +156,15 @@ class GooglePayGateway(
                 }
         }
     }
+
+    private fun paymentsClient(host: AndroidPaymentHost): PaymentsClient =
+        Wallet.getPaymentsClient(
+            host.activity,
+            Wallet.WalletOptions
+                .Builder()
+                .setEnvironment(config.environment.toWalletConstant())
+                .build(),
+        )
 
     private fun mapSuccess(paymentData: PaymentData?): PaymentResult {
         if (paymentData == null) return failure(FailureCode.SDK_ERROR, "Google Pay returned no payment data")
