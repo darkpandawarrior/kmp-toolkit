@@ -17,10 +17,11 @@ import androidx.compose.ui.unit.Dp
  * The experimental opt-in is contained here, exactly as [InputProfile] contains `mediaQuery`'s.
  * Consumers call this and never import `androidx.compose.foundation.layout.FlexBox`.
  *
- * Worth knowing: the 1.12.0 release notes say FlexBox was promoted to stable, but that landed in
- * AndroidX 1.12.0 *final*. Compose Multiplatform 1.12.0-rc01 — what this family pins — is built on
- * AndroidX 1.12.0-rc01, where it is still `@ExperimentalFlexBoxApi`. Drop the opt-in once CMP ships
- * on the final artifact; nothing else here changes.
+ * History, because the opt-in's absence is load-bearing: FlexBox was experimental through CMP
+ * 1.12.0-rc01, which resolved AndroidX 1.12.0-rc01. CMP 1.13.0-alpha01 resolves foundation-layout
+ * 1.13.0-alpha02, which promoted FlexBox to stable and DELETED the ExperimentalFlexBoxApi marker
+ * outright, so the old opt-in became a dangling reference that failed every Compose target at
+ * once. Do not re-add it.
  */
 @Composable
 fun TagChipRow(
