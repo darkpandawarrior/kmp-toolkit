@@ -23,6 +23,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: kmp-toolkit
+      # Fast, text-only pre-build gate — runs before the JDK is even set up. Kotlin/Native
+      # exposes Obj-C CATEGORY members as package-level declarations that need their own import,
+      # and NS_ENUM constants as CEnum entries that cannot be imported bare. Six failures across
+      # four repos between 2026-07 and 2026-09 were that one mistake, and only the macos leg below
+      # could find them — a full Mac build each time. This is pure text analysis, so it belongs
+      # here. --self-test runs first so a guard that has quietly stopped working fails loudly
+      # instead of passing everything. See the script header for how to extend the member list and
+      # for what it deliberately cannot catch.
+      - name: Obj-C category import guard
+        run: |
+          python3 scripts/objc-category-guard.py --self-test
+          python3 scripts/objc-category-guard.py
+
       # settings.gradle.kts does includeBuild("../kmp-build-logic") — check out the sibling repo
       - uses: actions/checkout@v4
         with:
