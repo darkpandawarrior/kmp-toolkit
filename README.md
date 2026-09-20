@@ -49,6 +49,8 @@ proven across four apps and others are candidates, rather than a uniformly battl
 - [network](#network)
 - [security](#security)
 - [device-integrity](#device-integrity)
+- [biometric](#biometric)
+- [secure-store](#secure-store)
 - [settings](#settings)
 - [auth](#auth)
 - [netlog](#netlog)
@@ -143,6 +145,8 @@ monorepo.
 | [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing, client factory, retry, 401 handling, connectivity | Android · JVM · iOS | Doori, PaymentsLab-KMP, Gaddi, Candidai (all four) |
 | [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening, Keystore, VAPT posture, `FLAG_SECURE` | Android only | Doori, PaymentsLab-KMP, Candidai (three, not Gaddi) |
 | [**device-integrity**](#device-integrity) | `com.siddharth.kmp:device-integrity` | The KMP sibling of `security`'s root/jailbreak check, `DeviceIntegrity.inspect()` for non-Android-only apps | Android · JVM · iOS · Wasm | new, no dependents yet |
+| [**biometric**](#biometric) | `com.siddharth.kmp:biometric` | The KMP sibling of `security`'s `BiometricGuard`, one suspending `authenticate()` over `BiometricPrompt` and `LAContext` | Android · iOS | new, no dependents yet |
+| [**secure-store**](#secure-store) | `com.siddharth.kmp:secure-store` | The KMP sibling of `security`'s `KeystoreSecureStore`, encrypted key/value over Keystore and Keychain | Android · iOS | new, no dependents yet |
 | [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | Doori (`stub`'s `StubModule`) |
 | [**auth**](#auth) | `com.siddharth.kmp:auth` | `TokenStore`, the one genuinely duplicated slice of app auth: an ephemeral in-memory token + a persisted one over any `Settings` | Android · JVM · iOS | new, no dependents yet |
 | [**netlog**](#netlog) | `com.siddharth.kmp:netlog` | `NetworkLogPlugin`, an in-memory Ktor client HTTP logger with credential redaction and `toCurl()` replay | Android · JVM · iOS · Wasm | new, no dependents yet |
@@ -811,6 +815,75 @@ if (report.isCompromised) {
 
 Emulator alone never gates by default, CI and QA both run on emulators. `device-integrity` has no
 dependency on any other `kmp-toolkit` module. New addition, no dependents yet.
+
+## biometric
+
+`security`'s `BiometricGuard` cannot move to `commonMain`, `BiometricPrompt` needs a
+`FragmentActivity` and takes it as a parameter. So every KMP consumer hand-rolled the other half:
+Doori wrote its own `IosBiometricAuthenticator` over `LAContext` because there was nothing to
+reuse. `biometric` is that seam, done once.
+
+```kotlin
+import com.siddharth.kmp.biometric.BiometricAuthenticator
+import com.siddharth.kmp.biometric.BiometricAvailability
+import com.siddharth.kmp.biometric.BiometricResult
+
+// Android only, once, from Application.onCreate():
+BiometricAndroid.install { currentResumedActivity as? FragmentActivity }
+
+val auth = BiometricAuthenticator()
+when (val availability = auth.canAuthenticate()) {
+    BiometricAvailability.Available -> when (auth.authenticate("Confirm payment", "Pay Rs 1,240")) {
+        BiometricResult.Success -> pay()
+        BiometricResult.Cancelled -> Unit                      // not an error, say nothing
+        is BiometricResult.Failed -> retry()
+        is BiometricResult.Unavailable -> fallBackToPin()
+    }
+    // Every other state explains itself, so the fallback can too.
+    else -> showPinEntry(because = availability.reason)
+}
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `BiometricAuthenticator` | `expect class` | `canAuthenticate()` + `suspend authenticate(title, subtitle, cancelLabel)`; `BiometricPrompt` (Class 3 / `BIOMETRIC_STRONG`) on Android, `LAContext` on iOS |
+| `BiometricAvailability` | sealed interface | `Available` / `NoHardware` / `NoneEnrolled` / `PasscodeNotSet` / `LockedOut` / `NotConfigured` / `Unavailable(reason)`, every case carries a loggable `reason` |
+| `BiometricResult` | sealed interface | `Success` / `Cancelled` / `Failed(reason)` / `Unavailable(availability)` |
+| `BiometricAndroid.install { }` | `object` | Hands the library the *currently resumed* `FragmentActivity`; until then `canAuthenticate()` answers `NotConfigured` rather than dying quietly |
+
+Android and iOS only. There is no JVM or browser biometric prompt to bind, and a stub actual that
+always answers "unavailable" is the `shareText` silent-no-op with a nicer name. Cancelling the
+calling coroutine dismisses the prompt. The consuming iOS app must declare
+`NSFaceIDUsageDescription`; Android needs a `FragmentActivity`, not merely a `ComponentActivity`.
+
+## secure-store
+
+The cross-platform half of `security`'s `KeystoreSecureStore`, built on `settings`' existing
+`SecureSettingsFactory` rather than wrapping the Keychain a second time.
+
+```kotlin
+import com.siddharth.kmp.securestore.SecureStore
+
+val store = SecureStore(context)            // iOS: SecureStore()
+val status = store.isAvailable()
+if (!store.putString("payment_token", token)) {
+    // The write did NOT land. status.reason says why, in one loggable sentence.
+}
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `SecureStore` | `expect class` | `isAvailable()`, `putString`/`getString`/`remove`/`contains`/`clear`; EncryptedSharedPreferences under an Android Keystore `MasterKey`, Keychain on iOS |
+| `SecureStoreStatus` | sealed interface | `Available` / `Unavailable(reason)`, the capability flag |
+
+Two deliberate choices. **Mutators return `Boolean`**, because a store that cannot be opened and
+silently accepts a payment token is a no-op with money attached. And **`isAvailable()` round-trips
+a canary** on first use, write, read back, delete, because a Keychain the app is not entitled to
+write to accepts the call and stores nothing; only the read-back half catches that.
+
+Reach for `security`'s `KeystoreSecureStore` instead when the threat model is a rooted device with
+a filesystem dump, it additionally hashes key *names* so even what you store is not named on disk.
+Reach for this one when the requirement is "the same secret, both platforms, encrypted at rest".
 
 ## settings
 

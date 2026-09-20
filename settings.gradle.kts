@@ -98,7 +98,12 @@ include(":result")
 include(":common")
 include(":mvi-core")
 include(":network")
+// :security stays Android-only on purpose — it is the VAPT surface (hook/SSL-bypass/root detection,
+// FLAG_SECURE, certificate pinning) and none of that has an iOS counterpart worth faking. The two
+// pieces of it that DO belong on both platforms were split out rather than stubbed:
 include(":security")
+include(":biometric")
+include(":secure-store")
 include(":device-integrity")
 include(":settings")
 include(":auth")
