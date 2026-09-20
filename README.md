@@ -331,17 +331,17 @@ the AI stack rather than a full app, wired into its Home panel's `AiModule`.
 
 | Layer | Technology |
 |---|---|
-| Language | Kotlin `2.4.20-RC` |
-| Build | Android Gradle Plugin `9.5.0-alpha02`, KSP `2.3.11` |
-| UI | Compose Multiplatform `1.12.0-rc01` (Material3 `1.12.0-alpha03`, BOM `2026.08.00`) |
-| Networking | Ktor `3.5.1` (OkHttp / Darwin / CIO / Js engines) |
+| Language | Kotlin `2.4.20`, Gradle `9.8.0-rc-2` |
+| Build | Android Gradle Plugin `9.5.0-alpha06`, KSP `2.3.12` |
+| UI | Compose Multiplatform `1.13.0-alpha01` (Material3 rides the same version; AndroidX BOM `2026.09.00`) |
+| Networking | Ktor `3.6.0` (OkHttp / Darwin / CIO / Js engines) |
 | DI | Koin `4.2.2` |
 | Async | kotlinx-coroutines `1.11.0` |
-| Persistence | Room `2.8.4` (KMP, `offline-outbox`) |
+| Persistence | Room `2.8.5` (KMP, `offline-outbox`) |
 | Logging | Napier `2.7.1` |
-| Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Robolectric `4.16.1` |
-| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`); not published to Maven |
-| CI | GitHub Actions, `ci.yml` (build+test matrix), `no-ai-attribution.yml` |
+| Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Mokkery `3.5.0`, Robolectric `4.17` |
+| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`); four modules also on Maven Central |
+| CI | GitHub Actions, `ci.yml` (`build-test` on ubuntu for android/jvm/wasm + `ios-compile` on macOS), `no-ai-attribution.yml` |
 
 ## Getting started
 
@@ -1726,7 +1726,7 @@ room { schemaDirectory("$projectDir/schemas") }
 Targets: Android, JVM, iOS, **and watchOS** (`watchosArm64`, `watchosSimulatorArm64`,
 `watchosDeviceArm64`), Doori's `core:data` re-exports the outbox through `commonMain` and targets
 watchOS too, so this module has to match that target set, sharing `appleMain` actuals between iOS and
-watchOS. Depends on Room `2.8.4` + `sqlite-bundled` (Android) and kotlinx-serialization; no other
+watchOS. Depends on Room `2.8.5` + `sqlite-bundled` (Android) and kotlinx-serialization; no other
 `kmp-toolkit` module. Consumed by Doori (`core:data`).
 
 ## store
