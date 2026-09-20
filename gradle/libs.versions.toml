@@ -7,12 +7,12 @@ kotlin = "2.4.20"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.12.0-RC"
 kotlinx-datetime = "0.8.0"
-lifecycle = "2.11.0"
+lifecycle = "2.12.0-alpha03"
 napier = "2.7.1"
 ktor = "3.6.0"
 koin = "4.2.2"
 compose-multiplatform = "1.13.0-alpha01"
-compose-bom = "2026.08.00"
+compose-bom = "2026.09.00"
 core-ktx = "1.19.0"
 activity-compose = "1.14.0-alpha02"
 biometric = "1.4.0-alpha07"
@@ -24,11 +24,11 @@ turbine = "1.2.1"
 ksp = "2.3.12"
 room = "2.8.5"
 sqlite-bundled = "2.8.0-alpha01"
-stripe = "23.11.1"
+stripe = "23.19.0"
 play-services-wallet = "20.0.0"
 razorpay = "1.6.41"
-cashfree = "2.5.0"
-robolectric = "4.16.1"
+cashfree = "2.6.0"
+robolectric = "4.17"
 dokka = "2.3.0-Beta"
 # Maven Central publishing: handles signing, POM, sources+javadoc jars and the Central Portal upload.
 vanniktechMavenPublish = "0.37.0"
@@ -36,7 +36,7 @@ compose-webview-multiplatform = "2.0.3"
 # Tier-1 adoption 2026-08-27. Both target lists below were read off the published Gradle module
 # metadata, not a changelog: the plan these came from claimed NEITHER publishes wasmJs. Both do,
 # which deleted an expect/actual and a hand-drawn Canvas fallback before either was written.
-vico = "3.3.0"
+vico = "3.3.1"
 zoomable = "2.13.0"
 # Multiplatform mocking. A COMPILER PLUGIN, so a Kotlin bump can break it in a way no catalogue
 # check would see - MokkeryCompatTest in :mvi-core is the canary that fails when it does.
@@ -53,7 +53,7 @@ androidx-security-crypto = "1.1.0"
 # Verified against real POMs on repo1.maven.org, not against git tags — compass's 3.x line
 # RENAMED its artifacts (compass-core -> core) and the old `compass-*` names stop at 1.6.7,
 # so a naive coordinate lands you two major versions behind without any error.
-calf = "0.13.0"
+calf = "0.14.0"
 compass = "4.0.0"
 
 [libraries]
