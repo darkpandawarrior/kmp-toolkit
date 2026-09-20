@@ -19,7 +19,10 @@ import platform.Foundation.create
  * Mail attaches it by name, Files saves it by name. The temporary directory is the system's to
  * reclaim, so nothing here has to clean up after a share the app never learns the outcome of.
  *
- * Never throws. Every failure is a share action whose caller's fallback is to share text.
+ * Never throws, and never silently does nothing. [canShareImage] returns true on iOS, so a caller
+ * has already skipped its own text fallback by the time it gets here — returning quietly on a
+ * failed write would reproduce exactly the silent no-op this actual was written to remove. Both
+ * failure paths therefore degrade to [shareText] rather than to nothing.
  */
 actual fun shareImage(
     pngBytes: ByteArray,
@@ -27,14 +30,20 @@ actual fun shareImage(
     text: String,
 ) {
     // usePinned { addressOf(0) } is out of bounds on an empty array, so this guard is load-bearing.
-    if (pngBytes.isEmpty()) return
+    if (pngBytes.isEmpty()) {
+        shareText(text)
+        return
+    }
     val safeName = fileName.replace(Regex("[^A-Za-z0-9_-]"), "_").take(64).ifEmpty { "share" }
     val path = NSTemporaryDirectory() + "$safeName.png"
     val data =
         pngBytes.usePinned { pinned ->
             NSData.create(bytes = pinned.addressOf(0), length = pngBytes.size.toULong())
         }
-    if (!data.writeToFile(path, atomically = true)) return
+    if (!data.writeToFile(path, atomically = true)) {
+        shareText(text)
+        return
+    }
     presentActivitySheet(listOf(text, NSURL.fileURLWithPath(path)))
 }
 
