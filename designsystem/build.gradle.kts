@@ -67,7 +67,34 @@ kotlin {
             implementation(project(":result"))
             implementation(project(":ai"))
             implementation(project(":llm-chat"))
+            // WalletAvailability — the four-state flag WalletPayButton refuses to draw on.
+            implementation(project(":payments-api"))
         }
+
+        // WalletPayButton lives here, NOT in commonMain, and there is no jvm/wasmJs actual on
+        // purpose. A device wallet does not exist on desktop or in a browser, so those targets get
+        // no declaration at all rather than an empty actual that compiles and silently does
+        // nothing — the exact bug class this seam was written to remove. An `expect` in commonMain
+        // would force one; an intermediate source set that only android and ios depend on does not,
+        // while still making the compiler check that both platforms match.
+        val walletMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.ui)
+                implementation(project(":payments-api"))
+            }
+        }
+        androidMain.get().dependsOn(walletMain)
+        iosMain.get().dependsOn(walletMain)
+
+        androidMain.dependencies {
+            // Google's own button asset. Google Pay's brand guidelines mandate it; a hand-drawn
+            // mark fails store review, so this is a hard dependency rather than a convenience.
+            implementation(libs.pay.button.compose)
+        }
+
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
