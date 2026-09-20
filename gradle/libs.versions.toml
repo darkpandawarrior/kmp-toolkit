@@ -40,7 +40,7 @@ vico = "3.3.1"
 zoomable = "2.13.0"
 # Multiplatform mocking. A COMPILER PLUGIN, so a Kotlin bump can break it in a way no catalogue
 # check would see - MokkeryCompatTest in :mvi-core is the canary that fails when it does.
-mokkery = "3.4.2"
+mokkery = "3.5.0"
 # NOT on the Compose Multiplatform train. Frozen upstream at 1.7.3 — no 1.13.0-alpha01 of
 # material-icons-core exists, so converting this to version.ref = "compose-multiplatform"
 # would fail to resolve. Verified against repo1 maven-metadata.xml, not recalled.

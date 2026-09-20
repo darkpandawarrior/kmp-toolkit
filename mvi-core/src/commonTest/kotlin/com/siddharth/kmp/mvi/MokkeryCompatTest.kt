@@ -24,7 +24,9 @@ private interface CompatCollaborator {
  * This test's job is to fail loudly and early on the next toolchain move. It deliberately runs on
  * every target rather than just the JVM, because the JVM is the one platform where Mokkery is
  * *least* likely to break and where MockK would have been an option anyway. Proven green on
- * jvm, iosSimulatorArm64 and wasmJs against Kotlin 2.4.20-RC, 2026-08-27.
+ * jvm, iosSimulatorArm64 and wasmJs against Kotlin 2.4.20-RC, 2026-08-27. Re-pointed at
+ * Kotlin 2.4.20 (final) + Mokkery 3.5.0 on 2026-09-20 — unverified until this test runs,
+ * which is exactly the state it exists to report.
  *
  * If this fails after a Kotlin upgrade, the answer is hand-written fakes, not a Mokkery snapshot.
  */
