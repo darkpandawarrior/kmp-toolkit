@@ -200,13 +200,17 @@ object AppleWebFlow {
 
 private const val MIN_RANDOM_LENGTH = 16
 
+/** The RFC 3986 unreserved set: ALPHA / DIGIT / "-" / "." / "_" / "~". */
+private fun Char.isRfc3986Unreserved(): Boolean =
+    this in 'A'..'Z' || this in 'a'..'z' || this in '0'..'9' || this in "-._~"
+
 /** RFC 3986 unreserved set; everything else is escaped. `+` is NOT a space here, only in decode. */
 private fun String.percentEncode(): String = encodeToByteArray().joinToString("") { byte ->
     val v = byte.toInt() and BYTE_MASK
     val c = v.toChar()
     // Explicit ASCII ranges, not isLetterOrDigit(): that is true for 'e9' -> 'e' too, and a
     // locale-aware predicate has no business deciding what is legal in a URL.
-    if (c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9' || c in "-._~") {
+    if (c.isRfc3986Unreserved()) {
         c.toString()
     } else {
         "%" + v.toString(HEX_RADIX).uppercase().padStart(2, '0')
