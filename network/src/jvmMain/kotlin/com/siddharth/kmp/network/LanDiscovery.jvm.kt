@@ -10,6 +10,7 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,6 +67,11 @@ actual class LanAdvertiser actual constructor(
     private var socket: DatagramSocket? = null
     private var worker: Thread? = null
 
+    // The probe responder is created ON the worker thread but must be closeable FROM stop(), because
+    // closing it is the only thing that unblocks a thread parked in DatagramSocket.receive() —
+    // Thread.interrupt() does not. Held here so stop() releases LAN_UDP_PORT synchronously.
+    private val responder = AtomicReference<DatagramSocket?>(null)
+
     actual fun start(
         serviceName: String,
         payload: String,
@@ -84,7 +90,7 @@ actual class LanAdvertiser actual constructor(
                 // Listen for probes on the discovery port too, so we answer instantly. We use a SECOND
                 // socket bound to the well-known port with reuse so multiple hosts on one machine coexist
                 // (mainly for tests); if the bind fails we still beacon periodically.
-                val responder =
+                val responderSocket =
                     try {
                         DatagramSocket(null).apply {
                             reuseAddress = true
@@ -95,24 +101,28 @@ actual class LanAdvertiser actual constructor(
                     } catch (_: Exception) {
                         null
                     }
+                responder.set(responderSocket)
+                // stop() may have run between start() returning and this thread getting here, in which
+                // case it saw a null field and closed nothing. Don't leave the port bound behind us.
+                if (!running.get()) responderSocket?.close()
                 val probeBuf = ByteArray(64)
                 try {
                     while (running.get() && !Thread.currentThread().isInterrupted) {
                         // 1. Periodic broadcast.
                         runCatching { sock.send(DatagramPacket(bytes, bytes.size, target)) }
                         // 2. Answer any probe that arrived this interval (unicast back to the asker).
-                        if (responder != null) {
+                        if (responderSocket != null) {
                             val probe = DatagramPacket(probeBuf, probeBuf.size)
                             val got =
                                 runCatching {
-                                    responder.receive(probe)
+                                    responderSocket.receive(probe)
                                     true
                                 }.getOrDefault(false)
                             if (got) {
                                 val text = String(probe.data, 0, probe.length, Charsets.UTF_8)
                                 if (text.startsWith(probeToken)) {
                                     runCatching {
-                                        responder.send(
+                                        responderSocket.send(
                                             DatagramPacket(bytes, bytes.size, probe.socketAddress),
                                         )
                                     }
@@ -123,17 +133,24 @@ actual class LanAdvertiser actual constructor(
                         }
                     }
                 } finally {
-                    responder?.close()
+                    responder.compareAndSet(responderSocket, null)
+                    responderSocket?.close()
                 }
             }
     }
 
     actual fun stop() {
         if (!running.compareAndSet(true, false)) return
-        worker?.interrupt()
-        worker = null
+        // Sockets first, interrupt second. DatagramSocket.receive() ignores Thread.interrupt(), so
+        // interrupting alone left the worker parked in receive() for up to one beacon interval —
+        // still holding LAN_UDP_PORT and still able to answer one more probe with the payload of an
+        // advertisement the caller has already stopped. Closing unblocks it and frees the port here,
+        // synchronously, which is what "releases platform resources" was always supposed to mean.
+        responder.getAndSet(null)?.close()
         socket?.close()
         socket = null
+        worker?.interrupt()
+        worker = null
     }
 }
 
