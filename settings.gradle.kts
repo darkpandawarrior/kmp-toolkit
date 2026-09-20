@@ -126,6 +126,9 @@ include(":charts")
 include(":provider:stripe")
 include(":provider:upi-intent")
 include(":provider:cashfree")
+// iOS-only, on purpose — there is no Apple Pay on Android, so the module declares no android
+// target rather than shipping a stub actual that compiles everywhere and pays nobody.
+include(":provider:applepay")
 include(":provider:googlepay")
 include(":provider:omise")
 include(":provider:razorpay")
