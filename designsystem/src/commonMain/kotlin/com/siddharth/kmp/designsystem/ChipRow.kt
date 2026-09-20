@@ -1,6 +1,5 @@
 package com.siddharth.kmp.designsystem
 
-import androidx.compose.foundation.layout.ExperimentalFlexBoxApi
 import androidx.compose.foundation.layout.FlexBox
 import androidx.compose.foundation.layout.FlexBoxConfig
 import androidx.compose.foundation.layout.FlexWrap
@@ -24,7 +23,6 @@ import androidx.compose.ui.unit.Dp
  * on the final artifact; nothing else here changes.
  */
 @Composable
-@OptIn(ExperimentalFlexBoxApi::class)
 fun TagChipRow(
     tags: List<String>,
     modifier: Modifier = Modifier,

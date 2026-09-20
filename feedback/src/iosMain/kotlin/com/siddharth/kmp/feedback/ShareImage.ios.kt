@@ -10,6 +10,7 @@ import platform.Foundation.NSData
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
 import platform.Foundation.create
+import platform.Foundation.writeToFile
 
 /**
  * iOS actual: writes the PNG into the temporary directory and hands its file URL to the share sheet
