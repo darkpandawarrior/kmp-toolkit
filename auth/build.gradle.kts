@@ -35,6 +35,10 @@ kotlin {
             // that have no reason to know about each other.
             api(libs.multiplatform.settings)
             implementation(libs.kotlinx.coroutines.core)
+            // Hashing.sha256Hex. An OIDC nonce is sent to the provider HASHED and compared against
+            // the raw value server-side, so the digest has to exist in commonMain — :common's is
+            // pure Kotlin and identical on every target, which MessageDigest/CC_SHA256 would not be.
+            implementation(project(":common"))
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
