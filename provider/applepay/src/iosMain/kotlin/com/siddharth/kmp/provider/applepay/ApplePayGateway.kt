@@ -26,7 +26,7 @@ import platform.PassKit.PKPayment
 import platform.PassKit.PKPaymentAuthorizationController
 import platform.PassKit.PKPaymentAuthorizationControllerDelegateProtocol
 import platform.PassKit.PKPaymentAuthorizationResult
-import platform.PassKit.PKPaymentAuthorizationStatusSuccess
+import platform.PassKit.PKPaymentAuthorizationStatus
 import platform.PassKit.PKPaymentRequest
 import platform.PassKit.PKPaymentSummaryItem
 import platform.darwin.NSObject
@@ -218,7 +218,7 @@ private class AuthorizationDelegate(
         // gives no way to revise this once the sheet closes.
         handler(
             PKPaymentAuthorizationResult(
-                status = PKPaymentAuthorizationStatusSuccess,
+                status = PKPaymentAuthorizationStatus.PKPaymentAuthorizationStatusSuccess,
                 errors = null,
             ),
         )
