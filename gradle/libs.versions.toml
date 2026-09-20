@@ -53,6 +53,11 @@ kotlinx-collections-immutable = "0.5.2"
 konnection = "1.4.5"
 play-services-location = "21.4.0"
 multiplatform-settings = "1.3.0"
+# Credential Manager — the only supported Google sign-in path since GoogleSignInClient was
+# deprecated. `credentials-play-services-auth` is the runtime provider and must ship alongside the
+# API artifact or getCredential() finds no provider at all; `googleid` carries GetGoogleIdOption.
+androidx-credentials = "1.5.0"
+googleid = "1.1.1"
 androidx-security-crypto = "1.1.0"
 # Verified against real POMs on repo1.maven.org, not against git tags — compass's 3.x line
 # RENAMED its artifacts (compass-core -> core) and the old `compass-*` names stop at 1.6.7,
@@ -158,6 +163,11 @@ multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", vers
 # MapSettings — the in-memory fake, for :auth's TokenStore tests.
 multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security-crypto" }
+
+# — auth (androidMain only: Credential Manager + Google ID) —
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "androidx-credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "androidx-credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
 # — offline-outbox (Room KMP — first Room module in the monorepo, versions match Mileway's) —
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }

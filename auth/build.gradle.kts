@@ -40,6 +40,13 @@ kotlin {
             // pure Kotlin and identical on every target, which MessageDigest/CC_SHA256 would not be.
             implementation(project(":common"))
         }
+        androidMain.dependencies {
+            // AndroidGoogleSignIn. credentials-play-services-auth is the PROVIDER: without it the
+            // API artifact compiles and getCredential() then fails at runtime with no provider.
+            implementation(libs.androidx.credentials)
+            implementation(libs.androidx.credentials.play.services.auth)
+            implementation(libs.googleid)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
             // MapSettings — the in-memory fake, same one Mileway's own auth tests already use.
