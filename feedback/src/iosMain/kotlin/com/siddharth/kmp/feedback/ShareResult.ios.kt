@@ -25,11 +25,18 @@ actual fun shareText(text: String) {
  *
  * Never throws: every caller is a share action whose fallback is to do nothing visible. A null
  * top view controller (no key window yet) simply means there is nothing to present from.
+ *
+ * On iPad this is presented as a popover, and UIKit raises `NSInvalidArgumentException` unless the
+ * popover has an anchor. Consumers in this family ship `TARGETED_DEVICE_FAMILY = "1,2"`, so that
+ * path is reachable and unanchored presentation is a crash, not a cosmetic issue. Anchoring to the
+ * presenting controller's own view is the minimum that avoids it.
  */
 internal fun presentActivitySheet(items: List<Any>) {
     if (items.isEmpty()) return
+    val top = topViewController() ?: return
     val controller = UIActivityViewController(activityItems = items, applicationActivities = null)
-    topViewController()?.presentViewController(controller, animated = true, completion = null)
+    controller.popoverPresentationController?.sourceView = top.view
+    top.presentViewController(controller, animated = true, completion = null)
 }
 
 /**
