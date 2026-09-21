@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.ktlint) apply false
     // Applied (not `apply false`) — the root project is the aggregator that stitches every module's
     // docs into one site. See the dokka block below.
     alias(libs.plugins.dokka)
@@ -36,6 +37,24 @@ subprojects {
     }
     tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
         exclude("**/build/**", "**/generated/**")
+    }
+}
+
+// Formatting. detekt judges structure; ktlint judges layout, and until now nothing judged layout
+// here at all — a detekt gate with no formatting gate behind it. The single number for line length
+// lives in .editorconfig (140) and nowhere else: detekt's style.MaxLineLength is `active: false`
+// precisely so the two tools cannot enforce one rule at two different values, which is how the
+// consumer apps ended up with 235 dead MaxLineLength baseline entries.
+//
+// Four rules are `disabled` in .editorconfig, each paired with the matching `active: false` in
+// config/detekt/detekt.yml. Changing one side without the other makes the two tools contradict
+// each other; the reasons are written out next to both halves.
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        // Same exclusion as detekt's: KSP / Compose-resources / Kotlin-JS output is machine-written
+        // and rewritten on every build. `.editorconfig` also carries it, for the IDE's benefit.
+        filter { exclude { it.file.invariantSeparatorsPath.contains("/build/") } }
     }
 }
 

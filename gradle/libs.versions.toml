@@ -4,6 +4,7 @@
 agp = "9.5.0-alpha06"
 detekt = "2.0.0-alpha.6"
 kotlin = "2.4.20"
+ktlint = "14.2.0"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.12.0-RC"
 kotlinx-datetime = "0.8.0"
@@ -197,6 +198,7 @@ compass-autocomplete-mobile = { module = "dev.jordond.compass:autocomplete-mobil
 
 [plugins]
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
