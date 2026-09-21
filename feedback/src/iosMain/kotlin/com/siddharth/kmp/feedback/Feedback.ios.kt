@@ -31,6 +31,35 @@ import kotlin.math.sin
 
 private const val SAMPLE_RATE = 44_100
 
+// ── RIFF/WAVE wire format (mono, 16-bit PCM little-endian). Every value below is fixed by the
+// WAV specification, not a tuning choice, so each one is named after the field it fills.
+private const val BYTE_MASK = 0xFF
+private const val SHORT_MASK = 0xFFFF
+private const val BITS_PER_BYTE = 8
+private const val BYTES_PER_SAMPLE = 2
+private const val BITS_PER_SAMPLE = 16
+
+/** Size of a `u32` field in the header. */
+private const val U32_FIELD_BYTES = 4
+
+/** Size of a `u16` field in the header. */
+private const val U16_FIELD_BYTES = 2
+
+/** Bytes of RIFF header that follow the size field — what `ChunkSize = 36 + dataSize` counts. */
+private const val RIFF_HEADER_TRAILING_BYTES = 36
+
+/** Length of the PCM `fmt ` chunk body, in bytes. */
+private const val FMT_CHUNK_BYTES = 16
+
+/** Audio format code 1 = uncompressed PCM. */
+private const val WAV_FORMAT_PCM = 1
+
+/** Mono. */
+private const val CHANNEL_COUNT = 1
+
+/** Cap on retained AVAudioPlayers, so rapid-fire cues cannot grow the list without bound. */
+private const val MAX_RETAINED_PLAYERS = 8
+
 private fun appendLE(
     out: MutableList<Byte>,
     value: Int,
@@ -38,8 +67,8 @@ private fun appendLE(
 ) {
     var v = value
     repeat(bytes) {
-        out.add((v and 0xFF).toByte())
-        v = v shr 8
+        out.add((v and BYTE_MASK).toByte())
+        v = v shr BITS_PER_BYTE
     }
 }
 
@@ -56,25 +85,25 @@ private fun renderWav(
 
     // RIFF header
     "RIFF".forEach { pcm.add(it.code.toByte()) }
-    appendLE(pcm, 36 + dataSize, 4)
+    appendLE(pcm, RIFF_HEADER_TRAILING_BYTES + dataSize, U32_FIELD_BYTES)
     "WAVE".forEach { pcm.add(it.code.toByte()) }
     // fmt chunk
     "fmt ".forEach { pcm.add(it.code.toByte()) }
-    appendLE(pcm, 16, 4) // chunk size
-    appendLE(pcm, 1, 2) // PCM
-    appendLE(pcm, 1, 2) // mono
-    appendLE(pcm, SAMPLE_RATE, 4)
-    appendLE(pcm, byteRate, 4)
-    appendLE(pcm, 2, 2) // block align
-    appendLE(pcm, 16, 2) // bits per sample
+    appendLE(pcm, FMT_CHUNK_BYTES, U32_FIELD_BYTES)
+    appendLE(pcm, WAV_FORMAT_PCM, U16_FIELD_BYTES)
+    appendLE(pcm, CHANNEL_COUNT, U16_FIELD_BYTES)
+    appendLE(pcm, SAMPLE_RATE, U32_FIELD_BYTES)
+    appendLE(pcm, byteRate, U32_FIELD_BYTES)
+    appendLE(pcm, BYTES_PER_SAMPLE, U16_FIELD_BYTES) // block align: 1 channel x 2 bytes
+    appendLE(pcm, BITS_PER_SAMPLE, U16_FIELD_BYTES)
     // data chunk
     "data".forEach { pcm.add(it.code.toByte()) }
-    appendLE(pcm, dataSize, 4)
+    appendLE(pcm, dataSize, U32_FIELD_BYTES)
 
     for (i in 0 until n) {
         val sample = build(i, SAMPLE_RATE.toDouble())
         val s = (sample * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767)
-        appendLE(pcm, s and 0xFFFF, 2)
+        appendLE(pcm, s and SHORT_MASK, BYTES_PER_SAMPLE)
     }
     return pcm.toByteArray()
 }
@@ -125,7 +154,7 @@ private class IosSoundPlayer : SoundPlayer {
             player.prepareToPlay()
             player.play()
             active.add(player)
-            if (active.size > 8) active.removeAt(0)
+            if (active.size > MAX_RETAINED_PLAYERS) active.removeAt(0)
         }
     }
 

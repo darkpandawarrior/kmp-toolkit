@@ -5,10 +5,24 @@ import kotlin.math.cos
 import kotlin.math.max
 
 /**
+ * Metres per degree of latitude. One degree of latitude is a fixed arc on the WGS-84 ellipsoid,
+ * unlike a degree of longitude, which shrinks with cos(latitude) — that is why only this one is a
+ * constant and the longitude conversion scales it.
+ */
+private const val METERS_PER_DEGREE_LATITUDE = 111_320.0
+
+/** Degrees in half a turn — the radians conversion for [cos]. */
+private const val DEGREES_PER_HALF_TURN = 180.0
+
+private const val MILLIS_PER_SECOND = 1000.0
+
+/**
  * Lightweight Kalman-like GPS smoother, operates on lat/lng separately, uses time delta
  * to increase process uncertainty.  Pure Kotlin, no Android dependencies.
  */
-class KalmanSmoother(private var processNoiseMetersPerSec: Double = 1.0) {
+class KalmanSmoother(
+    private var processNoiseMetersPerSec: Double = 1.0,
+) {
     private var initialized = false
     private var lat: Double = 0.0
     private var lng: Double = 0.0
@@ -52,7 +66,7 @@ class KalmanSmoother(private var processNoiseMetersPerSec: Double = 1.0) {
             return Pair(lat, lng)
         }
 
-        val dtSec = max(0.0, (timestampMs - lastTimestampMs).coerceAtLeast(0L) / 1000.0)
+        val dtSec = max(0.0, (timestampMs - lastTimestampMs).coerceAtLeast(0L) / MILLIS_PER_SECOND)
         val processStd = processNoiseMetersPerSec * dtSec
         val qLat = metersToLatDeg(processStd)
         val qLng = metersToLngDeg(processStd, lat)
@@ -73,13 +87,13 @@ class KalmanSmoother(private var processNoiseMetersPerSec: Double = 1.0) {
         return Pair(lat, lng)
     }
 
-    private fun metersToLatDeg(meters: Double): Double = meters / 111320.0
+    private fun metersToLatDeg(meters: Double): Double = meters / METERS_PER_DEGREE_LATITUDE
 
     private fun metersToLngDeg(
         meters: Double,
         atLatDeg: Double,
     ): Double {
-        val metersPerDeg = 111320.0 * cos(atLatDeg * PI / 180.0)
-        return if (metersPerDeg <= 0.0) meters / 111320.0 else meters / metersPerDeg
+        val metersPerDeg = METERS_PER_DEGREE_LATITUDE * cos(atLatDeg * PI / DEGREES_PER_HALF_TURN)
+        return if (metersPerDeg <= 0.0) meters / METERS_PER_DEGREE_LATITUDE else meters / metersPerDeg
     }
 }

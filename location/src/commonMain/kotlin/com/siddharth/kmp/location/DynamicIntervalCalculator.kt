@@ -60,30 +60,50 @@ object DynamicIntervalCalculator {
             else -> BASE_FAST_MS
         }
 
+    // Battery stretch. Below 30% the cadence halves; below 50% it eases off. Charging disables the
+    // penalty entirely, which is why `charging` is the first arm.
+    private const val BATTERY_CRITICAL_PCT = 30
+    private const val BATTERY_LOW_PCT = 50
+    private const val BATTERY_CRITICAL_MULTIPLIER = 2.0
+    private const val BATTERY_LOW_MULTIPLIER = 1.5
+    private const val NO_STRETCH = 1.0
+
     private fun batteryMultiplier(
         pct: Int,
         charging: Boolean,
     ): Double =
         when {
-            charging -> 1.0
-            pct < 30 -> 2.0
-            pct < 50 -> 1.5
-            else -> 1.0
+            charging -> NO_STRETCH
+            pct < BATTERY_CRITICAL_PCT -> BATTERY_CRITICAL_MULTIPLIER
+            pct < BATTERY_LOW_PCT -> BATTERY_LOW_MULTIPLIER
+            else -> NO_STRETCH
         }
 
     // Wave-2 IMU polish: shortens (boosts) the interval during a harsh accel/brake event so the
     // GPS track has denser resolution right where the interesting driving behavior happened.
     private const val HARSH_ACCEL_MULTIPLIER = 0.5
 
-    private fun accelMultiplier(harshAccel: Boolean): Double = if (harshAccel) HARSH_ACCEL_MULTIPLIER else 1.0
+    private fun accelMultiplier(harshAccel: Boolean): Double = if (harshAccel) HARSH_ACCEL_MULTIPLIER else NO_STRETCH
+
+    // Session-duration stretch. A long drive is a long drain, so cadence eases as the session runs.
+    private const val MILLIS_PER_HOUR = 3_600_000.0
+    private const val LONG_SESSION_HOURS = 6
+    private const val MEDIUM_SESSION_HOURS = 4
+    private const val SHORT_SESSION_HOURS = 2
+    private const val LONG_SESSION_MULTIPLIER = 1.75
+    private const val MEDIUM_SESSION_MULTIPLIER = 1.5
+    private const val SHORT_SESSION_MULTIPLIER = 1.25
+
+    /** Power-saver mode is the user asking for battery over fidelity; honour it with the same easing. */
+    private const val POWER_SAVER_MULTIPLIER = 1.5
 
     private fun durationMultiplier(elapsedMs: Long): Double {
-        val hours = elapsedMs / 3_600_000.0
+        val hours = elapsedMs / MILLIS_PER_HOUR
         return when {
-            hours > 6 -> 1.75
-            hours > 4 -> 1.5
-            hours > 2 -> 1.25
-            else -> 1.0
+            hours > LONG_SESSION_HOURS -> LONG_SESSION_MULTIPLIER
+            hours > MEDIUM_SESSION_HOURS -> MEDIUM_SESSION_MULTIPLIER
+            hours > SHORT_SESSION_HOURS -> SHORT_SESSION_MULTIPLIER
+            else -> NO_STRETCH
         }
     }
 
@@ -91,7 +111,7 @@ object DynamicIntervalCalculator {
     fun intervalMs(inputs: IntervalInputs): Long {
         var ms = baseForSpeed(inputs.speedMps).toDouble()
         ms *= batteryMultiplier(inputs.batteryPct, inputs.isCharging)
-        if (inputs.isPowerSaver) ms *= 1.5
+        if (inputs.isPowerSaver) ms *= POWER_SAVER_MULTIPLIER
         ms *= durationMultiplier(inputs.elapsedMs)
         ms *= inputs.tierMultiplier
         ms *= accelMultiplier(inputs.harshAccel)

@@ -59,7 +59,9 @@ object AppleSiwaServer {
     fun provisioned(): Boolean = requiredValues.none { it.isUnprovisioned() }
 }
 
-enum class AppleScope(internal val wireName: String) {
+enum class AppleScope(
+    internal val wireName: String,
+) {
     NAME("name"),
     EMAIL("email"),
 }
@@ -86,13 +88,14 @@ data class AppleSignInConfig(
         if (configProblem() == null) SignInAvailability.AVAILABLE else SignInAvailability.NOT_CONFIGURED
 
     /** Human-readable reason the flag is [SignInAvailability.NOT_CONFIGURED], or null when it is fine. */
-    fun configProblem(): String? = when {
-        servicesId.isUnprovisioned() -> "Apple Services ID is unprovisioned ($APPLE_SERVICES_ID)"
-        redirectUri.isUnprovisioned() -> "Apple redirect URI is unprovisioned ($APPLE_SIWA_REDIRECT_URI)"
-        !redirectUri.startsWith("https://") -> "Apple rejects a redirect_uri that is not https: $redirectUri"
-        appCallbackUri.isBlank() || "://" !in appCallbackUri -> "appCallbackUri is not a URI: $appCallbackUri"
-        else -> null
-    }
+    fun configProblem(): String? =
+        when {
+            servicesId.isUnprovisioned() -> "Apple Services ID is unprovisioned ($APPLE_SERVICES_ID)"
+            redirectUri.isUnprovisioned() -> "Apple redirect URI is unprovisioned ($APPLE_SIWA_REDIRECT_URI)"
+            !redirectUri.startsWith("https://") -> "Apple rejects a redirect_uri that is not https: $redirectUri"
+            appCallbackUri.isBlank() || "://" !in appCallbackUri -> "appCallbackUri is not a URI: $appCallbackUri"
+            else -> null
+        }
 }
 
 /**
@@ -112,9 +115,12 @@ data class AppleWebPending(
     fun encode(): String = "$state|$rawNonce|$authorizeUrl"
 
     companion object {
+        /** `state|rawNonce|authorizeUrl` — three fields, in [encode]'s order. */
+        private const val ENCODED_FIELD_COUNT = 3
+
         fun decode(encoded: String): AppleWebPending? {
-            val parts = encoded.split('|', limit = 3)
-            if (parts.size != 3 || parts.any { it.isEmpty() }) return null
+            val parts = encoded.split('|', limit = ENCODED_FIELD_COUNT)
+            if (parts.size != ENCODED_FIELD_COUNT || parts.any { it.isEmpty() }) return null
             return AppleWebPending(authorizeUrl = parts[2], state = parts[0], rawNonce = parts[1])
         }
     }
@@ -138,20 +144,25 @@ object AppleWebFlow {
      *   so it can prove the token was minted for *this* attempt.
      * @param state a fresh random value, likewise per-attempt. It is the CSRF defence.
      */
-    fun begin(config: AppleSignInConfig, rawNonce: String, state: String): AppleWebPending {
+    fun begin(
+        config: AppleSignInConfig,
+        rawNonce: String,
+        state: String,
+    ): AppleWebPending {
         require(rawNonce.length >= MIN_RANDOM_LENGTH) { "rawNonce is too short to be random" }
         require(state.length >= MIN_RANDOM_LENGTH) { "state is too short to be random" }
-        val params = buildList {
-            add("response_type" to "code id_token")
-            add("client_id" to config.servicesId)
-            add("redirect_uri" to config.redirectUri)
-            add("state" to state)
-            add("nonce" to Hashing.sha256Hex(rawNonce))
-            add("response_mode" to config.responseMode)
-            if (config.scopes.isNotEmpty()) {
-                add("scope" to config.scopes.sortedBy { it.wireName }.joinToString(" ") { it.wireName })
+        val params =
+            buildList {
+                add("response_type" to "code id_token")
+                add("client_id" to config.servicesId)
+                add("redirect_uri" to config.redirectUri)
+                add("state" to state)
+                add("nonce" to Hashing.sha256Hex(rawNonce))
+                add("response_mode" to config.responseMode)
+                if (config.scopes.isNotEmpty()) {
+                    add("scope" to config.scopes.sortedBy { it.wireName }.joinToString(" ") { it.wireName })
+                }
             }
-        }
         val url = params.joinToString("&", prefix = "$AUTHORIZE_ENDPOINT?") { (k, v) -> "$k=${v.percentEncode()}" }
         return AppleWebPending(authorizeUrl = url, state = state, rawNonce = rawNonce)
     }
@@ -163,7 +174,10 @@ object AppleWebFlow {
      * A state mismatch is [SignInOutcome.Failed], never a success: it means the callback did not come
      * from the attempt this app started, and the only safe move is to throw the whole thing away.
      */
-    fun complete(pending: AppleWebPending, callbackUrl: String): SignInOutcome {
+    fun complete(
+        pending: AppleWebPending,
+        callbackUrl: String,
+    ): SignInOutcome {
         val params = parseParams(callbackUrl)
         params["error"]?.let { error ->
             return if (error == CANCELLED) SignInOutcome.Cancelled else SignInOutcome.Failed("Apple returned error=$error")
@@ -171,8 +185,9 @@ object AppleWebFlow {
         if (params["state"] != pending.state) {
             return SignInOutcome.Failed("state mismatch — callback does not belong to this sign-in attempt")
         }
-        val idToken = params["id_token"]
-            ?: return SignInOutcome.Failed("callback carried no id_token; check the server bounce forwards it")
+        val idToken =
+            params["id_token"]
+                ?: return SignInOutcome.Failed("callback carried no id_token; check the server bounce forwards it")
         return SignInOutcome.Success(
             SocialIdentity(
                 provider = AuthProvider.APPLE,
@@ -188,34 +203,37 @@ object AppleWebFlow {
     internal fun parseParams(url: String): Map<String, String> {
         val start = url.indexOfFirst { it == '?' || it == '#' }
         if (start < 0 || start == url.lastIndex) return emptyMap()
-        return url.substring(start + 1)
+        return url
+            .substring(start + 1)
             .split('&')
             .mapNotNull { pair ->
                 val eq = pair.indexOf('=')
                 if (eq <= 0) null else pair.substring(0, eq).percentDecode() to pair.substring(eq + 1).percentDecode()
-            }
-            .toMap()
+            }.toMap()
     }
 }
 
 private const val MIN_RANDOM_LENGTH = 16
 
 /** The RFC 3986 unreserved set: ALPHA / DIGIT / "-" / "." / "_" / "~". */
-private fun Char.isRfc3986Unreserved(): Boolean =
-    this in 'A'..'Z' || this in 'a'..'z' || this in '0'..'9' || this in "-._~"
+private fun Char.isRfc3986Unreserved(): Boolean = this in 'A'..'Z' || this in 'a'..'z' || this in '0'..'9' || this in "-._~"
 
 /** RFC 3986 unreserved set; everything else is escaped. `+` is NOT a space here, only in decode. */
-private fun String.percentEncode(): String = encodeToByteArray().joinToString("") { byte ->
-    val v = byte.toInt() and BYTE_MASK
-    val c = v.toChar()
-    // Explicit ASCII ranges, not isLetterOrDigit(): that is true for 'e9' -> 'e' too, and a
-    // locale-aware predicate has no business deciding what is legal in a URL.
-    if (c.isRfc3986Unreserved()) {
-        c.toString()
-    } else {
-        "%" + v.toString(HEX_RADIX).uppercase().padStart(2, '0')
+private fun String.percentEncode(): String =
+    encodeToByteArray().joinToString("") { byte ->
+        val v = byte.toInt() and BYTE_MASK
+        val c = v.toChar()
+        // Explicit ASCII ranges, not isLetterOrDigit(): that is true for 'e9' -> 'e' too, and a
+        // locale-aware predicate has no business deciding what is legal in a URL.
+        if (c.isRfc3986Unreserved()) {
+            c.toString()
+        } else {
+            "%" + v.toString(HEX_RADIX).uppercase().padStart(2, '0')
+        }
     }
-}
+
+/** A percent escape is three characters: `%` plus two hex digits. */
+private const val PERCENT_ESCAPE_LENGTH = 3
 
 private fun String.percentDecode(): String {
     if ('%' !in this && '+' !in this) return this
@@ -225,13 +243,13 @@ private fun String.percentDecode(): String {
         val c = this[i]
         when {
             c == '%' && i + 2 < length -> {
-                val hex = substring(i + 1, i + 3).toIntOrNull(HEX_RADIX)
+                val hex = substring(i + 1, i + PERCENT_ESCAPE_LENGTH).toIntOrNull(HEX_RADIX)
                 if (hex == null) {
                     out.add(c.code.toByte())
                     i++
                 } else {
                     out.add(hex.toByte())
-                    i += 3
+                    i += PERCENT_ESCAPE_LENGTH
                 }
             }
             c == '+' -> {

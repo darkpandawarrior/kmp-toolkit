@@ -7,14 +7,20 @@ import kotlin.math.roundToLong
 // KMP-safe formatting helpers (no JVM-only `String.format` / `java.util.Date`), absorbed from the
 // openMF KMP template's `FormatNumber`/`FormatDate` approach so UI code can live in commonMain.
 
+/** Largest value that still fits in one decimal digit, so [pad2] knows when to add the zero. */
+private const val LARGEST_SINGLE_DIGIT = 9
+
+/** Base of the decimal system — the per-place factor [formatDecimal] and friends accumulate. */
+private const val DECIMAL_BASE = 10
+
 /** Two-digit zero-padded string for an Int (e.g. 5 -> "05"). */
-fun Int.pad2(): String = if (this in 0..9) "0$this" else this.toString()
+fun Int.pad2(): String = if (this in 0..LARGEST_SINGLE_DIGIT) "0$this" else this.toString()
 
 /** Decimal formatting without `String.format`. Rounds half-up to [places] digits. */
 fun Double.formatDecimal(places: Int): String {
     if (places <= 0) return this.roundToLong().toString()
     var factor = 1L
-    repeat(places) { factor *= 10 }
+    repeat(places) { factor *= DECIMAL_BASE }
     val negative = this < 0
     val scaled = abs(this * factor).roundToLong()
     val intPart = scaled / factor
@@ -25,7 +31,13 @@ fun Double.formatDecimal(places: Int): String {
 /** Whole-number thousands-comma grouping, no `String.format` (e.g. 12345.6 -> "12,345"). */
 fun Double.formatGrouped(): String {
     val whole = this.roundToLong()
-    val grouped = abs(whole).toString().reversed().chunked(3).joinToString(",").reversed()
+    val grouped =
+        abs(whole)
+            .toString()
+            .reversed()
+            .chunked(3)
+            .joinToString(",")
+            .reversed()
     return if (whole < 0) "-$grouped" else grouped
 }
 
@@ -67,7 +79,7 @@ fun formatTime12h(
 fun Long.minorToDecimalString(fractionDigits: Int = 2): String {
     if (fractionDigits <= 0) return this.toString()
     var factor = 1L
-    repeat(fractionDigits) { factor *= 10 }
+    repeat(fractionDigits) { factor *= DECIMAL_BASE }
     val negative = this < 0
     val magnitude = abs(this)
     val intPart = magnitude / factor
@@ -77,7 +89,18 @@ fun Long.minorToDecimalString(fractionDigits: Int = 2): String {
 
 private val shortMonthNames =
     listOf(
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
     )
 
 /** Friendly date, e.g. "Jun 19, 2026". */

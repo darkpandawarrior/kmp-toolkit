@@ -11,27 +11,25 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * Adaptive layout on two orthogonal axes.
- *
- * Width alone is not enough. A 1920dp TV and a 1920dp desktop monitor are the same width bucket but
- * need completely different treatment — the TV is viewed from three metres with a D-pad, the monitor
- * from half a metre with a mouse. Forking the whole token system per form factor (one copy for
- * handheld, another for TV, a third for watch) is the usual answer and it triples every future edit.
- *
- * So: [FormFactor] answers *how far away the eye is and what the input is*, [WindowType] answers
- * *how much room there is*, and [AdaptiveTokens] resolves from both.
- */
+// Adaptive layout on two orthogonal axes.
+//
+// Width alone is not enough. A 1920dp TV and a 1920dp desktop monitor are the same width bucket but
+// need completely different treatment — the TV is viewed from three metres with a D-pad, the monitor
+// from half a metre with a mouse. Forking the whole token system per form factor (one copy for
+// handheld, another for TV, a third for watch) is the usual answer and it triples every future edit.
+//
+// So: FormFactor answers *how far away the eye is and what the input is*, WindowType answers
+// *how much room there is*, and AdaptiveTokens resolves from both.
 
 /**
  * Viewing posture and input model. Not derivable from width — it comes from the platform, via
@@ -78,19 +76,24 @@ enum class WindowType {
  *   its smallest bucket while labelling it "720p" — those numbers describe a desktop window emulating
  *   a TV, not a TV.)
  */
-fun windowTypeFor(width: Dp, formFactor: FormFactor = FormFactor.Handheld): WindowType =
+fun windowTypeFor(
+    width: Dp,
+    formFactor: FormFactor = FormFactor.Handheld,
+): WindowType =
     when (formFactor) {
         FormFactor.Watch -> WindowType.Compact
-        FormFactor.Tv -> when {
-            width < 1280.dp -> WindowType.Compact
-            width < 1920.dp -> WindowType.Medium
-            else -> WindowType.Expanded
-        }
-        FormFactor.Handheld, FormFactor.Desktop -> when {
-            width < 600.dp -> WindowType.Compact
-            width < 840.dp -> WindowType.Medium
-            else -> WindowType.Expanded
-        }
+        FormFactor.Tv ->
+            when {
+                width < 1280.dp -> WindowType.Compact
+                width < 1920.dp -> WindowType.Medium
+                else -> WindowType.Expanded
+            }
+        FormFactor.Handheld, FormFactor.Desktop ->
+            when {
+                width < 600.dp -> WindowType.Compact
+                width < 840.dp -> WindowType.Medium
+                else -> WindowType.Expanded
+            }
     }
 
 /**
@@ -132,65 +135,69 @@ data class AdaptiveTokens(
 // Handheld / Desktop ladder — arm's length, touch or mouse.
 // ---------------------------------------------------------------------------------------------
 
-val CompactTokens = AdaptiveTokens(
-    screenPadding = 16.dp,
-    itemSpacing = 8.dp,
-    sectionSpacing = 24.dp,
-    toolbarHeight = 64.dp,
-    gridColumns = 2,
-    overscanPadding = 0.dp,
-    focusScale = 1f,
-    title = 20.sp,
-    sectionTitle = 18.sp,
-    body = 14.sp,
-    caption = 12.sp,
-)
+val CompactTokens =
+    AdaptiveTokens(
+        screenPadding = 16.dp,
+        itemSpacing = 8.dp,
+        sectionSpacing = 24.dp,
+        toolbarHeight = 64.dp,
+        gridColumns = 2,
+        overscanPadding = 0.dp,
+        focusScale = 1f,
+        title = 20.sp,
+        sectionTitle = 18.sp,
+        body = 14.sp,
+        caption = 12.sp,
+    )
 
-val MediumTokens = AdaptiveTokens(
-    screenPadding = 24.dp,
-    itemSpacing = 12.dp,
-    sectionSpacing = 32.dp,
-    toolbarHeight = 68.dp,
-    gridColumns = 3,
-    overscanPadding = 0.dp,
-    focusScale = 1f,
-    title = 24.sp,
-    sectionTitle = 20.sp,
-    body = 15.sp,
-    caption = 13.sp,
-)
+val MediumTokens =
+    AdaptiveTokens(
+        screenPadding = 24.dp,
+        itemSpacing = 12.dp,
+        sectionSpacing = 32.dp,
+        toolbarHeight = 68.dp,
+        gridColumns = 3,
+        overscanPadding = 0.dp,
+        focusScale = 1f,
+        title = 24.sp,
+        sectionTitle = 20.sp,
+        body = 15.sp,
+        caption = 13.sp,
+    )
 
-val ExpandedTokens = AdaptiveTokens(
-    screenPadding = 32.dp,
-    itemSpacing = 16.dp,
-    sectionSpacing = 40.dp,
-    toolbarHeight = 72.dp,
-    gridColumns = 4,
-    overscanPadding = 0.dp,
-    focusScale = 1f,
-    title = 28.sp,
-    sectionTitle = 22.sp,
-    body = 16.sp,
-    caption = 14.sp,
-)
+val ExpandedTokens =
+    AdaptiveTokens(
+        screenPadding = 32.dp,
+        itemSpacing = 16.dp,
+        sectionSpacing = 40.dp,
+        toolbarHeight = 72.dp,
+        gridColumns = 4,
+        overscanPadding = 0.dp,
+        focusScale = 1f,
+        title = 28.sp,
+        sectionTitle = 22.sp,
+        body = 16.sp,
+        caption = 14.sp,
+    )
 
 // ---------------------------------------------------------------------------------------------
 // Watch — a single set. Every Wear OS device is 192–227dp wide; a ladder would be theatre.
 // ---------------------------------------------------------------------------------------------
 
-val WatchTokens = AdaptiveTokens(
-    screenPadding = 8.dp,
-    itemSpacing = 4.dp,
-    sectionSpacing = 12.dp,
-    toolbarHeight = 32.dp,
-    gridColumns = 1,
-    overscanPadding = 0.dp,
-    focusScale = 1f,
-    title = 16.sp,
-    sectionTitle = 14.sp,
-    body = 13.sp,
-    caption = 11.sp,
-)
+val WatchTokens =
+    AdaptiveTokens(
+        screenPadding = 8.dp,
+        itemSpacing = 4.dp,
+        sectionSpacing = 12.dp,
+        toolbarHeight = 32.dp,
+        gridColumns = 1,
+        overscanPadding = 0.dp,
+        focusScale = 1f,
+        title = 16.sp,
+        sectionTitle = 14.sp,
+        body = 13.sp,
+        caption = 11.sp,
+    )
 
 // ---------------------------------------------------------------------------------------------
 // TV ladder — 10-foot viewing, D-pad focus, overscan-unsafe edges. [TvTokens] is the standard set:
@@ -198,62 +205,70 @@ val WatchTokens = AdaptiveTokens(
 // floor (18sp body minimum at 960dp) — a 14sp body is unreadable from a sofa.
 // ---------------------------------------------------------------------------------------------
 
-val TvTokens = AdaptiveTokens(
-    screenPadding = 48.dp,
-    itemSpacing = 16.dp,
-    sectionSpacing = 32.dp,
-    toolbarHeight = 80.dp,
-    gridColumns = 5,
-    overscanPadding = 28.dp,
-    focusScale = 1.08f,
-    title = 34.sp,
-    sectionTitle = 24.sp,
-    body = 18.sp,
-    caption = 14.sp,
-)
+val TvTokens =
+    AdaptiveTokens(
+        screenPadding = 48.dp,
+        itemSpacing = 16.dp,
+        sectionSpacing = 32.dp,
+        toolbarHeight = 80.dp,
+        gridColumns = 5,
+        overscanPadding = 28.dp,
+        focusScale = 1.08f,
+        title = 34.sp,
+        sectionTitle = 24.sp,
+        body = 18.sp,
+        caption = 14.sp,
+    )
 
-val TvMediumTokens = AdaptiveTokens(
-    screenPadding = 56.dp,
-    itemSpacing = 20.dp,
-    sectionSpacing = 40.dp,
-    toolbarHeight = 88.dp,
-    gridColumns = 6,
-    overscanPadding = 32.dp,
-    focusScale = 1.08f,
-    title = 40.sp,
-    sectionTitle = 28.sp,
-    body = 20.sp,
-    caption = 16.sp,
-)
+val TvMediumTokens =
+    AdaptiveTokens(
+        screenPadding = 56.dp,
+        itemSpacing = 20.dp,
+        sectionSpacing = 40.dp,
+        toolbarHeight = 88.dp,
+        gridColumns = 6,
+        overscanPadding = 32.dp,
+        focusScale = 1.08f,
+        title = 40.sp,
+        sectionTitle = 28.sp,
+        body = 20.sp,
+        caption = 16.sp,
+    )
 
-val TvExpandedTokens = AdaptiveTokens(
-    screenPadding = 64.dp,
-    itemSpacing = 24.dp,
-    sectionSpacing = 48.dp,
-    toolbarHeight = 96.dp,
-    gridColumns = 7,
-    overscanPadding = 36.dp,
-    focusScale = 1.08f,
-    title = 48.sp,
-    sectionTitle = 32.sp,
-    body = 22.sp,
-    caption = 18.sp,
-)
+val TvExpandedTokens =
+    AdaptiveTokens(
+        screenPadding = 64.dp,
+        itemSpacing = 24.dp,
+        sectionSpacing = 48.dp,
+        toolbarHeight = 96.dp,
+        gridColumns = 7,
+        overscanPadding = 36.dp,
+        focusScale = 1.08f,
+        title = 48.sp,
+        sectionTitle = 32.sp,
+        body = 22.sp,
+        caption = 18.sp,
+    )
 
 /** Resolves the token set for a surface. Total coverage: every [FormFactor] x [WindowType] pair. */
-fun tokensFor(formFactor: FormFactor, windowType: WindowType): AdaptiveTokens =
+fun tokensFor(
+    formFactor: FormFactor,
+    windowType: WindowType,
+): AdaptiveTokens =
     when (formFactor) {
         FormFactor.Watch -> WatchTokens
-        FormFactor.Tv -> when (windowType) {
-            WindowType.Compact -> TvTokens
-            WindowType.Medium -> TvMediumTokens
-            WindowType.Expanded -> TvExpandedTokens
-        }
-        FormFactor.Handheld, FormFactor.Desktop -> when (windowType) {
-            WindowType.Compact -> CompactTokens
-            WindowType.Medium -> MediumTokens
-            WindowType.Expanded -> ExpandedTokens
-        }
+        FormFactor.Tv ->
+            when (windowType) {
+                WindowType.Compact -> TvTokens
+                WindowType.Medium -> TvMediumTokens
+                WindowType.Expanded -> TvExpandedTokens
+            }
+        FormFactor.Handheld, FormFactor.Desktop ->
+            when (windowType) {
+                WindowType.Compact -> CompactTokens
+                WindowType.Medium -> MediumTokens
+                WindowType.Expanded -> ExpandedTokens
+            }
     }
 
 /**
@@ -273,7 +288,12 @@ fun tokensFor(formFactor: FormFactor, windowType: WindowType): AdaptiveTokens =
  * Generic in [T], so it carries `Dp`, `TextUnit`, `Int`, `Alignment`, a lambda — anything that
  * differs by width.
  */
-fun <T> byWindow(windowType: WindowType, compact: T, medium: T, expanded: T): T =
+fun <T> byWindow(
+    windowType: WindowType,
+    compact: T,
+    medium: T,
+    expanded: T,
+): T =
     when (windowType) {
         WindowType.Compact -> compact
         WindowType.Medium -> medium
@@ -282,8 +302,11 @@ fun <T> byWindow(windowType: WindowType, compact: T, medium: T, expanded: T): T 
 
 /** [byWindow] against the ambient [LocalWindowType]. */
 @Composable
-fun <T> byWindow(compact: T, medium: T, expanded: T): T =
-    byWindow(LocalWindowType.current, compact, medium, expanded)
+fun <T> byWindow(
+    compact: T,
+    medium: T,
+    expanded: T,
+): T = byWindow(LocalWindowType.current, compact, medium, expanded)
 
 /**
  * Picks a per-surface value, overriding only the surfaces that actually differ.
@@ -303,12 +326,13 @@ fun <T> byFormFactor(
     handheld: T = default,
     desktop: T = default,
     tv: T = default,
-): T = when (formFactor) {
-    FormFactor.Watch -> watch
-    FormFactor.Handheld -> handheld
-    FormFactor.Desktop -> desktop
-    FormFactor.Tv -> tv
-}
+): T =
+    when (formFactor) {
+        FormFactor.Watch -> watch
+        FormFactor.Handheld -> handheld
+        FormFactor.Desktop -> desktop
+        FormFactor.Tv -> tv
+    }
 
 /** [byFormFactor] against the ambient [LocalFormFactor]. */
 @Composable
@@ -373,14 +397,18 @@ fun AdaptiveTheme(
  * but keep its caption out of the clipped band.
  */
 @Composable
-fun Modifier.screenPadding(horizontal: Boolean = true, vertical: Boolean = true): Modifier {
+fun Modifier.screenPadding(
+    horizontal: Boolean = true,
+    vertical: Boolean = true,
+): Modifier {
     val pad = LocalAdaptiveTokens.current.screenPadding
-    val sides = when {
-        horizontal && vertical -> WindowInsetsSides.Horizontal + WindowInsetsSides.Vertical
-        horizontal -> WindowInsetsSides.Horizontal
-        vertical -> WindowInsetsSides.Vertical
-        else -> return this
-    }
+    val sides =
+        when {
+            horizontal && vertical -> WindowInsetsSides.Horizontal + WindowInsetsSides.Vertical
+            horizontal -> WindowInsetsSides.Horizontal
+            vertical -> WindowInsetsSides.Vertical
+            else -> return this
+        }
     return this
         .windowInsetsPadding(WindowInsets.safeDrawing.only(sides))
         .padding(
@@ -423,8 +451,11 @@ fun Modifier.contentWidth(max: Dp = DesignTokens.Spacing.contentMaxWidth): Modif
  * capping. `widthIn` alone would cap without centring and leave the column pinned to the start edge.
  */
 private fun Modifier.centredCap(max: Dp): Modifier =
-    if (max == Dp.Infinity) this
-    else fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = max)
+    if (max == Dp.Infinity) {
+        this
+    } else {
+        fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = max)
+    }
 
 /**
  * Escape hatch for consumers that already resolve a window size class upstream (Android

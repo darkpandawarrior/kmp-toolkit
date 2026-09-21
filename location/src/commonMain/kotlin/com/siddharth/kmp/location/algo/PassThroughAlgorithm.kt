@@ -19,7 +19,6 @@ import kotlin.math.abs
 public class PassThroughAlgorithm(
     private val profile: TuningProfile = defaultProfile(),
 ) : MileageAlgorithm {
-
     override val id: AlgorithmId = AlgorithmId.PassThrough
 
     override val knobs: List<KnobSpec> = ALL_KNOBS
@@ -46,7 +45,7 @@ public class PassThroughAlgorithm(
             return FixResult(FixVerdict.DUPLICATE, emitted = null, 0.0, 0.0, DistanceBucket.NONE, "duplicate $key")
         }
 
-        if (!fix.lat.isFiniteCoord(90.0) || !fix.lng.isFiniteCoord(180.0)) {
+        if (!fix.lat.isFiniteCoord(MAX_ABS_LATITUDE_DEG) || !fix.lng.isFiniteCoord(MAX_ABS_LONGITUDE_DEG)) {
             state = state.copy(rejected = state.rejected + 1)
             return FixResult(FixVerdict.REJECTED_BOUNDS, null, 0.0, 0.0, DistanceBucket.NONE, "out of bounds")
         }
@@ -56,7 +55,11 @@ public class PassThroughAlgorithm(
         if (maxAccuracyM > 0.0 && fix.accuracyM > maxAccuracyM) {
             state = state.copy(rejected = state.rejected + 1)
             return FixResult(
-                FixVerdict.REJECTED_ACCURACY, emitted = fix, 0.0, 0.0, DistanceBucket.NONE,
+                FixVerdict.REJECTED_ACCURACY,
+                emitted = fix,
+                0.0,
+                0.0,
+                DistanceBucket.NONE,
                 "accuracy ${fix.accuracyM}m > ${maxAccuracyM}m",
             )
         }
@@ -65,24 +68,26 @@ public class PassThroughAlgorithm(
         val displacement = if (prev == null) 0.0 else haversineMeters(prev.lat, prev.lng, fix.lat, fix.lng)
         last = fix
 
-        val bucket = when {
-            fix.isMock && !countMockDistance -> DistanceBucket.MOCK
-            else -> DistanceBucket.CLEANED
-        }
+        val bucket =
+            when {
+                fix.isMock && !countMockDistance -> DistanceBucket.MOCK
+                else -> DistanceBucket.CLEANED
+            }
         val delta = if (prev == null) 0.0 else displacement
 
         val speed = fix.speedMps ?: 0.0
         val n = state.accepted + 1
-        state = state.copy(
-            originalM = state.originalM + delta,
-            cleanedM = if (bucket == DistanceBucket.CLEANED) state.cleanedM + delta else state.cleanedM,
-            mockM = if (bucket == DistanceBucket.MOCK) state.mockM + delta else state.mockM,
-            accepted = n,
-            consecutiveNormal = state.consecutiveNormal + 1,
-            maxSpeedMps = maxOf(state.maxSpeedMps, speed),
-            avgSpeedMps = ((state.avgSpeedMps * (n - 1)) + speed) / n,
-            lastFix = fix,
-        )
+        state =
+            state.copy(
+                originalM = state.originalM + delta,
+                cleanedM = if (bucket == DistanceBucket.CLEANED) state.cleanedM + delta else state.cleanedM,
+                mockM = if (bucket == DistanceBucket.MOCK) state.mockM + delta else state.mockM,
+                accepted = n,
+                consecutiveNormal = state.consecutiveNormal + 1,
+                maxSpeedMps = maxOf(state.maxSpeedMps, speed),
+                avgSpeedMps = ((state.avgSpeedMps * (n - 1)) + speed) / n,
+                lastFix = fix,
+            )
 
         return FixResult(
             verdict = if (bucket == DistanceBucket.MOCK) FixVerdict.ABNORMAL else FixVerdict.ACCEPTED,
@@ -105,28 +110,39 @@ public class PassThroughAlgorithm(
     public companion object {
         public const val FLAG_COUNT_MOCK: String = "countMockDistance"
 
-        public val MaxAccuracy: KnobSpec = KnobSpec(
-            name = "maxAccuracyM",
-            default = 0.0, // 0 => accept everything the source emits
-            min = 0.0,
-            max = 500.0,
-            step = 5.0,
-            unit = "m",
-            description = "Reject fixes worse than this. 0 disables the check entirely.",
-        )
+        public val MaxAccuracy: KnobSpec =
+            KnobSpec(
+                name = "maxAccuracyM",
+                default = 0.0, // 0 => accept everything the source emits
+                min = 0.0,
+                max = 500.0,
+                step = 5.0,
+                unit = "m",
+                description = "Reject fixes worse than this. 0 disables the check entirely.",
+            )
 
         public val ALL_KNOBS: List<KnobSpec> = listOf(MaxAccuracy)
 
-        public fun defaultProfile(): TuningProfile =
-            TuningProfile(algorithmId = AlgorithmId.PassThrough, profileId = "sdk.passthrough")
+        public fun defaultProfile(): TuningProfile = TuningProfile(algorithmId = AlgorithmId.PassThrough, profileId = "sdk.passthrough")
 
         /** Where + when. Matches the natural UNIQUE index for de-duplicating persisted rows. */
-        public fun dedupeKey(fix: Fix): String =
-            "${fix.timeMs}:${fix.lat.round6()}:${fix.lng.round6()}"
+        public fun dedupeKey(fix: Fix): String = "${fix.timeMs}:${fix.lat.round6()}:${fix.lng.round6()}"
 
-        private fun Double.round6(): Long = kotlin.math.round(this * 1_000_000.0).toLong()
+        /** Absolute bound on a valid WGS-84 latitude, in degrees. */
+        private const val MAX_ABS_LATITUDE_DEG = 90.0
 
-        private fun Double.isFiniteCoord(limit: Double): Boolean =
-            !this.isNaN() && !this.isInfinite() && abs(this) <= limit
+        /** Absolute bound on a valid WGS-84 longitude, in degrees. */
+        private const val MAX_ABS_LONGITUDE_DEG = 180.0
+
+        /**
+         * Six decimal places of degree, the resolution the de-duplication key rounds to —
+         * ~0.11 m at the equator, finer than any consumer GPS fix and coarse enough that two
+         * redeliveries of the same sample collide.
+         */
+        private const val COORD_KEY_SCALE = 1_000_000.0
+
+        private fun Double.round6(): Long = kotlin.math.round(this * COORD_KEY_SCALE).toLong()
+
+        private fun Double.isFiniteCoord(limit: Double): Boolean = !this.isNaN() && !this.isInfinite() && abs(this) <= limit
     }
 }

@@ -34,10 +34,11 @@ private object UninspectedDeviceIntegrity : DeviceIntegrity {
             rooted = false,
             emulator = false,
             debuggerAttached = false,
-            signals = listOf(
-                "device-integrity: no Context installed — detectors did NOT run. " +
-                    "Call installDeviceIntegrityContext(applicationContext) at startup.",
-            ),
+            signals =
+                listOf(
+                    "device-integrity: no Context installed — detectors did NOT run. " +
+                        "Call installDeviceIntegrityContext(applicationContext) at startup.",
+                ),
             inspected = false,
         )
 }
@@ -115,14 +116,19 @@ internal class AndroidDeviceIntegrity(
         return connected || debuggableBuild
     }
 
-    /** Best-effort `which su` — an [Exception] means the binary is absent, which is the good case. */
+    /**
+     * Best-effort `which su`. Any failure — no such binary, SELinux denial, a vendor ROM that
+     * refuses the exec — means "su did not resolve", which is the good case. The breadth of the
+     * catch is the point, so the variable is named `ignored` to say so on the page rather than in
+     * a baseline file.
+     */
     private fun suOnPath(): Boolean =
         try {
             val process = Runtime.getRuntime().exec(arrayOf("which", "su"))
             val output = process.inputStream.bufferedReader().readLine()
             process.waitFor()
             !output.isNullOrBlank()
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             false
         }
 }

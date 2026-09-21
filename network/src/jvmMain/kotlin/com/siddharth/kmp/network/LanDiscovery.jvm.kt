@@ -47,6 +47,9 @@ private fun encodeBeacon(
     serviceName: String,
 ): String = "${beaconPrefix(serviceType)}$payload|$port|$serviceName"
 
+/** A beacon payload is `payload|port|name`, so anything shorter is not one. */
+private const val BEACON_FIELD_COUNT = 3
+
 private fun decodeBeacon(
     serviceType: String,
     raw: String,
@@ -55,7 +58,7 @@ private fun decodeBeacon(
     val prefix = beaconPrefix(serviceType)
     if (!raw.startsWith(prefix)) return null
     val parts = raw.removePrefix(prefix).split("|")
-    if (parts.size < 3) return null
+    if (parts.size < BEACON_FIELD_COUNT) return null
     val port = parts[1].toIntOrNull() ?: return null
     return LanHost(host = sourceHost, port = port, payload = parts[0], name = parts[2])
 }
@@ -198,6 +201,15 @@ actual class LanDiscoverer actual constructor(
 
             val buf = ByteArray(256)
 
+            // A socket timeout, a packet with no source address and an undecodable payload are
+            // the same event to this loop — nothing to announce — so they are one nullable result
+            // rather than three `continue`s.
+            fun hostFrom(packet: DatagramPacket): LanHost? {
+                val sourceHost = packet.address?.hostAddress ?: return null
+                val text = String(packet.data, 0, packet.length, Charsets.UTF_8)
+                return decodeBeacon(serviceType, text, sourceHost)
+            }
+
             fun pump(sock: DatagramSocket) {
                 while (listening.get()) {
                     val packet = DatagramPacket(buf, buf.size)
@@ -206,12 +218,11 @@ actual class LanDiscoverer actual constructor(
                             sock.receive(packet)
                             true
                         }.getOrDefault(false)
-                    if (!received) continue // socket timeout — loop and re-check `listening`
-                    val text = String(packet.data, 0, packet.length, Charsets.UTF_8)
-                    val sourceHost = packet.address?.hostAddress ?: continue
-                    val hostRecord = decodeBeacon(serviceType, text, sourceHost) ?: continue
-                    val key = "${hostRecord.host}:${hostRecord.port}/${hostRecord.payload}"
-                    if (seen.add(key)) trySend(hostRecord)
+                    val hostRecord = if (received) hostFrom(packet) else null
+                    if (hostRecord != null) {
+                        val key = "${hostRecord.host}:${hostRecord.port}/${hostRecord.payload}"
+                        if (seen.add(key)) trySend(hostRecord)
+                    }
                 }
             }
 

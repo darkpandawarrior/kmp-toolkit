@@ -36,7 +36,12 @@ private val RequestBodyKey = AttributeKey<String>("NetworkLogRequestBody")
  * module is meant for reuse. Pass `readResponseBody = false` if a consumer sees empty response
  * bodies after installing this; everything else still records. Resolving it properly means routing
  * through Ktor's `ResponseObserver`, which is the intended upgrade path.
+ *
+ * PascalCase on purpose: this is a Ktor client-plugin factory, and Ktor's own plugins
+ * (ContentNegotiation, Logging, HttpTimeout) read as types at the `install(...)` call site. ktlint's
+ * function-naming rule exempts factory methods but cannot recognise this one.
  */
+@Suppress("ktlint:standard:function-naming")
 @OptIn(ExperimentalTime::class)
 public fun NetworkLogPlugin(
     store: NetworkLogStore,

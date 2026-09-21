@@ -80,8 +80,10 @@ object AntiDebugDetector {
             } else {
                 0
             }
-        } catch (e: Exception) {
-            // Unreadable proc — treat as "not traced" rather than a false positive.
+        } catch (ignored: Exception) {
+            // Unreadable proc — treat as "not traced" rather than a false positive. The catch is
+            // deliberately broad (SecurityException, IOException, a vendor kernel returning
+            // nonsense) because every failure mode has the same, safe answer.
             0
         }
 }

@@ -15,6 +15,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
+/**
+ * TCP connect budget. Deliberately much shorter than the request timeout: failing to reach the host
+ * at all is a different failure from a slow response, and a mobile client should find out fast.
+ */
+private const val CONNECT_TIMEOUT_MS = 15_000L
+
 /** Resolves the server base URL at call time (backed by DataStore in core:data; defaults to localhost). */
 fun interface BaseUrlProvider {
     suspend fun baseUrl(): String
@@ -105,7 +111,7 @@ fun createHttpClient(
         }
         install(HttpTimeout) {
             this.requestTimeoutMillis = requestTimeoutMillis
-            connectTimeoutMillis = 15_000
+            connectTimeoutMillis = CONNECT_TIMEOUT_MS
             // requestTimeoutMillis bounds the whole call, including streaming the response body — a
             // 30s cap would kill the long-lived /api/scan stream. streamScan() overrides this to
             // INFINITE per-request for a long-lived streaming call; every other call keeps the 30s
