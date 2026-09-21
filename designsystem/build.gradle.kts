@@ -79,7 +79,7 @@ kotlin {
         // would force one; an intermediate source set that only android and ios depend on does not,
         // while still making the compiler check that both platforms match.
         // Inherits commonMain's Compose + :payments-api dependencies through dependsOn.
-        val walletMain by creating { dependsOn(commonMain.get()) }
+        val walletMain = create("walletMain") { dependsOn(commonMain.get()) }
         androidMain.get().dependsOn(walletMain)
         iosMain.get().dependsOn(walletMain)
 
@@ -102,7 +102,7 @@ kotlin {
         //
         // iOS and wasm are precisely where this reaches UI that Robolectric/Roborazzi cannot, which
         // is the whole point of gap #5 in the 2026-07-24 absorption note. So it runs exactly there.
-        val composeUiTest by creating {
+        val composeUiTest = create("composeUiTest") {
             dependsOn(commonTest.get())
             dependencies {
                 implementation(kotlin("test"))
