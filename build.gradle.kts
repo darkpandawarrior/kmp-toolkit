@@ -234,3 +234,45 @@ subprojects {
 plugins.withType<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin> {
     the<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension>().resolution("ws", "8.21.0")
 }
+
+// iOS *test* binary linkage — a workaround for an UPSTREAM PACKAGING BUG, not for anything in this
+// repo. `org.jetbrains.compose.ui:ui-uikit-<target>:1.13.0-alpha01` publishes its cinterop klib with
+// JetBrains' own CI machine's Swift runtime path baked into `default/manifest`:
+//   linkerOpts=… -L/Applications/Xcode_26.4.app/…/usr/lib/swift/iphonesimulator … -lswiftCompatibility51 …
+// That directory exists on no other machine, so `ld` fails to find libswiftCompatibility51 and every
+// iOS test binary that links Compose UI dies (:designsystem, :provider:hosted-webview). Appending the
+// *real* toolchain's Swift lib dir restores the search path while keeping the version pin and without
+// mutating the environment (symlinking a fake /Applications/Xcode_26.4.app would go green here and
+// fail on CI and every other machine). Resolved from the active toolchain at configuration time on
+// purpose: a second hardcoded absolute path is precisely the upstream bug.
+// DELETE once that artifact stops shipping an absolute Xcode path — do not "tidy" it away before.
+val swiftRuntimeLibDir: String? =
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
+        runCatching {
+            // …/usr/bin/swift -> …/usr/lib/swift
+            providers.exec { commandLine("xcrun", "--find", "swift") }
+                .standardOutput.asText.get().trim()
+                .substringBeforeLast("/bin/swift") + "/lib/swift"
+        }.getOrNull()
+    } else {
+        null
+    }
+
+if (swiftRuntimeLibDir != null) {
+    subprojects {
+        plugins.withId("org.jetbrains.kotlin.multiplatform") {
+            extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
+                targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+                    val sdk = when {
+                        name.startsWith("iosSimulator") -> "iphonesimulator"
+                        name.startsWith("ios") -> "iphoneos"
+                        else -> return@configureEach
+                    }
+                    binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable>().configureEach {
+                        linkerOpts("-L$swiftRuntimeLibDir/$sdk")
+                    }
+                }
+            }
+        }
+    }
+}

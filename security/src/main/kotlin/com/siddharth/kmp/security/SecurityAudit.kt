@@ -24,10 +24,14 @@ interface SecurityAuditor {
  * Aggregated result of a full security pass.
  *
  * @property signals concatenated human-readable trail from every layer, for logging / a debug screen.
- * @property isCompromised the gate a caller acts on. `rooted || debuggerAttached || hooked ||
- *   sslBypassSuspected` — emulator alone does NOT compromise (dev/QA run on emulators). Each term is
- *   already suppressed by its [SecurityConfig] bypass flag at construction time, so a VAPT build with
- *   the relevant bypass set will report the raw booleans but still gate as not-compromised.
+ * @property inspected whether the device-integrity layer actually ran its detectors. Carried up from
+ *   [SecurityReport.inspected]; false makes this audit compromised regardless of the other flags.
+ * @property isCompromised the gate a caller acts on. `!inspected || rooted || debuggerAttached ||
+ *   hooked || sslBypassSuspected` — emulator alone does NOT compromise (dev/QA run on emulators).
+ *   Each of the five signal terms is already suppressed by its [SecurityConfig] bypass flag at
+ *   construction time, so a VAPT build with the relevant bypass set will report the raw booleans but
+ *   still gate as not-compromised. [inspected] has no bypass flag and never will: a VAPT build needs
+ *   specific findings excused, not the detectors excused from running.
  */
 data class SecurityAudit(
     val rooted: Boolean,
@@ -36,9 +40,11 @@ data class SecurityAudit(
     val hooked: Boolean,
     val sslBypassSuspected: Boolean,
     val signals: List<String>,
+    val inspected: Boolean = true,
 ) {
+    /** **Fails closed** — see [SecurityReport.isCompromised] for why. */
     val isCompromised: Boolean
-        get() = rooted || debuggerAttached || hooked || sslBypassSuspected
+        get() = !inspected || rooted || debuggerAttached || hooked || sslBypassSuspected
 }
 
 /**
@@ -88,10 +94,15 @@ class AndroidSecurityAuditor(
                     hooked = if (config.bypassHook) false else hooked,
                     sslBypassSuspected = if (config.bypassSsl) false else sslBypassSuspected,
                     signals = signals.toList(),
+                    // Propagated, not defaulted. Without this the aggregate gate would still fail
+                    // open on an un-run inspection and the fix below it would be cosmetic — this is
+                    // the call an app actually makes at launch.
+                    inspected = deviceReport.inspected,
                 )
 
             if (audit.isCompromised) {
-                AppLog.w("Security audit COMPROMISED: ${audit.signals.joinToString()}", tag = TAG)
+                val why = if (!audit.inspected) "device integrity never ran; " else ""
+                AppLog.w("Security audit COMPROMISED: $why${audit.signals.joinToString()}", tag = TAG)
             } else {
                 AppLog.i(
                     "Security audit OK (emulator=$emulator, bypassRoot=${config.bypassRoot}, " +

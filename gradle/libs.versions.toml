@@ -1,57 +1,68 @@
 # Single source of truth for the whole kmp-toolkit monorepo — one catalog for every module,
 # so versions can never drift between siblings (the reason for consolidating the old per-repo leaves).
 [versions]
-agp = "9.5.0-alpha02"
+agp = "9.5.0-alpha06"
 detekt = "2.0.0-alpha.6"
-kotlin = "2.4.20-RC"
+kotlin = "2.4.20"
 kotlinx-coroutines = "1.11.0"
-kotlinx-serialization = "1.11.0"
+kotlinx-serialization = "1.12.0-RC"
 kotlinx-datetime = "0.8.0"
-lifecycle = "2.11.0"
+lifecycle = "2.12.0-alpha03"
 napier = "2.7.1"
-ktor = "3.5.1"
+ktor = "3.6.0"
 koin = "4.2.2"
-compose-multiplatform = "1.12.0-rc01"
-compose-material3 = "1.12.0-alpha03"
-compose-bom = "2026.08.00"
+compose-multiplatform = "1.13.0-alpha01"
+compose-bom = "2026.09.00"
 core-ktx = "1.19.0"
-activity-compose = "1.13.0"
+activity-compose = "1.14.0-alpha02"
 biometric = "1.4.0-alpha07"
 junit = "4.13.2"
 androidx-test = "1.7.0"
 androidx-test-ext-junit = "1.3.0"
 mockk = "1.14.11"
 turbine = "1.2.1"
-ksp = "2.3.11"
-room = "2.8.4"
-sqlite-bundled = "2.7.0"
-stripe = "23.11.1"
+ksp = "2.3.12"
+room = "2.8.5"
+sqlite-bundled = "2.8.0-alpha01"
+stripe = "23.19.0"
 play-services-wallet = "20.0.0"
+# Google's own Compose Google Pay button. Not optional garnish: the Google Pay brand
+# guidelines require the vendor-supplied mark, and a hand-drawn one is a store-review
+# rejection rather than a style choice. Same reason iOS uses PKPaymentButton.
+pay-button = "1.1.0"
 razorpay = "1.6.41"
-cashfree = "2.5.0"
-robolectric = "4.16.1"
-dokka = "2.2.0"
+cashfree = "2.6.0"
+robolectric = "4.17"
+dokka = "2.3.0-Beta"
 # Maven Central publishing: handles signing, POM, sources+javadoc jars and the Central Portal upload.
-vanniktechMavenPublish = "0.34.0"
+vanniktechMavenPublish = "0.37.0"
 compose-webview-multiplatform = "2.0.3"
 # Tier-1 adoption 2026-08-27. Both target lists below were read off the published Gradle module
 # metadata, not a changelog: the plan these came from claimed NEITHER publishes wasmJs. Both do,
 # which deleted an expect/actual and a hand-drawn Canvas fallback before either was written.
-vico = "3.3.0"
+vico = "3.3.1"
 zoomable = "2.13.0"
 # Multiplatform mocking. A COMPILER PLUGIN, so a Kotlin bump can break it in a way no catalogue
 # check would see - MokkeryCompatTest in :mvi-core is the canary that fails when it does.
-mokkery = "3.4.2"
+mokkery = "3.5.0"
+# NOT on the Compose Multiplatform train. Frozen upstream at 1.7.3 — no 1.13.0-alpha01 of
+# material-icons-core exists, so converting this to version.ref = "compose-multiplatform"
+# would fail to resolve. Verified against repo1 maven-metadata.xml, not recalled.
 material-icons = "1.7.3"
-kotlinx-collections-immutable = "0.5.1"
+kotlinx-collections-immutable = "0.5.2"
 konnection = "1.4.5"
 play-services-location = "21.4.0"
 multiplatform-settings = "1.3.0"
+# Credential Manager — the only supported Google sign-in path since GoogleSignInClient was
+# deprecated. `credentials-play-services-auth` is the runtime provider and must ship alongside the
+# API artifact or getCredential() finds no provider at all; `googleid` carries GetGoogleIdOption.
+androidx-credentials = "1.5.0"
+googleid = "1.1.1"
 androidx-security-crypto = "1.1.0"
 # Verified against real POMs on repo1.maven.org, not against git tags — compass's 3.x line
 # RENAMED its artifacts (compass-core -> core) and the old `compass-*` names stop at 1.6.7,
 # so a naive coordinate lands you two major versions behind without any error.
-calf = "0.13.0"
+calf = "0.14.0"
 compass = "4.0.0"
 
 [libraries]
@@ -89,13 +100,17 @@ koin-test-junit4 = { module = "io.insert-koin:koin-test-junit4", version.ref = "
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
-# Adaptive top-level layout (NavigationSuiteScaffold). Rides `compose-material3`, NOT
-# `compose-multiplatform`: this artifact tracks the material3 line and publishes no 1.12.0-rc01 at
-# all — its latest is 1.12.0-alpha03, which is exactly what compose-material3 already pins.
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-multiplatform" }
+# Adaptive top-level layout (NavigationSuiteScaffold).
+# Rides `compose-multiplatform` like every other Compose Multiplatform artifact. It used to carry a
+# separate `compose-material3` pin, from a time when the material3 line was genuinely ahead of the
+# plugin — that stopped being true: material3 and material3-adaptive-navigation-suite both publish
+# 1.13.0-alpha01, the same string as the org.jetbrains.compose plugin. An individual pin below the
+# plugin's version is not a pin at all: Gradle's highest-wins resolution hands the plugin's version
+# to the module anyway and the catalog entry goes inert while still reading as deliberate.
 # Lives in :designsystem, NOT :app-shell — app-shell applies no Compose plugin and declares no
 # wasmJs target, so a Compose UI dependency cannot go there without changing what that module is.
-compose-adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "compose-material3" }
+compose-adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "compose-multiplatform" }
 # Charts. Deliberately a separate :charts module rather than :designsystem, which Mileway's Wear
 # target consumes — a chart library has no business in a watch build.
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
@@ -132,6 +147,7 @@ play-services-location = { module = "com.google.android.gms:play-services-locati
 # — provider:stripe (Android-only leaf, Stripe PaymentSheet) —
 stripe-paymentsheet = { module = "com.stripe:paymentsheet", version.ref = "stripe" }
 play-services-wallet = { module = "com.google.android.gms:play-services-wallet", version.ref = "play-services-wallet" }
+pay-button-compose = { module = "com.google.pay.button:compose-pay-button", version.ref = "pay-button" }
 
 # — provider:razorpay / :cashfree / :googlepay (Android-only leaves, 5c) —
 razorpay-checkout = { module = "com.razorpay:checkout", version.ref = "razorpay" }
@@ -147,6 +163,11 @@ multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", vers
 # MapSettings — the in-memory fake, for :auth's TokenStore tests.
 multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security-crypto" }
+
+# — auth (androidMain only: Credential Manager + Google ID) —
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "androidx-credentials" }
+androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "androidx-credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
 # — offline-outbox (Room KMP — first Room module in the monorepo, versions match Mileway's) —
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }

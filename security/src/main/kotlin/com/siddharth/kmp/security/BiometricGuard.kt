@@ -8,9 +8,12 @@ import androidx.fragment.app.FragmentActivity
 
 /**
  * Android biometric prompt helper. Android-only: [BiometricPrompt] requires a [FragmentActivity],
- * so this can't live in `commonMain`. A cross-platform biometric abstraction (e.g. an app-side
- * `BiometricAuthenticator` interface with an iOS `LAContext` binding) can delegate to this on the
- * Android side.
+ * so this can't live in `commonMain`.
+ *
+ * The cross-platform seam now exists as its own module: `:biometric`'s `BiometricAuthenticator`
+ * (`BiometricPrompt` on Android, `LAContext` on iOS, one suspending call). Prefer it for anything
+ * a KMP consumer touches. This stays as the Android-only, callback-shaped helper for code that
+ * already holds the activity and wants no coroutine at all.
  */
 object BiometricGuard {
     enum class Availability { Available, NoHardware, NoneEnrolled, Unavailable }

@@ -12,6 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Fast leg: android / jvm / wasm. Stays on ubuntu-latest — Apple targets cannot build on a Linux
+  # host at all, so putting this leg on a Mac would only make it slower and more expensive.
   build-test:
     runs-on: ubuntu-latest
     defaults:
@@ -21,6 +23,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: kmp-toolkit
+      # Fast, text-only pre-build gate — runs before the JDK is even set up. Kotlin/Native
+      # exposes Obj-C CATEGORY members as package-level declarations that need their own import,
+      # and NS_ENUM constants as CEnum entries that cannot be imported bare. Six failures across
+      # four repos between 2026-07 and 2026-09 were that one mistake, and only the macos leg below
+      # could find them — a full Mac build each time. This is pure text analysis, so it belongs
+      # here. --self-test runs first so a guard that has quietly stopped working fails loudly
+      # instead of passing everything. See the script header for how to extend the member list and
+      # for what it deliberately cannot catch.
+      - name: Obj-C category import guard
+        run: |
+          python3 scripts/objc-category-guard.py --self-test
+          python3 scripts/objc-category-guard.py
+
       # settings.gradle.kts does includeBuild("../kmp-build-logic") — check out the sibling repo
       - uses: actions/checkout@v4
         with:
@@ -33,13 +48,57 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
-      - name: Build + test all modules
+      - name: Build + test android / jvm / wasm
         # `check` aggregates jvmTest + testAndroidHostTest (KMP modules) + testDebugUnitTest (the
         # android-only leaf modules: security + the 11 providers) + wasmJsBrowserTest (karma/headless
         # Chrome — ubuntu-latest ships Chrome) + AGP lint on the leaf modules, so it's a superset of
         # the previously hand-listed tasks and won't drift as modules/targets are added. `assemble`
-        # stays alongside it: `check` only compiles iosSimulatorArm64 (the test target), not iosArm64
-        # (the device target consumers actually ship), so `assemble` is what compile-checks it. Both
-        # silently no-op on iOS here — kotlin.native.ignoreDisabledTargets skips Apple targets on a
-        # Linux host; they'd need a macOS runner to actually build (not added — see PR description).
-        run: ./gradlew assemble check --stacktrace
+        # stays alongside it for the non-Apple compile check.
+        #
+        # -Pkotlin.native.ignoreDisabledTargets=true is passed HERE, on the Linux leg only, instead of
+        # sitting in gradle.properties. As a global property it silently skipped iosArm64 and
+        # iosSimulatorArm64 for all 28 iOS-declaring modules in every build including this one, so the
+        # ~26 hand-written Kotlin/Native files across 9 iosMain source sets had no compile
+        # verification anywhere and CI was green regardless. Scoped to this job, the flag does the one
+        # job it is for — let a Linux host skip targets it cannot build — and the ios-compile job
+        # below is what actually proves those source sets compile.
+        run: ./gradlew assemble check -Pkotlin.native.ignoreDisabledTargets=true --stacktrace
+
+  # Apple leg: the compile verification the Linux job structurally cannot do.
+  # Deliberately NOT gated behind build-test — a Kotlin/Native break and a JVM break are independent,
+  # and finding both in one run beats finding them in two.
+  ios-compile:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: kmp-toolkit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kmp-toolkit
+      - uses: actions/checkout@v4
+        with:
+          repository: darkpandawarrior/kmp-build-logic
+          path: kmp-build-logic
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Compile iOS targets + run iOS tests
+        # No ignoreDisabledTargets here — on a Mac host every Apple target is enabled, and the flag's
+        # only possible effect would be to hide the failure this job exists to surface.
+        #
+        # Both Apple targets, not just the simulator: iosArm64 is the device target consumers
+        # actually ship, iosSimulatorArm64 is the one tests can run on. They compile against
+        # different konan targets and a cinterop/API mistake can break one and not the other.
+        # iosSimulatorArm64Test then runs the common + ios test source sets natively, which is the
+        # only place MokkeryCompatTest's Kotlin/Native leg is exercised.
+        run: |
+          ./gradlew \
+            compileKotlinIosSimulatorArm64 \
+            compileKotlinIosArm64 \
+            iosSimulatorArm64Test \
+            --stacktrace

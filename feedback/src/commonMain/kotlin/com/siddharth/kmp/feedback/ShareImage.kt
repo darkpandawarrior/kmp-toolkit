@@ -3,10 +3,10 @@ package com.siddharth.kmp.feedback
 /**
  * Shares an image with accompanying [text] through the platform share sheet.
  *
- * Mirrors [shareText] deliberately, including its honesty about coverage: Android is implemented,
- * the other targets are no-ops for now, exactly as [shareText] already is. A caller that needs a
- * guaranteed share should call [shareText] when [shareImage] is unavailable rather than assume
- * this landed — see `canShareImage`.
+ * Mirrors [shareText] deliberately, including its honesty about coverage: Android and iOS are
+ * implemented; JVM and wasm are no-ops because no share sheet exists there, exactly as [shareText]
+ * is. A caller that needs a guaranteed share should call [shareText] when [shareImage] is
+ * unavailable rather than assume this landed — see `canShareImage`.
  *
  * @param pngBytes the encoded image (see `ImageBitmap.toPngBytes()` in :designsystem).
  * @param fileName base name without extension; sanitised by the platform actual.

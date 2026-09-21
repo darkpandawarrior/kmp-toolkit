@@ -10,6 +10,14 @@ name: Publish to Maven Central
 #
 # Central requires every artifact signed, plus sources and javadoc jars. The vanniktech plugin
 # produces all of that; see the Maven Central block in build.gradle.kts.
+#
+# RUNS ON macOS, and must. Apple targets only build on a Mac host, so an ubuntu publish emitted
+# Gradle module metadata with no iosArm64 / iosSimulatorArm64 variant for any of the 28
+# iOS-declaring modules. Nothing failed: the upload succeeded, the job was green, and any external
+# consumer resolving com.siddharth.kmp:* from an iosMain source set got "no matching variant" at
+# resolution time instead. The four family apps never hit it because they vendor this repo through
+# includeBuild and resolve project paths, not published coordinates. The metadata assertion after
+# the publish step is what stops that shipping again.
 
 on:
   workflow_dispatch:
@@ -26,7 +34,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with: { submodules: recursive }
@@ -61,6 +69,25 @@ jobs:
             ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
             echo "### Published io.github.darkpandawarrior to Maven Central" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # Mirrors the "Refuse to run without credentials" guard above: assert the thing that was
+      # silently wrong, at the artifact, rather than trusting the publish task's exit code.
+      - name: Assert the module metadata carries an iOS variant
+        run: |
+          set -euo pipefail
+          # The four modules in `centralModules` (build.gradle.kts). All are KMP and all declare
+          # iosArm64 + iosSimulatorArm64, so every one of them must carry an Apple variant.
+          for m in result common mvi-core network; do
+            meta="$m/build/publications/kotlinMultiplatform/module.json"
+            test -f "$meta" || {
+              echo "::error::$m produced no Gradle module metadata at $meta"; exit 1; }
+            grep -q 'iosArm64' "$meta" || {
+              echo "::error::$m module metadata has no iosArm64 variant. This publish would hand any"
+              echo "::error::external consumer resolving from an iosMain source set a 'no matching"
+              echo "::error::variant' failure. Apple targets need a Mac host — check runs-on."
+              exit 1; }
+            echo "ok: $m carries an iosArm64 variant"
+          done
 
       - name: Show what was produced
         run: |

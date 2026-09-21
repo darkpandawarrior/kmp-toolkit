@@ -4,3 +4,6 @@ import com.multiplatform.webview.web.PlatformWebViewParams
 
 actual fun sslFailClosedWebViewParams(onSslError: () -> Unit): PlatformWebViewParams? =
     PlatformWebViewParams(client = SslFailClosedWebViewClient(onSslError))
+
+/** SslFailClosedWebViewClient really is installed on the WebView, and really does cancel the load. */
+actual fun sslFailClosedSupported(): Boolean = true

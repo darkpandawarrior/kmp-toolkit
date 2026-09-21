@@ -22,7 +22,12 @@ import com.multiplatform.webview.web.rememberWebViewState
  * SECURITY: SSL/certificate errors fail closed via [sslFailClosedWebViewParams] — its Android `actual`
  * cancels the load and reports [HostedReturnOutcome.Failure] through [onResult]; never call
  * `handler.proceed()` — a flaky regional cert is not a reason to bypass certificate validation on a
- * checkout page. See that function's KDoc for the iOS parity gap.
+ * checkout page.
+ *
+ * NOT on every platform. Check [sslFailClosedSupported] before opening this screen for a payment
+ * session: it is false on iOS, where this module installs no TLS handling at all. This composable
+ * does not gate itself on it, because refusing to render, falling back to a native SDK or accepting
+ * the risk is the caller's policy decision, not this module's.
  */
 @Composable
 fun HostedCheckoutScreen(

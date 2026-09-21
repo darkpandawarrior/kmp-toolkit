@@ -21,17 +21,34 @@ interface DeviceIntegrity {
  * Outcome of a [DeviceIntegrity.inspect] pass.
  *
  * @property signals human-readable trail of every positive signal, for logging / a debug screen.
+ * @property inspected whether the detectors actually ran. False means the other flags carry no
+ *   information and MUST NOT be read as "clean". Mirrors the field of the same name on
+ *   :device-integrity's DeviceIntegrityReport.
  * @property isCompromised the gate a caller acts on. Emulator alone does NOT compromise (dev/QA run
- *   on emulators); root or an attached debugger do.
+ *   on emulators); root, an attached debugger, or an inspection that never ran do.
  */
 data class SecurityReport(
     val rooted: Boolean,
     val emulator: Boolean,
     val debuggerAttached: Boolean,
     val signals: List<String>,
+    val inspected: Boolean = true,
 ) {
+    /**
+     * **Fails closed.** An un-run inspection ([inspected] == false) reports compromised.
+     *
+     * This used to be `rooted || debuggerAttached`, with no [inspected] field to consult — so a
+     * [SecurityReport] whose detectors had never run reported `isCompromised == false` and the app
+     * proceeded. That is manufactured assurance: the worst property a root-detection surface can
+     * have, because the caller cannot tell "we checked and it is clean" from "we never checked".
+     *
+     * :device-integrity, the KMP sibling of this module, names precisely this defect in its own
+     * KDoc as its reason for existing and already fails closed. This one was left behind, and
+     * :security is the module PaymentsLab substitutes — so the fix landed everywhere except the
+     * place it was actually being used.
+     */
     val isCompromised: Boolean
-        get() = rooted || debuggerAttached
+        get() = !inspected || rooted || debuggerAttached
 }
 
 /**
@@ -111,6 +128,9 @@ class AndroidDeviceIntegrity(
                 emulator = emulator,
                 debuggerAttached = debuggerAttached,
                 signals = signals.toList(),
+                // Explicit rather than defaulted: this class holds a Context, so its detectors
+                // always run, and saying so here is what makes the field meaningful anywhere else.
+                inspected = true,
             )
         if (report.isCompromised) {
             AppLog.w("Device compromised: ${signals.joinToString()}", tag = TAG)

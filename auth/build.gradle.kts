@@ -35,6 +35,17 @@ kotlin {
             // that have no reason to know about each other.
             api(libs.multiplatform.settings)
             implementation(libs.kotlinx.coroutines.core)
+            // Hashing.sha256Hex. An OIDC nonce is sent to the provider HASHED and compared against
+            // the raw value server-side, so the digest has to exist in commonMain — :common's is
+            // pure Kotlin and identical on every target, which MessageDigest/CC_SHA256 would not be.
+            implementation(project(":common"))
+        }
+        androidMain.dependencies {
+            // AndroidGoogleSignIn. credentials-play-services-auth is the PROVIDER: without it the
+            // API artifact compiles and getCredential() then fails at runtime with no provider.
+            implementation(libs.androidx.credentials)
+            implementation(libs.androidx.credentials.play.services.auth)
+            implementation(libs.googleid)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

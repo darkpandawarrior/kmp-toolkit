@@ -6,7 +6,8 @@ package com.siddharth.kmp.paymentsapi
  * Deliberately separate from [PaymentGateway] — refund/compensation is an orchestration concern
  * (per the split-payment design), not part of the gateway contract every provider implements.
  *
- * Implemented in `provider:wallet` against the same backend ledger [WalletGateway] debits via HTTP.
+ * Implemented in `provider:wallet` against the same backend ledger its own gateway debits via HTTP.
+ * (Unrelated to [WalletGateway], the device-wallet contract — this port is the internal-rail ledger.)
  */
 interface WalletLedgerPort {
     /** Idempotently debit [walletAccountId] by [amountMinor]. Throws if the balance is insufficient. */

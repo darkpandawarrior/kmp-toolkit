@@ -12,7 +12,7 @@ apps, never designed as a "platform" up front. 40 modules today, from a typed `R
 (Doori, PaymentsLab-KMP, Candidai, Gaddi) by actual imports, not just declared substitutions:
 `common`, `mvi-core`, `network`, `ai` and `result` are used by all four; `security` by three (all but
 Gaddi); `designsystem` and `llm-chat` by three (all but Doori). The rest have one consumer or none:
-`ai-testing`, `settings` and `app-shell` are Doori-only so far, the 19 payment-gateway leaves serve
+`ai-testing`, `settings` and `app-shell` are Doori-only so far, the 20 payment-gateway leaves serve
 PaymentsLab-KMP alone by design, while `device-integrity`, `store`, `auth`, `netlog` and `charts` are
 extractions still waiting for their first. Treat this as a staging ground where a few modules are
 proven across four apps and others are candidates, rather than a uniformly battle-tested platform.
@@ -49,6 +49,8 @@ proven across four apps and others are candidates, rather than a uniformly battl
 - [network](#network)
 - [security](#security)
 - [device-integrity](#device-integrity)
+- [biometric](#biometric)
+- [secure-store](#secure-store)
 - [settings](#settings)
 - [auth](#auth)
 - [netlog](#netlog)
@@ -61,7 +63,7 @@ proven across four apps and others are candidates, rather than a uniformly battl
 - [location](#location)
 - [app-shell](#app-shell)
 - [payments-api](#payments-api)
-- [provider:\* (19 payment-gateway leaves)](#provider--19-payment-gateway-leaves)
+- [provider:\* (20 payment-gateway leaves)](#provider--20-payment-gateway-leaves)
 - [offline-outbox](#offline-outbox)
 - [store](#store)
 - [bots-policy](#bots-policy)
@@ -73,9 +75,10 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 </details>
 
-> **At a glance**, **40-module** monorepo: **21 core/leaf modules** (9 original extractions +
+> **At a glance**, **43-module** monorepo: **23 core/leaf modules** (9 original extractions +
 > `llm-chat` / `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` /
-> `app-shell` / `store` + `auth` / `netlog` / `charts` + `ai-testing`) and **19** `provider:*` payment-gateway leaves, each published
+> `app-shell` / `store` + `auth` / `netlog` / `charts` + `ai-testing` + `biometric` / `secure-store`)
+> and **20** `provider:*` payment-gateway leaves, each published
 > independently under `com.siddharth.kmp:<name>`. *Numbers verified against `settings.gradle.kts`.*
 
 ## Why kmp-toolkit
@@ -106,12 +109,13 @@ monorepo.
 
 ## Highlights
 
-- 🧩 **40 Gradle modules, one dependency graph.** 21 core/leaf modules (9 original + `llm-chat` /
+- 🧩 **43 Gradle modules, one dependency graph.** 23 core/leaf modules (9 original + `llm-chat` /
   `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` / `app-shell` /
-  `store` + `auth` / `netlog` / `charts` + `ai-testing`) and 19 `provider:*` payment-gateway leaves,
+  `store` + `auth` / `netlog` / `charts` + `ai-testing` + `biometric` / `secure-store`) and 20
+  `provider:*` payment-gateway leaves,
   every one published independently under `com.siddharth.kmp:<name>`, and a consumer only pulls in
   the modules it needs.
-- 💳 **`payments-api` + 19 providers is a real gateway-abstraction exercise, not a toy.** One
+- 💳 **`payments-api` + 20 providers is a real gateway-abstraction exercise, not a toy.** One
   `PaymentGateway`/`PaymentBackend` contract in `payments-api`, then a thin Android-only adapter per
   provider (`stripe`, `razorpay`, `cashfree`, `square`, `mpesa`, `wallet`, `stripe-connect`,
   `hosted-webview`, …), `StubGateway`/`SimulatedPayment` let the contract be exercised with zero live
@@ -143,6 +147,8 @@ monorepo.
 | [**network**](#network) | `com.siddharth.kmp:network` | Generic Ktor HTTP plumbing, client factory, retry, 401 handling, connectivity | Android · JVM · iOS | Doori, PaymentsLab-KMP, Gaddi, Candidai (all four) |
 | [**security**](#security) | `com.siddharth.kmp:security` | Android app-hardening, Keystore, VAPT posture, `FLAG_SECURE` | Android only | Doori, PaymentsLab-KMP, Candidai (three, not Gaddi) |
 | [**device-integrity**](#device-integrity) | `com.siddharth.kmp:device-integrity` | The KMP sibling of `security`'s root/jailbreak check, `DeviceIntegrity.inspect()` for non-Android-only apps | Android · JVM · iOS · Wasm | new, no dependents yet |
+| [**biometric**](#biometric) | `com.siddharth.kmp:biometric` | The KMP sibling of `security`'s `BiometricGuard`, one suspending `authenticate()` over `BiometricPrompt` and `LAContext` | Android · iOS | new, no dependents yet |
+| [**secure-store**](#secure-store) | `com.siddharth.kmp:secure-store` | The KMP sibling of `security`'s `KeystoreSecureStore`, encrypted key/value over Keystore and Keychain | Android · iOS | new, no dependents yet |
 | [**settings**](#settings) | `com.siddharth.kmp:settings` | `SecureSettingsFactory`, encrypted key/value settings behind `multiplatform-settings`' `Settings` interface | Android · JVM · iOS | Doori (`stub`'s `StubModule`) |
 | [**auth**](#auth) | `com.siddharth.kmp:auth` | `TokenStore`, the one genuinely duplicated slice of app auth: an ephemeral in-memory token + a persisted one over any `Settings` | Android · JVM · iOS | new, no dependents yet |
 | [**netlog**](#netlog) | `com.siddharth.kmp:netlog` | `NetworkLogPlugin`, an in-memory Ktor client HTTP logger with credential redaction and `toCurl()` replay | Android · JVM · iOS · Wasm | new, no dependents yet |
@@ -154,8 +160,8 @@ monorepo.
 | [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Gaddi |
 | [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Doori (`feature:tracking`) |
 | [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library, location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | Doori (`feature:tracking`'s location/notification seams) |
-| [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the 19 `provider:*` leaves |
-| [**provider:\***](#provider--19-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 19 Android-only adapters implementing `payments-api`'s contract per gateway | Android only | reference integrations |
+| [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the 20 `provider:*` leaves |
+| [**provider:\***](#provider--20-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 20 adapters implementing `payments-api`'s contract per gateway; mostly Android-only, `wallet` is KMP and `applepay` is iOS-only | mostly Android; `wallet` Android · iOS; `applepay` iOS only | reference integrations |
 | [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox, its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Doori (`core:data`) |
 | [**store**](#store) | `com.siddharth.kmp:store` | Clean-room offline-first screen-state pattern, `ScreenState`, `DecisionEngine`, `FetchPolicy`, no HTTP/store dependency | Android · JVM · iOS · Wasm | new, no dependents yet |
 | [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell, `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Gaddi (ai engine) |
@@ -197,6 +203,8 @@ graph LR
   provider_cashfree["provider:cashfree"] --> common["common"]
   provider_googlepay["provider:googlepay"] --> payments_api["payments-api"]
   provider_googlepay["provider:googlepay"] --> common["common"]
+  provider_applepay["provider:applepay"] --> payments_api["payments-api"]
+  provider_applepay["provider:applepay"] --> common["common"]
   provider_omise["provider:omise"] --> payments_api["payments-api"]
   provider_omise["provider:omise"] --> common["common"]
   provider_razorpay["provider:razorpay"] --> payments_api["payments-api"]
@@ -331,17 +339,17 @@ the AI stack rather than a full app, wired into its Home panel's `AiModule`.
 
 | Layer | Technology |
 |---|---|
-| Language | Kotlin `2.4.20-RC` |
-| Build | Android Gradle Plugin `9.5.0-alpha02`, KSP `2.3.11` |
-| UI | Compose Multiplatform `1.12.0-rc01` (Material3 `1.12.0-alpha03`, BOM `2026.08.00`) |
-| Networking | Ktor `3.5.1` (OkHttp / Darwin / CIO / Js engines) |
+| Language | Kotlin `2.4.20`, Gradle `9.8.0-rc-2` |
+| Build | Android Gradle Plugin `9.5.0-alpha06`, KSP `2.3.12` |
+| UI | Compose Multiplatform `1.13.0-alpha01` (Material3 rides the same version; AndroidX BOM `2026.09.00`) |
+| Networking | Ktor `3.6.0` (OkHttp / Darwin / CIO / Js engines) |
 | DI | Koin `4.2.2` |
 | Async | kotlinx-coroutines `1.11.0` |
-| Persistence | Room `2.8.4` (KMP, `offline-outbox`) |
+| Persistence | Room `2.8.5` (KMP, `offline-outbox`) |
 | Logging | Napier `2.7.1` |
-| Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Robolectric `4.16.1` |
-| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`); not published to Maven |
-| CI | GitHub Actions, `ci.yml` (build+test matrix), `no-ai-attribution.yml` |
+| Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Mokkery `3.5.0`, Robolectric `4.17` |
+| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`); four modules also on Maven Central |
+| CI | GitHub Actions, `ci.yml` (`build-test` on ubuntu for android/jvm/wasm + `ios-compile` on macOS), `no-ai-attribution.yml` |
 
 ## Getting started
 
@@ -811,6 +819,75 @@ if (report.isCompromised) {
 
 Emulator alone never gates by default, CI and QA both run on emulators. `device-integrity` has no
 dependency on any other `kmp-toolkit` module. New addition, no dependents yet.
+
+## biometric
+
+`security`'s `BiometricGuard` cannot move to `commonMain`, `BiometricPrompt` needs a
+`FragmentActivity` and takes it as a parameter. So every KMP consumer hand-rolled the other half:
+Doori wrote its own `IosBiometricAuthenticator` over `LAContext` because there was nothing to
+reuse. `biometric` is that seam, done once.
+
+```kotlin
+import com.siddharth.kmp.biometric.BiometricAuthenticator
+import com.siddharth.kmp.biometric.BiometricAvailability
+import com.siddharth.kmp.biometric.BiometricResult
+
+// Android only, once, from Application.onCreate():
+BiometricAndroid.install { currentResumedActivity as? FragmentActivity }
+
+val auth = BiometricAuthenticator()
+when (val availability = auth.canAuthenticate()) {
+    BiometricAvailability.Available -> when (auth.authenticate("Confirm payment", "Pay Rs 1,240")) {
+        BiometricResult.Success -> pay()
+        BiometricResult.Cancelled -> Unit                      // not an error, say nothing
+        is BiometricResult.Failed -> retry()
+        is BiometricResult.Unavailable -> fallBackToPin()
+    }
+    // Every other state explains itself, so the fallback can too.
+    else -> showPinEntry(because = availability.reason)
+}
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `BiometricAuthenticator` | `expect class` | `canAuthenticate()` + `suspend authenticate(title, subtitle, cancelLabel)`; `BiometricPrompt` (Class 3 / `BIOMETRIC_STRONG`) on Android, `LAContext` on iOS |
+| `BiometricAvailability` | sealed interface | `Available` / `NoHardware` / `NoneEnrolled` / `PasscodeNotSet` / `LockedOut` / `NotConfigured` / `Unavailable(reason)`, every case carries a loggable `reason` |
+| `BiometricResult` | sealed interface | `Success` / `Cancelled` / `Failed(reason)` / `Unavailable(availability)` |
+| `BiometricAndroid.install { }` | `object` | Hands the library the *currently resumed* `FragmentActivity`; until then `canAuthenticate()` answers `NotConfigured` rather than dying quietly |
+
+Android and iOS only. There is no JVM or browser biometric prompt to bind, and a stub actual that
+always answers "unavailable" is the `shareText` silent-no-op with a nicer name. Cancelling the
+calling coroutine dismisses the prompt. The consuming iOS app must declare
+`NSFaceIDUsageDescription`; Android needs a `FragmentActivity`, not merely a `ComponentActivity`.
+
+## secure-store
+
+The cross-platform half of `security`'s `KeystoreSecureStore`, built on `settings`' existing
+`SecureSettingsFactory` rather than wrapping the Keychain a second time.
+
+```kotlin
+import com.siddharth.kmp.securestore.SecureStore
+
+val store = SecureStore(context)            // iOS: SecureStore()
+val status = store.isAvailable()
+if (!store.putString("payment_token", token)) {
+    // The write did NOT land. status.reason says why, in one loggable sentence.
+}
+```
+
+| Member | Kind | What it does |
+|---|---|---|
+| `SecureStore` | `expect class` | `isAvailable()`, `putString`/`getString`/`remove`/`contains`/`clear`; EncryptedSharedPreferences under an Android Keystore `MasterKey`, Keychain on iOS |
+| `SecureStoreStatus` | sealed interface | `Available` / `Unavailable(reason)`, the capability flag |
+
+Two deliberate choices. **Mutators return `Boolean`**, because a store that cannot be opened and
+silently accepts a payment token is a no-op with money attached. And **`isAvailable()` round-trips
+a canary** on first use, write, read back, delete, because a Keychain the app is not entitled to
+write to accepts the call and stores nothing; only the read-back half catches that.
+
+Reach for `security`'s `KeystoreSecureStore` instead when the threat model is a rooted device with
+a filesystem dump, it additionally hashes key *names* so even what you store is not named on disk.
+Reach for this one when the requirement is "the same secret, both platforms, encrypted at rest".
 
 ## settings
 
@@ -1682,13 +1759,13 @@ real integration code with catalog/docs only (business onboarding required to ac
 `PaymentResult.Failure`/`PaymentStep.Errored`), its only cross-family dependency. Targets: Android,
 JVM, iOS.
 
-## provider:* (19 payment-gateway leaves)
+## provider:* (20 payment-gateway leaves)
 
-Nineteen Android-only leaf modules, one per gateway, each implementing `payments-api`'s
-`PaymentGateway` contract against a real SDK: `stripe`, `stripe-connect`, `razorpay`, `cashfree`,
-`square`, `omise`, `paystack`, `paytm`, `peach`, `nmi`, `xendit`, `flutterwave`, `googlepay`,
-`upi-intent`, `cash`, `mobile-money`, `mpesa`, `wallet`, and `hosted-webview` (a Compose-WebView
-generic hosted-checkout leaf via `compose-webview-multiplatform`, for gateways with no native SDK).
+Twenty leaf modules, one per gateway, each implementing `payments-api`'s `PaymentGateway` contract
+against a real SDK: `stripe`, `stripe-connect`, `razorpay`, `cashfree`, `square`, `omise`,
+`paystack`, `paytm`, `peach`, `nmi`, `xendit`, `flutterwave`, `googlepay`, `upi-intent`, `cash`,
+`mobile-money`, `mpesa`, `wallet`, `applepay`, and `hosted-webview` (a Compose-WebView generic
+hosted-checkout leaf via `compose-webview-multiplatform`, for gateways with no native SDK).
 
 ```kotlin
 // provider:stripe/build.gradle.kts — the shape every leaf follows
@@ -1703,9 +1780,16 @@ dependencies {
 Every leaf depends on `payments-api` (the contract) and `common` (logging), then whatever
 vendor-specific SDK it wraps, `stripe.paymentsheet` + `play-services-wallet` for `stripe`,
 `razorpay.checkout` for `razorpay`, `cashfree.pg-api`/`cashfree.pg-ui` from Cashfree's own Maven repo
-for `cashfree`, `robolectric` for host-side unit tests in a couple of leaves. None of the 19 leaves
-depend on each other. All Android-only, `compileSdk 37` / `minSdk 24`, since every leaf wraps a
-concrete Android SDK/Activity-callback surface, same reasoning as `security`.
+for `cashfree`, `robolectric` for host-side unit tests in a couple of leaves. None of the 20 leaves
+depend on each other.
+
+Most are Android-only, `compileSdk 37` / `minSdk 24`, because they wrap a concrete Android
+SDK/Activity-callback surface, same reasoning as `security`. Three are not, and each for a reason
+worth stating: `wallet` is an internal ledger over HTTP with no vendor SDK at all, so it is plain
+KMP; `googlepay` keeps its single Android target but holds its config and request JSON in
+`commonMain`, off `org.json`; and `applepay` declares **iOS targets only** — there is no Apple Pay
+on Android, and a stub `actual` that compiles everywhere and pays nobody is worse than a module the
+Android classpath simply does not contain.
 
 ## offline-outbox
 
@@ -1726,7 +1810,7 @@ room { schemaDirectory("$projectDir/schemas") }
 Targets: Android, JVM, iOS, **and watchOS** (`watchosArm64`, `watchosSimulatorArm64`,
 `watchosDeviceArm64`), Doori's `core:data` re-exports the outbox through `commonMain` and targets
 watchOS too, so this module has to match that target set, sharing `appleMain` actuals between iOS and
-watchOS. Depends on Room `2.8.4` + `sqlite-bundled` (Android) and kotlinx-serialization; no other
+watchOS. Depends on Room `2.8.5` + `sqlite-bundled` (Android) and kotlinx-serialization; no other
 `kmp-toolkit` module. Consumed by Doori (`core:data`).
 
 ## store
@@ -1898,7 +1982,7 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 - [x] 9 original leaves extracted from Candidai / PaymentsLab-KMP / Doori / Gaddi (`result`,
       `common`, `mvi-core`, `network`, `security`, `designsystem`, `ai`, `feedback`, `location`)
 - [x] `llm-chat`, cloud LLM chat client (Gemini / OpenAI / Anthropic) (`bb33d0c`)
-- [x] `payments-api` + 19 `provider:*` gateway leaves, one contract, sandbox-honest `GatewayStatus`
+- [x] `payments-api` + 20 `provider:*` gateway leaves, one contract, sandbox-honest `GatewayStatus`
 - [x] `offline-outbox`, first Room module in the monorepo, targeting watchOS alongside Android/JVM/iOS
 - [x] `bots-policy`, zero-dependency ISMCTS search shell extracted from Gaddi
 - [x] Seven more standalone/utility leaves, `device-integrity` (KMP root/jailbreak check),
