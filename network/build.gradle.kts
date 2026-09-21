@@ -43,11 +43,9 @@ kotlin {
             // Real reachability (periodic interface probe) — replaces AlwaysOnlineConnectivityChecker.
             implementation(libs.konnection)
         }
-        val wasmJsMain by getting {
-            dependencies {
-                // Ktor's Js engine is published for both js(IR) and wasmJs targets.
-                implementation(libs.ktor.client.js)
-            }
+        wasmJsMain.dependencies {
+            // Ktor's Js engine is published for both js(IR) and wasmJs targets.
+            implementation(libs.ktor.client.js)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

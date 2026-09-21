@@ -87,6 +87,28 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
+      # setup-gradle caches ~/.gradle. It does NOT cache ~/.konan, where the Kotlin/Native
+      # toolchain lives (~3 GB prebuilt + ~1 GB LLVM deps locally), so this macOS job
+      # re-provisioned the whole toolchain on every run. Keyed on the KOTLIN version, not on
+      # hashFiles(libs.versions.toml) — the toolchain depends on Kotlin alone, and keying on the
+      # whole catalogue mints a fresh multi-GB entry on every unrelated dependency bump.
+      # No restore-keys: a near-miss restores the OLD toolchain, the build downloads the new one
+      # anyway, and the save step then writes BOTH into one entry that never shrinks.
+      # klib/cache is deliberately NOT cached — it regrows cheaply from a warm toolchain, and
+      # including it is how a repo eats its own 10 GB Actions cache budget.
+      - name: Resolve the Kotlin version for the cache key
+        id: kotlin
+        run: |
+          v=$(sed -nE 's/^[[:space:]]*kotlin[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' gradle/libs.versions.toml | head -1)
+          test -n "$v" || { echo "could not parse kotlin version from libs.versions.toml"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Cache the Kotlin/Native toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.konan/kotlin-native-prebuilt-*
+            ~/.konan/dependencies
+          key: konan-${{ runner.os }}-${{ steps.kotlin.outputs.version }}
       - name: Compile iOS targets + run iOS tests
         # No ignoreDisabledTargets here — on a Mac host every Apple target is enabled, and the flag's
         # only possible effect would be to hide the failure this job exists to surface.

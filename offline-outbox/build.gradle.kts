@@ -45,10 +45,8 @@ kotlin {
         appleMain.dependencies {
             implementation(libs.sqlite.bundled)
         }
-        val jvmMain by getting {
-            dependencies {
-                implementation(libs.sqlite.bundled)
-            }
+        jvmMain.dependencies {
+            implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
