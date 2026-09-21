@@ -8,7 +8,7 @@ import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import kotlinx.collections.immutable.ImmutableList
@@ -37,7 +37,7 @@ fun TimeSeriesChart(
     LaunchedEffect(data) {
         producer.runTransaction {
             if (data.isNotEmpty()) {
-                lineSeries { series(data.map { it.x }, data.map { it.y }) }
+                lineModel { series(data.map { it.x }, data.map { it.y }) }
             }
         }
     }

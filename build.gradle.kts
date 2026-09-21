@@ -31,7 +31,11 @@ subprojects {
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
         buildUponDefaultConfig = true
         parallel = true
-        // Findings that predate the gate are grandfathered so this lands green; new code is gated.
+        // THERE ARE NO BASELINE FILES IN THIS REPO ANY MORE. The 116 findings the 18 per-module
+        // baselines used to grandfather were fixed in code, and detekt runs clean without them.
+        // The wiring stays so a genuinely-wrong finding can be parked deliberately, with a reason,
+        // rather than by appearing in a file nobody reads — but a new `detekt-baseline.xml` is a
+        // decision to defend in review, not a way to make a number go down.
         baseline = file("detekt-baseline.xml")
         source.setFrom(layout.projectDirectory.dir("src"))
     }
@@ -49,6 +53,21 @@ subprojects {
 // Four rules are `disabled` in .editorconfig, each paired with the matching `active: false` in
 // config/detekt/detekt.yml. Changing one side without the other makes the two tools contradict
 // each other; the reasons are written out next to both halves.
+// `expect`/`actual` CLASSES (as opposed to functions) are still a Beta Kotlin feature, and the
+// compiler emits one warning per declaration telling you to opt in — 38 of them across this repo's
+// expect classes (SecureStore, LanDiscovery, SecureKeyStore, BiometricAuthenticator, …).
+//
+// This flag is the opt-in the warning itself names (KT-61573), not a way of hiding a defect: it
+// acknowledges a language feature whose API may still change, and it silences nothing else. There
+// is no alternative fix — a KMP library cannot express a platform-varying class without them, and
+// leaving 38 warnings in every build is how a real warning gets missed.
+// Remove once expect/actual classes leave Beta.
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+        compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+}
+
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
@@ -75,7 +94,12 @@ dependencies {
     // Derived from `subprojects` rather than listing modules by hand — a new module joins the docs
     // by existing, with no second place to remember to update. The provider:* leaves alone would
     // make a hand-written list 19 entries longer and immediately stale.
-    subprojects.forEach { dokka(it) }
+    //
+    // `project(it.path)` rather than `it`: passing a Project object straight in as a dependency
+    // notation is deprecated and fails with an error in Gradle 10. This was one of the four
+    // "Deprecated Gradle features were used in this build" entries, and the only one originating
+    // in this repo's own scripts rather than in a plugin.
+    subprojects.forEach { dokka(project(it.path)) }
 }
 
 dokka {
