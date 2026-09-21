@@ -31,10 +31,11 @@ data class GoogleSignInConfig(
     fun availability(): SignInAvailability =
         if (configProblem() == null) SignInAvailability.AVAILABLE else SignInAvailability.NOT_CONFIGURED
 
-    fun configProblem(): String? = when {
-        serverClientId.isUnprovisioned() -> "Google web client ID is unprovisioned ($GOOGLE_WEB_CLIENT_ID)"
-        !serverClientId.endsWith(".apps.googleusercontent.com") ->
-            "serverClientId is not a Google client ID: $serverClientId"
-        else -> null
-    }
+    fun configProblem(): String? =
+        when {
+            serverClientId.isUnprovisioned() -> "Google web client ID is unprovisioned ($GOOGLE_WEB_CLIENT_ID)"
+            !serverClientId.endsWith(".apps.googleusercontent.com") ->
+                "serverClientId is not a Google client ID: $serverClientId"
+            else -> null
+        }
 }

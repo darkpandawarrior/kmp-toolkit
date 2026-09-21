@@ -24,7 +24,9 @@ sealed interface SecureStoreStatus {
     }
 
     /** The store could not be opened, or did not return what it was given. [reason] carries the detail. */
-    data class Unavailable(override val reason: String) : SecureStoreStatus
+    data class Unavailable(
+        override val reason: String,
+    ) : SecureStoreStatus
 }
 
 /**

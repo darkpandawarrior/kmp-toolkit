@@ -56,7 +56,9 @@ sealed interface BiometricAvailability {
     }
 
     /** Anything the platform reported that the cases above do not name; [reason] carries the detail. */
-    data class Unavailable(override val reason: String) : BiometricAvailability
+    data class Unavailable(
+        override val reason: String,
+    ) : BiometricAvailability
 }
 
 /**
@@ -76,14 +78,18 @@ sealed interface BiometricResult {
     data object Cancelled : BiometricResult
 
     /** The prompt ran and did not authenticate the user. Retrying is reasonable. */
-    data class Failed(val reason: String) : BiometricResult
+    data class Failed(
+        val reason: String,
+    ) : BiometricResult
 
     /**
      * No prompt was ever shown, because [BiometricAuthenticator.canAuthenticate] would have said so.
      * Carries the same [BiometricAvailability] a pre-flight check returns, so a caller that skipped
      * the check still gets the actionable reason rather than a bare failure.
      */
-    data class Unavailable(val availability: BiometricAvailability) : BiometricResult
+    data class Unavailable(
+        val availability: BiometricAvailability,
+    ) : BiometricResult
 }
 
 /**

@@ -9,4 +9,6 @@ package com.siddharth.kmp.ai
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class Unimplemented(val reason: String)
+annotation class Unimplemented(
+    val reason: String,
+)

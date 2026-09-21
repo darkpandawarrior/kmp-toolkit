@@ -14,7 +14,9 @@ import kotlinx.coroutines.flow.update
  * screen needs a one-shot effect (navigation, toast, one-shot dialog); this class won't grow that
  * capability in place, it's deliberately the smaller of the two.
  */
-abstract class StateViewModel<S : Any>(initial: S) : ViewModel() {
+abstract class StateViewModel<S : Any>(
+    initial: S,
+) : ViewModel() {
     private val _state = MutableStateFlow(initial)
     val state: StateFlow<S> = _state.asStateFlow()
 

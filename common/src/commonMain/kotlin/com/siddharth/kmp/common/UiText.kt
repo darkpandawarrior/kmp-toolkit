@@ -11,9 +11,14 @@ package com.siddharth.kmp.common
  * - [Empty] is an explicit "no text" so a caller never has to reach for `Dynamic("")`.
  */
 sealed interface UiText {
-    data class Dynamic(val value: String) : UiText
+    data class Dynamic(
+        val value: String,
+    ) : UiText
 
-    data class Res(val key: String, val args: List<String> = emptyList()) : UiText
+    data class Res(
+        val key: String,
+        val args: List<String> = emptyList(),
+    ) : UiText
 
     data object Empty : UiText
 

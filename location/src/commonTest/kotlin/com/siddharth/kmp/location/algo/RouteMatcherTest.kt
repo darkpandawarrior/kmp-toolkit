@@ -5,13 +5,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class RouteMatcherTest {
-
     @Test
     fun matchRequest_from_fixes_carries_accuracy_as_the_radius() {
-        val fixes = listOf(
-            Fix(lat = 12.9, lng = 77.6, timeMs = 1000L, accuracyM = 8.0),
-            Fix(lat = 12.901, lng = 77.6, timeMs = 2000L, accuracyM = 15.0),
-        )
+        val fixes =
+            listOf(
+                Fix(lat = 12.9, lng = 77.6, timeMs = 1000L, accuracyM = 8.0),
+                Fix(lat = 12.901, lng = 77.6, timeMs = 2000L, accuracyM = 15.0),
+            )
         val request = MatchRequest.from(fixes)
 
         assertEquals(listOf(8.0, 15.0), request.points.map { it.radiusM })
@@ -45,11 +45,12 @@ class RouteMatcherTest {
     @Test
     fun matchedRoute_carries_per_point_matched_flags_for_outliers() {
         // OSRM: a null tracepoint means the point could not be matched at all.
-        val route = MatchedRoute(
-            distanceM = 500.0,
-            confidence = 0.8,
-            pointMatched = listOf(true, false, true),
-        )
+        val route =
+            MatchedRoute(
+                distanceM = 500.0,
+                confidence = 0.8,
+                pointMatched = listOf(true, false, true),
+            )
         assertEquals(listOf(true, false, true), route.pointMatched)
     }
 }

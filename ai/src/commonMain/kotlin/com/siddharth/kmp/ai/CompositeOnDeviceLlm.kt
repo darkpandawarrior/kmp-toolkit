@@ -30,8 +30,7 @@ class CompositeOnDeviceLlm(
 
     override val supportsImage: Boolean get() = backends.any { it.supportsImage }
 
-    override suspend fun generate(prompt: String): AiResult<String> =
-        tryBackends { it.generate(PromptGuard.wrap(prompt).text) }
+    override suspend fun generate(prompt: String): AiResult<String> = tryBackends { it.generate(PromptGuard.wrap(prompt).text) }
 
     override suspend fun generate(parts: List<LlmPart>): AiResult<String> {
         val needsImage = parts.any { it is LlmPart.Image }
@@ -76,8 +75,7 @@ class CompositeOnDeviceLlm(
                 unavailableReason = AiFailure.NotSupportedOnPlatform,
             )
 
-    private fun chooseBackend(accepts: (OnDeviceLlm) -> Boolean): OnDeviceLlm? =
-        backends.firstOrNull { it.isAvailable() && accepts(it) }
+    private fun chooseBackend(accepts: (OnDeviceLlm) -> Boolean): OnDeviceLlm? = backends.firstOrNull { it.isAvailable() && accepts(it) }
 
     /**
      * Runs [call] against each available (and [accepts]-passing) backend in order, returning the

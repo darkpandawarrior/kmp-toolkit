@@ -31,10 +31,11 @@ class ResumableModelDownloaderTest {
     fun setUp() {
         server = HttpServer.create(InetSocketAddress("localhost", 0), 0)
         server.start()
-        dir = File.createTempFile("downloader-test", "").apply {
-            delete()
-            mkdirs()
-        }
+        dir =
+            File.createTempFile("downloader-test", "").apply {
+                delete()
+                mkdirs()
+            }
     }
 
     @After

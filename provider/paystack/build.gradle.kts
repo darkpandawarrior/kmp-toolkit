@@ -28,4 +28,3 @@ dependencies {
 
     testImplementation(libs.junit)
 }
-

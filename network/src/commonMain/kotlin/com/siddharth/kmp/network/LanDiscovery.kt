@@ -38,7 +38,9 @@ data class LanHost(
  * Lifecycle: construct with a [serviceType], call [start] with the coordinates, and [stop] when done.
  * Implementations are NOT required to be restartable after [stop]; create a new instance per ad.
  */
-expect class LanAdvertiser(serviceType: String) {
+expect class LanAdvertiser(
+    serviceType: String,
+) {
     /**
      * Begins advertising [host]:[port] / [payload] under [serviceName]. Safe to call once; calling
      * again before [stop] is implementation-defined (prefer one instance per advertisement).
@@ -78,6 +80,8 @@ expect class LanAdvertiser(serviceType: String) {
  * declare what its consumer must request. That suppression is not a claim that no permission is
  * needed; on API 37 it would be an actively wrong one.
  */
-expect class LanDiscoverer(serviceType: String) {
+expect class LanDiscoverer(
+    serviceType: String,
+) {
     fun discover(): Flow<LanHost>
 }

@@ -7,9 +7,14 @@ package com.siddharth.kmp.ai
  * Audio is deliberately not modeled yet (no backend needs it) — add a case here when one does.
  */
 sealed interface LlmPart {
-    data class Text(val text: String) : LlmPart
+    data class Text(
+        val text: String,
+    ) : LlmPart
 
-    data class Image(val bytes: ByteArray, val mime: String = "image/png") : LlmPart {
+    data class Image(
+        val bytes: ByteArray,
+        val mime: String = "image/png",
+    ) : LlmPart {
         // ByteArray has no structural equals/hashCode of its own (Kotlin data classes fall back to
         // reference identity for array properties) — override so two Images over equal bytes compare equal.
         override fun equals(other: Any?): Boolean =

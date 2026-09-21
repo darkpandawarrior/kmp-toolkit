@@ -39,16 +39,17 @@ kotlin {
         // Intermediate source set for the Compose WebView checkout screen — shared by android + ios,
         // excluded from wasmJs. Declaring explicit dependsOn edges opts this module out of the
         // default hierarchy template, so the ios intermediate is wired by hand below.
-        val webviewMain = create("webviewMain") {
-            dependsOn(commonMain.get())
-            dependencies {
-                implementation(project(":payments-api"))
-                implementation(libs.compose.runtime)
-                implementation(libs.compose.foundation)
-                implementation(libs.compose.ui)
-                implementation(libs.compose.webview.multiplatform)
+        val webviewMain =
+            create("webviewMain") {
+                dependsOn(commonMain.get())
+                dependencies {
+                    implementation(project(":payments-api"))
+                    implementation(libs.compose.runtime)
+                    implementation(libs.compose.foundation)
+                    implementation(libs.compose.ui)
+                    implementation(libs.compose.webview.multiplatform)
+                }
             }
-        }
         androidMain.get().dependsOn(webviewMain)
         val iosMain = maybeCreate("iosMain").apply { dependsOn(webviewMain) }
         getByName("iosArm64Main").dependsOn(iosMain)

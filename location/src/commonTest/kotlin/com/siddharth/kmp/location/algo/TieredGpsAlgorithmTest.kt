@@ -10,7 +10,6 @@ import kotlin.test.assertTrue
  * exclusion, mock bucketing, resume round-trip, and that a knob actually changes behaviour.
  */
 class TieredGpsAlgorithmTest {
-
     private fun fix(
         lat: Double,
         lng: Double,
@@ -22,18 +21,22 @@ class TieredGpsAlgorithmTest {
 
     // A driving-speed straight line: 5s cadence, ~11.1 m/leg (0.0001 deg lat) so legs clear the
     // driving jitter gate (5 m) comfortably and never trip the abnormal caps.
-    private fun drivingTrace(points: Int, startMs: Long = 1_000L): List<Fix> =
+    private fun drivingTrace(
+        points: Int,
+        startMs: Long = 1_000L,
+    ): List<Fix> =
         (0 until points).map { i ->
             fix(lat = 12.9000 + i * 0.0001, lng = 77.6000, tMs = startMs + i * 5_000L)
         }
 
     @Test
     fun bucket_invariant_holds_across_a_mixed_trace() {
-        val trace = drivingTrace(15) +
-            // a mock leg
-            fix(lat = 12.9020, lng = 77.6100, tMs = 76_000L, isMock = true) +
-            // a teleport spike (>5km in under 30s)
-            fix(lat = 13.5000, lng = 78.2000, tMs = 78_000L)
+        val trace =
+            drivingTrace(15) +
+                // a mock leg
+                fix(lat = 12.9020, lng = 77.6100, tMs = 76_000L, isMock = true) +
+                // a teleport spike (>5km in under 30s)
+                fix(lat = 13.5000, lng = 78.2000, tMs = 78_000L)
         val report = AlgorithmHarness.run(TieredGpsAlgorithm(), trace)
 
         assertTrue(
@@ -47,12 +50,13 @@ class TieredGpsAlgorithmTest {
         // Stationary fixes: tiny (~1m) wander, 5s apart, speed reported near zero. Below the
         // driving-band-irrelevant walking jitter gate (2m) and with no movement history, this
         // must be dropped rather than accumulated as travelled distance.
-        val trace = listOf(
-            fix(lat = 12.9000, lng = 77.6000, tMs = 0L, speed = 0.0),
-            fix(lat = 12.90000005, lng = 77.6000, tMs = 5_000L, speed = 0.2),
-            fix(lat = 12.90000010, lng = 77.6000, tMs = 10_000L, speed = 0.2),
-            fix(lat = 12.90000003, lng = 77.6000, tMs = 15_000L, speed = 0.1),
-        )
+        val trace =
+            listOf(
+                fix(lat = 12.9000, lng = 77.6000, tMs = 0L, speed = 0.0),
+                fix(lat = 12.90000005, lng = 77.6000, tMs = 5_000L, speed = 0.2),
+                fix(lat = 12.90000010, lng = 77.6000, tMs = 10_000L, speed = 0.2),
+                fix(lat = 12.90000003, lng = 77.6000, tMs = 15_000L, speed = 0.1),
+            )
         val report = AlgorithmHarness.run(TieredGpsAlgorithm(), trace)
 
         assertEquals(3, report.count(FixVerdict.JITTER), "the three near-zero wanders should be suppressed")
@@ -61,12 +65,13 @@ class TieredGpsAlgorithmTest {
 
     @Test
     fun instant_teleport_is_excluded_as_a_spike_not_folded_into_original() {
-        val trace = listOf(
-            fix(lat = 12.9000, lng = 77.6000, tMs = 0L),
-            fix(lat = 12.9010, lng = 77.6010, tMs = 5_000L), // normal ~150m leg
-            // >5km jump 5s later: displacement > spikeHardGateM, well past maxPlausibleSpeedMps too
-            fix(lat = 13.5000, lng = 78.2000, tMs = 10_000L),
-        )
+        val trace =
+            listOf(
+                fix(lat = 12.9000, lng = 77.6000, tMs = 0L),
+                fix(lat = 12.9010, lng = 77.6010, tMs = 5_000L), // normal ~150m leg
+                // >5km jump 5s later: displacement > spikeHardGateM, well past maxPlausibleSpeedMps too
+                fix(lat = 13.5000, lng = 78.2000, tMs = 10_000L),
+            )
         val report = AlgorithmHarness.run(TieredGpsAlgorithm(), trace)
 
         assertEquals(1, report.count(FixVerdict.SPIKE))
@@ -80,9 +85,10 @@ class TieredGpsAlgorithmTest {
 
     @Test
     fun mock_fixes_are_bucketed_away_from_cleaned() {
-        val trace = drivingTrace(4) +
-            fix(lat = 12.9010, lng = 77.6100, tMs = 20_000L, isMock = true) +
-            fix(lat = 12.9020, lng = 77.6200, tMs = 25_000L, isMock = true)
+        val trace =
+            drivingTrace(4) +
+                fix(lat = 12.9010, lng = 77.6100, tMs = 20_000L, isMock = true) +
+                fix(lat = 12.9020, lng = 77.6200, tMs = 25_000L, isMock = true)
         val report = AlgorithmHarness.run(TieredGpsAlgorithm(), trace)
 
         assertTrue(report.finalState.mockM > 0.0, "mock legs should land in the mock bucket")
@@ -103,17 +109,19 @@ class TieredGpsAlgorithmTest {
     fun widening_the_driving_jitter_knob_suppresses_a_leg_the_default_accepts() {
         // Kalman disabled so displacement is an exact haversine of the input coordinates, not a
         // filtered estimate — the point of this test is the knob, not the smoother.
-        val trace = listOf(
-            fix(lat = 12.9000, lng = 77.6000, tMs = 0L, speed = 0.0), // anchor; speed 0.0 seeds history
-            fix(lat = 12.90006, lng = 77.6000, tMs = 5_000L, speed = 10.0), // ~6.7m driving-speed leg
-        )
+        val trace =
+            listOf(
+                fix(lat = 12.9000, lng = 77.6000, tMs = 0L, speed = 0.0), // anchor; speed 0.0 seeds history
+                fix(lat = 12.90006, lng = 77.6000, tMs = 5_000L, speed = 10.0), // ~6.7m driving-speed leg
+            )
         val base = TieredGpsAlgorithm.milewayV1Profile().with(TieredGpsAlgorithm.FLAG_ENABLE_KALMAN, false)
 
         val default = AlgorithmHarness.run(TieredGpsAlgorithm(base), trace)
-        val widened = AlgorithmHarness.run(
-            TieredGpsAlgorithm(base.with(TieredGpsAlgorithm.DrivingJitter.name, 20.0)),
-            trace,
-        )
+        val widened =
+            AlgorithmHarness.run(
+                TieredGpsAlgorithm(base.with(TieredGpsAlgorithm.DrivingJitter.name, 20.0)),
+                trace,
+            )
 
         assertTrue(default.finalState.cleanedM > 0.0, "default 5m driving gate should accept a ~6.7m leg")
         assertEquals(0.0, widened.finalState.cleanedM, "a 20m gate should suppress the same leg as jitter")
@@ -142,18 +150,20 @@ class TieredGpsAlgorithmTest {
 
     @Test
     fun kalman_smoothing_can_be_disabled_via_the_flag() {
-        val trace = listOf(
-            fix(lat = 12.9000, lng = 77.6000, tMs = 0L, speed = 5.0),
-            fix(lat = 12.9002, lng = 77.6000, tMs = 5_000L, speed = 5.0),
-        )
+        val trace =
+            listOf(
+                fix(lat = 12.9000, lng = 77.6000, tMs = 0L, speed = 5.0),
+                fix(lat = 12.9002, lng = 77.6000, tMs = 5_000L, speed = 5.0),
+            )
 
         val smoothed = TieredGpsAlgorithm().also { it.reset(SessionContext(0L)) }
         smoothed.process(trace[0])
         val smoothedEmitted = smoothed.process(trace[1]).emitted
 
-        val raw = TieredGpsAlgorithm(
-            TieredGpsAlgorithm.milewayV1Profile().with(TieredGpsAlgorithm.FLAG_ENABLE_KALMAN, false),
-        ).also { it.reset(SessionContext(0L)) }
+        val raw =
+            TieredGpsAlgorithm(
+                TieredGpsAlgorithm.milewayV1Profile().with(TieredGpsAlgorithm.FLAG_ENABLE_KALMAN, false),
+            ).also { it.reset(SessionContext(0L)) }
         raw.process(trace[0])
         val rawEmitted = raw.process(trace[1]).emitted
 

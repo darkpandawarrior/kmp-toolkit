@@ -53,8 +53,9 @@ class AndroidGoogleSignIn(
         val rawNonce = nonceSource()
         val hashedNonce = Hashing.sha256Hex(rawNonce)
         val filtered = attempt(hashedNonce, rawNonce, filterByAuthorizedAccounts = config.filterByAuthorizedAccounts)
-        val noAccounts = filtered is SignInOutcome.Unavailable &&
-            filtered.reason == SignInAvailability.NO_CREDENTIALS_AVAILABLE
+        val noAccounts =
+            filtered is SignInOutcome.Unavailable &&
+                filtered.reason == SignInAvailability.NO_CREDENTIALS_AVAILABLE
         if (!noAccounts || !config.signUpFallback || !config.filterByAuthorizedAccounts) return filtered
         return attempt(hashedNonce, rawNonce, filterByAuthorizedAccounts = false)
     }
@@ -67,14 +68,16 @@ class AndroidGoogleSignIn(
         rawNonce: String,
         filterByAuthorizedAccounts: Boolean,
     ): SignInOutcome {
-        val option = GetGoogleIdOption.Builder()
-            .setServerClientId(config.serverClientId)
-            .setFilterByAuthorizedAccounts(filterByAuthorizedAccounts)
-            // Auto-select only ever makes sense on the filtered pass: on the unfiltered sign-up pass
-            // it would silently pick an account the user has never used with this app.
-            .setAutoSelectEnabled(config.autoSelectEnabled && filterByAuthorizedAccounts)
-            .setNonce(hashedNonce)
-            .build()
+        val option =
+            GetGoogleIdOption
+                .Builder()
+                .setServerClientId(config.serverClientId)
+                .setFilterByAuthorizedAccounts(filterByAuthorizedAccounts)
+                // Auto-select only ever makes sense on the filtered pass: on the unfiltered sign-up pass
+                // it would silently pick an account the user has never used with this app.
+                .setAutoSelectEnabled(config.autoSelectEnabled && filterByAuthorizedAccounts)
+                .setNonce(hashedNonce)
+                .build()
         val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
         return try {
             toOutcome(credentialManager.getCredential(activityContext, request).credential, rawNonce)
@@ -93,7 +96,10 @@ class AndroidGoogleSignIn(
         }
     }
 
-    private fun toOutcome(credential: Credential, rawNonce: String): SignInOutcome {
+    private fun toOutcome(
+        credential: Credential,
+        rawNonce: String,
+    ): SignInOutcome {
         if (credential !is CustomCredential ||
             credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {

@@ -41,20 +41,29 @@ private class FakeProvider(
 // sees no pending work on the test dispatcher and advances straight to the timeout before the mock
 // response lands. Dispatchers.Unconfined keeps the mock's coroutine on the calling thread instead,
 // so it resolves before control ever returns to the scheduler.
-private fun mockEngine(status: HttpStatusCode, body: String) =
-    MockEngine(
-        MockEngineConfig().apply {
-            dispatcher = Dispatchers.Unconfined
-            addHandler {
-                respond(content = body, status = status, headers = headersOf(HttpHeaders.ContentType, "application/json"))
-            }
-        },
-    )
+private fun mockEngine(
+    status: HttpStatusCode,
+    body: String,
+) = MockEngine(
+    MockEngineConfig().apply {
+        dispatcher = Dispatchers.Unconfined
+        addHandler {
+            respond(content = body, status = status, headers = headersOf(HttpHeaders.ContentType, "application/json"))
+        }
+    },
+)
 
 /** Records the single request it receives (url + headers + body) alongside the mocked response. */
-private class CapturedRequest(val url: String, val headers: Map<String, String>, val body: String)
+private class CapturedRequest(
+    val url: String,
+    val headers: Map<String, String>,
+    val body: String,
+)
 
-private fun capturingMockEngine(status: HttpStatusCode, body: String): Pair<MockEngine, () -> CapturedRequest?> {
+private fun capturingMockEngine(
+    status: HttpStatusCode,
+    body: String,
+): Pair<MockEngine, () -> CapturedRequest?> {
     var captured: CapturedRequest? = null
     val engine =
         MockEngine(

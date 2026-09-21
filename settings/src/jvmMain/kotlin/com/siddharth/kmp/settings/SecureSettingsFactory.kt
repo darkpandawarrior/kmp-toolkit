@@ -36,10 +36,11 @@ actual class SecureSettingsFactory(
             ByteArrayInputStream(decrypt(key, storeFile.readBytes())).use { props.load(it) }
         }
         return PropertiesSettings(props) { updated ->
-            val plain = ByteArrayOutputStream().use { bos ->
-                updated.store(bos, null)
-                bos.toByteArray()
-            }
+            val plain =
+                ByteArrayOutputStream().use { bos ->
+                    updated.store(bos, null)
+                    bos.toByteArray()
+                }
             storeFile.parentFile?.mkdirs()
             storeFile.writeBytes(encrypt(key, plain))
         }
@@ -49,8 +50,12 @@ actual class SecureSettingsFactory(
         if (keyFile.exists() && keyFile.length() > 0) {
             return SecretKeySpec(Base64.getDecoder().decode(keyFile.readText().trim()), "AES")
         }
-        val raw = KeyGenerator.getInstance("AES").apply { init(256, SecureRandom()) }
-            .generateKey().encoded
+        val raw =
+            KeyGenerator
+                .getInstance("AES")
+                .apply { init(256, SecureRandom()) }
+                .generateKey()
+                .encoded
         keyFile.parentFile?.mkdirs()
         keyFile.writeText(Base64.getEncoder().encodeToString(raw))
         runCatching {
@@ -59,19 +64,27 @@ actual class SecureSettingsFactory(
         return SecretKeySpec(raw, "AES")
     }
 
-    private fun encrypt(key: SecretKeySpec, plain: ByteArray): ByteArray {
+    private fun encrypt(
+        key: SecretKeySpec,
+        plain: ByteArray,
+    ): ByteArray {
         val iv = ByteArray(IV_BYTES).also { SecureRandom().nextBytes(it) }
-        val cipher = Cipher.getInstance(TRANSFORMATION).apply {
-            init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv))
-        }
+        val cipher =
+            Cipher.getInstance(TRANSFORMATION).apply {
+                init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv))
+            }
         return iv + cipher.doFinal(plain) // IV prepended, GCM tag appended by the cipher
     }
 
-    private fun decrypt(key: SecretKeySpec, blob: ByteArray): ByteArray {
+    private fun decrypt(
+        key: SecretKeySpec,
+        blob: ByteArray,
+    ): ByteArray {
         val iv = blob.copyOfRange(0, IV_BYTES)
-        val cipher = Cipher.getInstance(TRANSFORMATION).apply {
-            init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv))
-        }
+        val cipher =
+            Cipher.getInstance(TRANSFORMATION).apply {
+                init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv))
+            }
         return cipher.doFinal(blob.copyOfRange(IV_BYTES, blob.size))
     }
 
@@ -80,7 +93,6 @@ actual class SecureSettingsFactory(
         private const val IV_BYTES = 12
         private const val TAG_BITS = 128
 
-        private fun defaultStoreFile(): File =
-            File(System.getProperty("user.home"), ".kmp-toolkit-secure/secure_settings.enc")
+        private fun defaultStoreFile(): File = File(System.getProperty("user.home"), ".kmp-toolkit-secure/secure_settings.enc")
     }
 }

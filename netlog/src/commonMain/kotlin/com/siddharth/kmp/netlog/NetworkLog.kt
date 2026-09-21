@@ -41,15 +41,17 @@ public val DEFAULT_REDACTED_HEADERS: Set<String> =
  * to fix by hand. Proper escaping is a real parser and this is a debug convenience — the ceiling is
  * deliberate, not overlooked.
  */
-public fun NetworkLogEntry.toCurl(
-    redactHeaders: Set<String> = DEFAULT_REDACTED_HEADERS,
-): String {
+public fun NetworkLogEntry.toCurl(redactHeaders: Set<String> = DEFAULT_REDACTED_HEADERS): String {
     val redact = redactHeaders.map { it.lowercase() }.toSet()
     return buildString {
         append("curl -X ").append(method)
         requestHeaders.forEach { (name, value) ->
             val shown = if (name.lowercase() in redact) "<redacted>" else value
-            append(" -H '").append(name).append(": ").append(shown).append("'")
+            append(" -H '")
+                .append(name)
+                .append(": ")
+                .append(shown)
+                .append("'")
         }
         requestBody?.let { append(" -d '").append(it).append("'") }
         append(" '").append(url).append("'")

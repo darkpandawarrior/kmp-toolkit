@@ -77,7 +77,14 @@ class MlKitGenAiOnDeviceLlm(
         flow {
             if (!isAvailable() || model.checkStatus() != FeatureStatus.AVAILABLE) return@flow
             val request = buildRequest(parts) ?: return@flow
-            emitAll(model.generateContentStream(request).map { it.candidates.firstOrNull()?.text.orEmpty() })
+            emitAll(
+                model.generateContentStream(request).map {
+                    it.candidates
+                        .firstOrNull()
+                        ?.text
+                        .orEmpty()
+                },
+            )
         }.catch {
             // On-device model hiccup mid-stream — degrade to whatever already emitted.
         }
@@ -85,7 +92,12 @@ class MlKitGenAiOnDeviceLlm(
     private suspend fun runGeneration(parts: List<LlmPart>): AiResult<String> {
         if (model.checkStatus() != FeatureStatus.AVAILABLE) return Result.Failure(AiFailure.ModelNotResident)
         val request = buildRequest(parts) ?: return Result.Failure(AiFailure.NotSupportedOnPlatform)
-        val text = model.generateContent(request).candidates.firstOrNull()?.text
+        val text =
+            model
+                .generateContent(request)
+                .candidates
+                .firstOrNull()
+                ?.text
         return if (text.isNullOrBlank()) Result.Failure(AiFailure.EmptyReply) else Result.Success(text)
     }
 

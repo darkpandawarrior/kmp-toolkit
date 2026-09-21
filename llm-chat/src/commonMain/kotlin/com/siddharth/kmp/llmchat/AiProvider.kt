@@ -82,7 +82,9 @@ internal suspend fun AiProvider.httpCloudCapabilities(): AiCapabilities =
 /** One increment of a [AiProvider.completeStream] reply. */
 sealed interface AiChunk {
     /** A piece of the model's reply text, in generation order. */
-    data class Token(val text: String) : AiChunk
+    data class Token(
+        val text: String,
+    ) : AiChunk
 
     /**
      * The stream ended in failure — before, or after, some [Token]s already emitted.

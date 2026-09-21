@@ -51,7 +51,11 @@ class PermissionOrchestratorTest {
 
             orchestrator.skipAlreadyGranted()
 
-            assertEquals(AppPermission.NOTIFICATIONS, orchestrator.state.value.current?.permission)
+            assertEquals(
+                AppPermission.NOTIFICATIONS,
+                orchestrator.state.value.current
+                    ?.permission,
+            )
             assertTrue(provider.requested.isEmpty())
         }
 
@@ -64,7 +68,11 @@ class PermissionOrchestratorTest {
             val result = orchestrator.requestCurrent()
 
             assertEquals(PermissionResult.DeniedAlways, result)
-            assertEquals(AppPermission.NOTIFICATIONS, orchestrator.state.value.current?.permission)
+            assertEquals(
+                AppPermission.NOTIFICATIONS,
+                orchestrator.state.value.current
+                    ?.permission,
+            )
         }
 
     @Test

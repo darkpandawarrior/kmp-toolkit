@@ -96,15 +96,23 @@ data class SocialIdentity(
 )
 
 sealed interface SignInOutcome {
-    data class Success(val identity: SocialIdentity) : SignInOutcome
+    data class Success(
+        val identity: SocialIdentity,
+    ) : SignInOutcome
 
     /** User dismissed the sheet. Not an error — never show a toast for this. */
     data object Cancelled : SignInOutcome
 
     /** The capability flag said no. [detail] is for the log, [reason] is for the UI decision. */
-    data class Unavailable(val reason: SignInAvailability, val detail: String) : SignInOutcome
+    data class Unavailable(
+        val reason: SignInAvailability,
+        val detail: String,
+    ) : SignInOutcome
 
-    data class Failed(val message: String, val cause: Throwable? = null) : SignInOutcome
+    data class Failed(
+        val message: String,
+        val cause: Throwable? = null,
+    ) : SignInOutcome
 }
 
 /** Prefix of every unreplaced provisioning sentinel — see `provisioning/placeholders.json`. */
@@ -120,5 +128,4 @@ internal const val BYTE_MASK = 0xFF
  * Lowercase hex of raw bytes. Deliberately not the stdlib's `ByteArray.toHexString()`, which is
  * still behind `@ExperimentalStdlibApi` and would push an opt-in onto every consumer.
  */
-internal fun ByteArray.toLowerHex(): String =
-    joinToString("") { byte -> (byte.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(2, '0') }
+internal fun ByteArray.toLowerHex(): String = joinToString("") { byte -> (byte.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(2, '0') }

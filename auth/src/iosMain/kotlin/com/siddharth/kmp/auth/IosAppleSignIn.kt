@@ -64,29 +64,32 @@ class IosAppleSignIn(
      */
     override fun availability(): SignInAvailability = SignInAvailability.AVAILABLE
 
-    override suspend fun signIn(): SignInOutcome = withContext(Dispatchers.Main) {
-        // performRequests() presents UI, so it is main-thread-only. Forced here rather than
-        // documented, because the failure off-main is a rare crash rather than a clear error.
-        suspendCancellableCoroutine { continuation ->
-            val rawNonce = nonceSource()
-            val request = ASAuthorizationAppleIDProvider().createRequest().apply {
-                requestedScopes = listOf(ASAuthorizationScopeFullName, ASAuthorizationScopeEmail)
-                // Apple stores the SHA-256; the raw value travels home for the server to compare.
-                nonce = Hashing.sha256Hex(rawNonce)
+    override suspend fun signIn(): SignInOutcome =
+        withContext(Dispatchers.Main) {
+            // performRequests() presents UI, so it is main-thread-only. Forced here rather than
+            // documented, because the failure off-main is a rare crash rather than a clear error.
+            suspendCancellableCoroutine { continuation ->
+                val rawNonce = nonceSource()
+                val request =
+                    ASAuthorizationAppleIDProvider().createRequest().apply {
+                        requestedScopes = listOf(ASAuthorizationScopeFullName, ASAuthorizationScopeEmail)
+                        // Apple stores the SHA-256; the raw value travels home for the server to compare.
+                        nonce = Hashing.sha256Hex(rawNonce)
+                    }
+                val delegate =
+                    AppleSignInDelegate(rawNonce, anchor) { outcome ->
+                        release()
+                        if (continuation.isActive) continuation.resume(outcome)
+                    }
+                val controller = ASAuthorizationController(authorizationRequests = listOf(request))
+                controller.delegate = delegate
+                controller.presentationContextProvider = delegate
+                inFlight = delegate
+                inFlightController = controller
+                continuation.invokeOnCancellation { release() }
+                controller.performRequests()
             }
-            val delegate = AppleSignInDelegate(rawNonce, anchor) { outcome ->
-                release()
-                if (continuation.isActive) continuation.resume(outcome)
-            }
-            val controller = ASAuthorizationController(authorizationRequests = listOf(request))
-            controller.delegate = delegate
-            controller.presentationContextProvider = delegate
-            inFlight = delegate
-            inFlightController = controller
-            continuation.invokeOnCancellation { release() }
-            controller.performRequests()
         }
-    }
 
     private fun release() {
         inFlight = null
@@ -101,7 +104,6 @@ private class AppleSignInDelegate(
 ) : NSObject(),
     ASAuthorizationControllerDelegateProtocol,
     ASAuthorizationControllerPresentationContextProvidingProtocol {
-
     override fun authorizationController(
         controller: ASAuthorizationController,
         didCompleteWithAuthorization: ASAuthorization,
@@ -127,9 +129,10 @@ private class AppleSignInDelegate(
                     userId = credential.user,
                     email = credential.email,
                     // Populated on the FIRST authorization only — Apple never sends the name again.
-                    displayName = credential.fullName?.let { name ->
-                        listOfNotNull(name.givenName, name.familyName).joinToString(" ").ifBlank { null }
-                    },
+                    displayName =
+                        credential.fullName?.let { name ->
+                            listOfNotNull(name.givenName, name.familyName).joinToString(" ").ifBlank { null }
+                        },
                 ),
             ),
         )
@@ -148,9 +151,7 @@ private class AppleSignInDelegate(
         )
     }
 
-    override fun presentationAnchorForAuthorizationController(
-        controller: ASAuthorizationController,
-    ): ASPresentationAnchor = anchor()
+    override fun presentationAnchorForAuthorizationController(controller: ASAuthorizationController): ASPresentationAnchor = anchor()
 }
 
 @OptIn(BetaInteropApi::class)

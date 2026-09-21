@@ -15,19 +15,21 @@ import kotlin.test.assertEquals
 
 // Same Dispatchers.Unconfined rationale as LlmChatSmokeTest.mockEngine: keeps the mock response on
 // the calling thread so it resolves synchronously under runTest's virtual clock.
-private fun sseMockEngine(vararg sseLines: String, status: HttpStatusCode = HttpStatusCode.OK) =
-    MockEngine(
-        MockEngineConfig().apply {
-            dispatcher = Dispatchers.Unconfined
-            addHandler {
-                respond(
-                    content = sseLines.joinToString("\n"),
-                    status = status,
-                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
-                )
-            }
-        },
-    )
+private fun sseMockEngine(
+    vararg sseLines: String,
+    status: HttpStatusCode = HttpStatusCode.OK,
+) = MockEngine(
+    MockEngineConfig().apply {
+        dispatcher = Dispatchers.Unconfined
+        addHandler {
+            respond(
+                content = sseLines.joinToString("\n"),
+                status = status,
+                headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+            )
+        }
+    },
+)
 
 class StreamingProviderTest {
     @Test
@@ -132,7 +134,9 @@ class StreamingProviderTest {
         runTest {
             // AiProvider.completeStream's default implementation, exercised through a minimal
             // implementer that doesn't override it — the fallback every non-HTTP AiProvider gets.
-            class SingleShotProvider(private val text: String) : AiProvider {
+            class SingleShotProvider(
+                private val text: String,
+            ) : AiProvider {
                 override val id = "single-shot"
                 override val displayName = id
 
@@ -141,7 +145,8 @@ class StreamingProviderTest {
                 override suspend fun complete(
                     messages: List<AiMessage>,
                     config: AiConfig,
-                ) = com.siddharth.kmp.result.Result.Success<String>(text)
+                ) = com.siddharth.kmp.result.Result
+                    .Success<String>(text)
             }
 
             val chunks = SingleShotProvider("hello").completeStream(emptyList()).toList()

@@ -58,7 +58,8 @@ object BiometricGuard {
                 },
             )
         val promptInfo =
-            BiometricPrompt.PromptInfo.Builder()
+            BiometricPrompt.PromptInfo
+                .Builder()
                 .setTitle(title)
                 .setSubtitle(subtitle)
                 .setNegativeButtonText("Cancel")

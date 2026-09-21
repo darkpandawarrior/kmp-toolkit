@@ -8,7 +8,6 @@ plugins {
     `maven-publish`
 }
 
-
 kotlin {
     // Must be explicit: the template is applied automatically ONLY while no source set declares its
     // own `dependsOn`. The `composeUiTest` set below declares one, which silently switches the
@@ -102,13 +101,14 @@ kotlin {
         //
         // iOS and wasm are precisely where this reaches UI that Robolectric/Roborazzi cannot, which
         // is the whole point of gap #5 in the 2026-07-24 absorption note. So it runs exactly there.
-        val composeUiTest = create("composeUiTest") {
-            dependsOn(commonTest.get())
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.compose.ui.test)
+        val composeUiTest =
+            create("composeUiTest") {
+                dependsOn(commonTest.get())
+                dependencies {
+                    implementation(kotlin("test"))
+                    implementation(libs.compose.ui.test)
+                }
             }
-        }
         iosArm64Test.get().dependsOn(composeUiTest)
         iosSimulatorArm64Test.get().dependsOn(composeUiTest)
         wasmJsTest.get().dependsOn(composeUiTest)

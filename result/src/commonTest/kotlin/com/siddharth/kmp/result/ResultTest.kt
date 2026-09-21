@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class ResultTest {
-
     private val ok: Result<Int, DataError> = Result.Success(2)
     private val err: Result<Int, DataError> = Result.Failure(DataError.Network.NO_INTERNET)
 

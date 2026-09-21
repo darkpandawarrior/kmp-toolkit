@@ -23,55 +23,67 @@ import kotlin.test.assertNull
 @OptIn(ExperimentalTestApi::class)
 class OtpFieldUiTest {
     @Test
-    fun typingDigitsDrivesTheValueAndFiresCompleteOnce() = runComposeUiTest {
-        var value = ""
-        var completed: String? = null
-        var completions = 0
+    fun typingDigitsDrivesTheValueAndFiresCompleteOnce() =
+        runComposeUiTest {
+            var value = ""
+            var completed: String? = null
+            var completions = 0
 
-        setContent {
-            var code by remember { mutableStateOf("") }
-            OtpField(
-                value = code,
-                onValueChange = { code = it; value = it },
-                onComplete = { completed = it; completions++ },
-                length = 4,
-                modifier = Modifier.testTag("otp"),
-            )
+            setContent {
+                var code by remember { mutableStateOf("") }
+                OtpField(
+                    value = code,
+                    onValueChange = {
+                        code = it
+                        value = it
+                    },
+                    onComplete = {
+                        completed = it
+                        completions++
+                    },
+                    length = 4,
+                    modifier = Modifier.testTag("otp"),
+                )
+            }
+
+            onNodeWithTag("otp").performTextInput("12")
+            assertEquals("12", value)
+            assertNull(completed, "must not complete before the code is full")
+
+            onNodeWithTag("otp").performTextInput("34")
+            assertEquals("1234", value)
+            assertEquals("1234", completed)
+            assertEquals(1, completions)
         }
-
-        onNodeWithTag("otp").performTextInput("12")
-        assertEquals("12", value)
-        assertNull(completed, "must not complete before the code is full")
-
-        onNodeWithTag("otp").performTextInput("34")
-        assertEquals("1234", value)
-        assertEquals("1234", completed)
-        assertEquals(1, completions)
-    }
 
     @Test
-    fun nonDigitsAreStrippedAndOverflowIsTruncated() = runComposeUiTest {
-        var value = ""
-        setContent {
-            var code by remember { mutableStateOf("") }
-            OtpField(
-                value = code,
-                onValueChange = { code = it; value = it },
-                length = 4,
-                modifier = Modifier.testTag("otp"),
-            )
-        }
+    fun nonDigitsAreStrippedAndOverflowIsTruncated() =
+        runComposeUiTest {
+            var value = ""
+            setContent {
+                var code by remember { mutableStateOf("") }
+                OtpField(
+                    value = code,
+                    onValueChange = {
+                        code = it
+                        value = it
+                    },
+                    length = 4,
+                    modifier = Modifier.testTag("otp"),
+                )
+            }
 
-        // The notification-paste path, end to end rather than just through sanitizeOtp.
-        onNodeWithTag("otp").performTextReplacement("G-4821 is your code")
-        assertEquals("4821", value)
-    }
+            // The notification-paste path, end to end rather than just through sanitizeOtp.
+            onNodeWithTag("otp").performTextReplacement("G-4821 is your code")
+            assertEquals("4821", value)
+        }
 
     @Test
-    fun pageIndicatorRendersNothingForASinglePage() = runComposeUiTest {
-        setContent {
-            PageIndicator(currentPage = 0, pageCount = 1, modifier = Modifier.testTag("dots"))
+    fun pageIndicatorRendersNothingForASinglePage() =
+        runComposeUiTest {
+            setContent {
+                PageIndicator(currentPage = 0, pageCount = 1, modifier = Modifier.testTag("dots"))
+            }
+            onNodeWithTag("dots").assertDoesNotExist()
         }
-        onNodeWithTag("dots").assertDoesNotExist()
-    }
 }

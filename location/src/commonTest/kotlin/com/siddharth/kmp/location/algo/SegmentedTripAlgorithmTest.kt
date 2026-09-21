@@ -6,30 +6,50 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SegmentedTripAlgorithmTest {
-
-    private fun drive(points: Int, startMs: Long = 1_000L, stepDeg: Double = 0.0005, intervalMs: Long = 5_000L) =
-        (0 until points).map { i ->
-            Fix(
-                lat = 12.9000 + i * stepDeg,
-                lng = 77.6000,
-                timeMs = startMs + i * intervalMs,
-                accuracyM = 6.0,
-                speedMps = 11.0,
-            )
-        }
+    private fun drive(
+        points: Int,
+        startMs: Long = 1_000L,
+        stepDeg: Double = 0.0005,
+        intervalMs: Long = 5_000L,
+    ) = (0 until points).map { i ->
+        Fix(
+            lat = 12.9000 + i * stepDeg,
+            lng = 77.6000,
+            timeMs = startMs + i * intervalMs,
+            accuracyM = 6.0,
+            speedMps = 11.0,
+        )
+    }
 
     /** Random-walk drift around a fixed point: what a parked car actually produces. */
-    private fun parkedDrift(points: Int, startMs: Long, atLat: Double, atLng: Double, intervalMs: Long = 5_000L) =
-        (0 until points).map { i ->
-            val ring = i % 4
-            Fix(
-                lat = atLat + when (ring) { 0 -> 0.00004; 2 -> -0.00004; else -> 0.0 },
-                lng = atLng + when (ring) { 1 -> 0.00004; 3 -> -0.00004; else -> 0.0 },
-                timeMs = startMs + i * intervalMs,
-                accuracyM = 8.0,
-                speedMps = 0.3,
-            )
-        }
+    private fun parkedDrift(
+        points: Int,
+        startMs: Long,
+        atLat: Double,
+        atLng: Double,
+        intervalMs: Long = 5_000L,
+    ) = (0 until points).map { i ->
+        val ring = i % 4
+        Fix(
+            lat =
+                atLat +
+                    when (ring) {
+                        0 -> 0.00004
+                        2 -> -0.00004
+                        else -> 0.0
+                    },
+            lng =
+                atLng +
+                    when (ring) {
+                        1 -> 0.00004
+                        3 -> -0.00004
+                        else -> 0.0
+                    },
+            timeMs = startMs + i * intervalMs,
+            accuracyM = 8.0,
+            speedMps = 0.3,
+        )
+    }
 
     // ── parity ────────────────────────────────────────────────────────────────────────────────────
 
@@ -37,13 +57,15 @@ class SegmentedTripAlgorithmTest {
     fun parity_profile_is_identical_to_the_bare_delegate() {
         val trace = drive(40)
         val bare = AlgorithmHarness.run(TieredGpsAlgorithm(), trace)
-        val wrapped = AlgorithmHarness.run(
-            SegmentedTripAlgorithm(SegmentedTripAlgorithm.parityProfile()),
-            trace,
-        )
+        val wrapped =
+            AlgorithmHarness.run(
+                SegmentedTripAlgorithm(SegmentedTripAlgorithm.parityProfile()),
+                trace,
+            )
 
         assertEquals(
-            bare.finalState.cleanedM, wrapped.finalState.cleanedM,
+            bare.finalState.cleanedM,
+            wrapped.finalState.cleanedM,
             absoluteTolerance = 0.001,
         )
         assertEquals(bare.finalState.originalM, wrapped.finalState.originalM, absoluteTolerance = 0.001)
@@ -54,23 +76,30 @@ class SegmentedTripAlgorithmTest {
     @Test
     fun motion_inside_the_error_ellipse_is_rejected() {
         // 4 m steps reported with 40 m accuracy: physically indistinguishable from noise.
-        val noisy = (0 until 20).map { i ->
-            Fix(
-                lat = 12.9 + i * 0.000036, lng = 77.6,
-                timeMs = 1000L + i * 5000L, accuracyM = 40.0, speedMps = 0.6,
+        val noisy =
+            (0 until 20).map { i ->
+                Fix(
+                    lat = 12.9 + i * 0.000036,
+                    lng = 77.6,
+                    timeMs = 1000L + i * 5000L,
+                    accuracyM = 40.0,
+                    speedMps = 0.6,
+                )
+            }
+        val gated =
+            AlgorithmHarness.run(
+                SegmentedTripAlgorithm(
+                    SegmentedTripAlgorithm
+                        .defaultProfile()
+                        .with(SegmentedTripAlgorithm.FLAG_ENABLE_STOP_SUPPRESSION, false),
+                ),
+                noisy,
             )
-        }
-        val gated = AlgorithmHarness.run(
-            SegmentedTripAlgorithm(
-                SegmentedTripAlgorithm.defaultProfile()
-                    .with(SegmentedTripAlgorithm.FLAG_ENABLE_STOP_SUPPRESSION, false),
-            ),
-            noisy,
-        )
-        val ungated = AlgorithmHarness.run(
-            SegmentedTripAlgorithm(SegmentedTripAlgorithm.parityProfile()),
-            noisy,
-        )
+        val ungated =
+            AlgorithmHarness.run(
+                SegmentedTripAlgorithm(SegmentedTripAlgorithm.parityProfile()),
+                noisy,
+            )
 
         assertTrue(
             gated.finalState.cleanedM < ungated.finalState.cleanedM,
@@ -101,10 +130,11 @@ class SegmentedTripAlgorithmTest {
         val parked = parkedDrift(60, last.timeMs + 5_000L, last.lat, last.lng)
 
         val withStops = AlgorithmHarness.run(SegmentedTripAlgorithm(), leg + parked)
-        val withoutStops = AlgorithmHarness.run(
-            SegmentedTripAlgorithm(SegmentedTripAlgorithm.parityProfile()),
-            leg + parked,
-        )
+        val withoutStops =
+            AlgorithmHarness.run(
+                SegmentedTripAlgorithm(SegmentedTripAlgorithm.parityProfile()),
+                leg + parked,
+            )
 
         assertTrue(
             withStops.finalState.cleanedM < withoutStops.finalState.cleanedM,
@@ -118,19 +148,27 @@ class SegmentedTripAlgorithmTest {
         val leg = drive(8)
         val last = leg.last()
         // Crawl slowly (below stop speed) but steadily away — traffic, not parking.
-        val crawl = (1..6).map { i ->
-            Fix(
-                lat = last.lat + i * 0.00012, lng = last.lng,
-                timeMs = last.timeMs + i * 5_000L, accuracyM = 6.0, speedMps = 0.5,
-            )
-        }
+        val crawl =
+            (1..6).map { i ->
+                Fix(
+                    lat = last.lat + i * 0.00012,
+                    lng = last.lng,
+                    timeMs = last.timeMs + i * 5_000L,
+                    accuracyM = 6.0,
+                    speedMps = 0.5,
+                )
+            }
         // Then resume normal speed, which exits the stop radius for certain.
-        val resume = (1..6).map { i ->
-            Fix(
-                lat = crawl.last().lat + i * 0.0005, lng = last.lng,
-                timeMs = crawl.last().timeMs + i * 5_000L, accuracyM = 6.0, speedMps = 11.0,
-            )
-        }
+        val resume =
+            (1..6).map { i ->
+                Fix(
+                    lat = crawl.last().lat + i * 0.0005,
+                    lng = last.lng,
+                    timeMs = crawl.last().timeMs + i * 5_000L,
+                    accuracyM = 6.0,
+                    speedMps = 11.0,
+                )
+            }
         val trace = leg + crawl + resume
 
         val segmented = AlgorithmHarness.run(SegmentedTripAlgorithm(), trace)
@@ -192,9 +230,10 @@ class SegmentedTripAlgorithmTest {
     fun bucket_invariant_holds_across_a_mixed_trace() {
         val leg = drive(12)
         val last = leg.last()
-        val trace = leg +
-            parkedDrift(40, last.timeMs + 5_000L, last.lat, last.lng) +
-            listOf(last.copy(timeMs = last.timeMs + 400_000L, isMock = true, lat = last.lat + 0.002))
+        val trace =
+            leg +
+                parkedDrift(40, last.timeMs + 5_000L, last.lat, last.lng) +
+                listOf(last.copy(timeMs = last.timeMs + 400_000L, isMock = true, lat = last.lat + 0.002))
 
         val report = AlgorithmHarness.run(SegmentedTripAlgorithm(), trace)
         assertTrue(report.finalState.invariantHolds(), "invariant broken: ${report.finalState}")
@@ -230,8 +269,9 @@ class SegmentedTripAlgorithmTest {
 
     @Test
     fun registry_can_build_it_by_id() {
-        val registry = MileageAlgorithmRegistry()
-            .register(SegmentedTripAlgorithm.Id) { p, e -> SegmentedTripAlgorithm(p, e) }
+        val registry =
+            MileageAlgorithmRegistry()
+                .register(SegmentedTripAlgorithm.Id) { p, e -> SegmentedTripAlgorithm(p, e) }
         assertEquals(SegmentedTripAlgorithm.Id, registry.create(SegmentedTripAlgorithm.defaultProfile()).id)
     }
 }

@@ -20,15 +20,17 @@ import kotlin.test.assertEquals
  * against the old plain-assignment implementation and they fail; against the fix they pass.
  */
 class SetStateConcurrencyTest {
-
     private class CounterStateVm : StateViewModel<Int>(0) {
         fun inc() = setState { this + 1 }
     }
 
-    private data class Count(val n: Int)
+    private data class Count(
+        val n: Int,
+    )
 
     private class CounterBaseVm : BaseViewModel<Count, Unit, Unit>(Count(0)) {
         fun inc() = setState { copy(n = n + 1) }
+
         override fun onAction(action: Unit) = Unit
     }
 
@@ -36,20 +38,24 @@ class SetStateConcurrencyTest {
     private val perWorker = 25_000
 
     @Test
-    fun stateViewModel_concurrentSetState_convergesWithoutLostUpdates() = runBlocking {
-        val vm = CounterStateVm()
-        (0 until workers).map {
-            launch(Dispatchers.Default) { repeat(perWorker) { vm.inc() } }
-        }.joinAll()
-        assertEquals(workers * perWorker, vm.state.value)
-    }
+    fun stateViewModel_concurrentSetState_convergesWithoutLostUpdates() =
+        runBlocking {
+            val vm = CounterStateVm()
+            (0 until workers)
+                .map {
+                    launch(Dispatchers.Default) { repeat(perWorker) { vm.inc() } }
+                }.joinAll()
+            assertEquals(workers * perWorker, vm.state.value)
+        }
 
     @Test
-    fun baseViewModel_concurrentSetState_convergesWithoutLostUpdates() = runBlocking {
-        val vm = CounterBaseVm()
-        (0 until workers).map {
-            launch(Dispatchers.Default) { repeat(perWorker) { vm.inc() } }
-        }.joinAll()
-        assertEquals(workers * perWorker, vm.state.value.n)
-    }
+    fun baseViewModel_concurrentSetState_convergesWithoutLostUpdates() =
+        runBlocking {
+            val vm = CounterBaseVm()
+            (0 until workers)
+                .map {
+                    launch(Dispatchers.Default) { repeat(perWorker) { vm.inc() } }
+                }.joinAll()
+            assertEquals(workers * perWorker, vm.state.value.n)
+        }
 }

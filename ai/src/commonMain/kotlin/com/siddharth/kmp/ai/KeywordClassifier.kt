@@ -12,7 +12,9 @@ package com.siddharth.kmp.ai
  * [categories]' declaration order (the same tiebreak a `when` chain would give). Returns null when
  * no category's keywords appear at all.
  */
-class KeywordClassifier<T>(private val categories: Map<T, List<String>>) {
+class KeywordClassifier<T>(
+    private val categories: Map<T, List<String>>,
+) {
     fun classify(text: String): T? {
         val lowerText = text.lowercase()
         return categories

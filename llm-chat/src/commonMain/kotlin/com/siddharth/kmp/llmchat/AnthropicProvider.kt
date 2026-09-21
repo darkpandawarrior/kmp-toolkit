@@ -70,7 +70,12 @@ class AnthropicProvider(
                         )
                     }
                 response.status.toAiFailureOrNull()?.let { return@withTimeout Result.Failure(it) }
-                val text = response.body<AnthropicResponse>().content.firstOrNull()?.text
+                val text =
+                    response
+                        .body<AnthropicResponse>()
+                        .content
+                        .firstOrNull()
+                        ?.text
                 if (text.isNullOrBlank()) Result.Failure(AiFailure.EmptyReply) else Result.Success(text)
             }
         } catch (_: TimeoutCancellationException) {
