@@ -61,4 +61,50 @@ something that appears in many modules at once.
 
 - hooks: `.githooks` — active. Never bypass with `--no-verify`; fix the cause.
 
+## Hard-won notes
+
+## Traps — read before concluding a module is unused
+
+**A module's consumers are in other repos. Grepping this one proves nothing.**
+
+Doori, PaymentsLab-KMP and Candidai each consume the toolkit through `includeBuild` +
+`dependencySubstitution` in their own `settings.gradle.kts`:
+
+```kotlin
+substitute(module("com.siddharth.kmp:security")).using(project(":security"))
+```
+
+So a module can have **zero references inside kmp-toolkit** and still be shipping in three apps.
+`:security` is exactly that case — verified 2026-09-22, every mention of `AntiDebugDetector`,
+`AntiHookDetector`, `AntiSslBypassDetector` and `PaymentCertificatePinning` lives inside
+`security/` itself, which reads as an orphaned island until you look outside the repo. It is not.
+Deleting it would have broken Doori, PaymentsLab-KMP and Candidai.
+
+Before calling any module dead:
+
+```sh
+for d in ../../Android/Mileway ../../Android/PaymentsLab ../../Android/HireSignal ../../Android/Kursi; do
+  grep -rn 'kmp:<module>' "$d" --include='*.kts' --include='*.toml' 2>/dev/null | grep -v '/build/'
+done
+```
+
+Note the local directory names are the *old* ones: `Mileway`->Doori, `Kursi`->Gaddi,
+`HireSignal`->Candidai, `PaymentsLab`->PaymentsLab-KMP. A grep for the new name finds nothing on
+disk.
+
+## The `:security` split is partial, and partly permanent
+
+`:biometric`, `:secure-store` and `:device-integrity` are the KMP successors and are real
+(commonMain + androidMain + iosMain). But only **3 of 14** files left `:security`:
+
+| Moved | Still Android-only in `:security` |
+|---|---|
+| `DeviceIntegrity` -> `:device-integrity` | `AntiDebugDetector`, `AntiHookDetector`, `AntiSslBypassDetector` |
+| `SecureStore` -> `:secure-store` | `KeystoreCrypto`, `KeystoreSecureStore`, `PaymentCertificatePinning` |
+| `BiometricGuard` -> `:biometric` (renamed `BiometricAuthenticator`) | `SecureScreen`, `SecurityAudit`, `SecurityPolicy`, `AppSecurityManager`, `SecurityModule` |
+
+The remainder is not a backlog item by default: Android Keystore, `FLAG_SECURE`, and root/hook/
+debugger detection are platform-specific by nature, and `:security` declares `src/main` rather than
+`src/commonMain` precisely because it is Android-only. Treat "finish the split" as a question about
+each file, not a migration to run.
 
