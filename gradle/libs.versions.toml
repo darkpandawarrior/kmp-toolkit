@@ -101,6 +101,14 @@ koin-test-junit4 = { module = "io.insert-koin:koin-test-junit4", version.ref = "
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
+# The @Preview annotation for commonMain. Since Compose Multiplatform 1.10 the AndroidX annotation
+# IS the multiplatform one and this artifact is what publishes it — `org.jetbrains.compose.ui`, NOT
+# the deprecated `org.jetbrains.compose.components:components-ui-tooling-preview`.
+compose-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose-multiplatform" }
+# The preview RENDERER, which is a separate artifact from the annotation and Android-only. Goes on
+# `androidRuntimeClasspath` rather than `debugImplementation` because this module uses AGP 9's
+# com.android.kotlin.multiplatform.library plugin, where the debug* configurations do not exist.
+compose-ui-tooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose-multiplatform" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-multiplatform" }
 # Adaptive top-level layout (NavigationSuiteScaffold).
 # Rides `compose-multiplatform` like every other Compose Multiplatform artifact. It used to carry a

@@ -48,6 +48,10 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            // The @Preview annotation, in commonMain. DesignSystemPreviews.kt records why the
+            // annotation this artifact publishes is `androidx.compose.ui.tooling.preview.Preview`
+            // and not the deprecated org.jetbrains one.
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.kotlinx.coroutines.core)
             // StepTimeline node icons (Check/Close) — core set only, no need for `-extended`.
             implementation(libs.material.icons.core)
@@ -113,4 +117,17 @@ kotlin {
         iosSimulatorArm64Test.get().dependsOn(composeUiTest)
         wasmJsTest.get().dependsOn(composeUiTest)
     }
+}
+
+// The preview RENDERER — a different artifact from the annotation above, and Android-only: preview
+// rendering in Compose Multiplatform is Android tooling underneath, so a commonMain @Preview is
+// drawn by the Android renderer and requires this module's `android {}` target to exist.
+//
+// `androidRuntimeClasspath`, not `debugImplementation`: this module uses AGP 9's
+// com.android.kotlin.multiplatform.library plugin (the `android { }` block inside `kotlin { }`),
+// which does not create the per-variant debug*/release* configurations the old Android library
+// plugin did. Wiring `debugImplementation` here fails with "configuration not found"; wiring
+// nothing at all is worse — the previews compile and the IDE gutter silently renders nothing.
+dependencies {
+    androidRuntimeClasspath(libs.compose.ui.tooling)
 }
