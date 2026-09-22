@@ -20,9 +20,10 @@ private const val NONCE_BYTES = 32
 fun newRawNonce(bytes: Int = NONCE_BYTES): String {
     require(bytes > 0) { "nonce length must be positive" }
     val buffer = ByteArray(bytes)
-    val status = buffer.usePinned { pinned ->
-        SecRandomCopyBytes(kSecRandomDefault, bytes.convert(), pinned.addressOf(0))
-    }
+    val status =
+        buffer.usePinned { pinned ->
+            SecRandomCopyBytes(kSecRandomDefault, bytes.convert(), pinned.addressOf(0))
+        }
     check(status == 0) { "SecRandomCopyBytes failed with OSStatus $status" }
     return buffer.toLowerHex()
 }

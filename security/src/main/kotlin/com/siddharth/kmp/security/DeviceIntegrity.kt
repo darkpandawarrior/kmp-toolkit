@@ -209,14 +209,19 @@ class AndroidDeviceIntegrity(
         return connected || debuggableBuild
     }
 
-    /** Best-effort `which su` — an [Exception] means the binary is absent, which is the good case. */
+    /**
+     * Best-effort `which su`. Any failure — no such binary, SELinux denial, a vendor ROM that
+     * refuses the exec — means "su did not resolve", which is the good case. The breadth of the
+     * catch is the point, so the variable is named `ignored` to say so on the page rather than in
+     * a baseline file.
+     */
     private fun suOnPath(): Boolean =
         try {
             val process = Runtime.getRuntime().exec(arrayOf("which", "su"))
             val output = process.inputStream.bufferedReader().readLine()
             process.waitFor()
             !output.isNullOrBlank()
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             false
         }
 }
@@ -265,6 +270,18 @@ internal fun isRootTag(tags: String?): Boolean = tags != null && tags.contains("
  * Pure emulator heuristic over `Build.*` values. Extracted so the exact matching rules can be
  * unit-tested against known emulator and real-device fingerprints without a device.
  */
+private val EMULATOR_FINGERPRINT_PREFIXES = listOf("generic", "unknown")
+
+private val EMULATOR_FINGERPRINT_MARKERS = listOf("emulator", "sdk_gphone", "vbox")
+
+private val EMULATOR_HARDWARE_MARKERS = listOf("goldfish", "ranchu", "vbox86", "ttvm_x86")
+
+private val EMULATOR_MODEL_MARKERS =
+    listOf("sdk_gphone", "emulator", "android sdk built for", "google_sdk")
+
+private val EMULATOR_PRODUCT_MARKERS =
+    listOf("sdk_gphone", "sdk_google", "google_sdk", "emulator", "vbox86")
+
 internal fun isEmulatorBuild(
     fingerprint: String,
     model: String,
@@ -275,51 +292,31 @@ internal fun isEmulatorBuild(
     device: String = "",
 ): Boolean {
     val fp = fingerprint.lowercase()
-    if (fp.startsWith("generic") ||
-        fp.startsWith("unknown") ||
-        fp.contains("emulator") ||
-        fp.contains("sdk_gphone") ||
-        fp.contains("vbox")
-    ) {
-        return true
-    }
-
     val hw = hardware.lowercase()
-    if (hw in setOf("goldfish", "ranchu", "vbox86", "ttvm_x86") ||
-        hw.contains("goldfish") ||
-        hw.contains("ranchu")
-    ) {
-        return true
-    }
-
     val mdl = model.lowercase()
-    if (mdl.contains("sdk_gphone") ||
-        mdl.contains("emulator") ||
-        mdl.contains("android sdk built for") ||
-        mdl.contains("google_sdk")
-    ) {
-        return true
-    }
-
     val prod = product.lowercase()
-    if (prod.contains("sdk_gphone") ||
-        prod.contains("sdk_google") ||
-        prod == "google_sdk" ||
-        prod.contains("emulator") ||
-        prod.contains("vbox86") ||
-        prod.startsWith("sdk")
-    ) {
-        return true
-    }
-
     val mfr = manufacturer.lowercase()
-    if (mfr.contains("genymotion") || mfr.contains("unknown") && brand.lowercase().startsWith("generic")) {
-        return true
-    }
+    val brnd = brand.lowercase()
+    val genericBrand = brnd.startsWith("generic")
 
-    if (device.lowercase().contains("vbox86") || brand.lowercase().startsWith("generic")) {
-        return true
-    }
+    // One named predicate per Build.* field. Previously this was five stacked `if`s of four to six
+    // `||` terms each, which read as one 22-branch function and hid the operator-precedence
+    // subtlety on the manufacturer line: `a || b && c` is `a || (b && c)`, now parenthesised.
+    val fingerprintSaysEmulator =
+        EMULATOR_FINGERPRINT_PREFIXES.any { fp.startsWith(it) } ||
+            EMULATOR_FINGERPRINT_MARKERS.any { fp.contains(it) }
+    val hardwareSaysEmulator = EMULATOR_HARDWARE_MARKERS.any { hw.contains(it) }
+    val modelSaysEmulator = EMULATOR_MODEL_MARKERS.any { mdl.contains(it) }
+    val productSaysEmulator = EMULATOR_PRODUCT_MARKERS.any { prod.contains(it) } || prod.startsWith("sdk")
+    val vendorSaysEmulator =
+        mfr.contains("genymotion") ||
+            (mfr.contains("unknown") && genericBrand) ||
+            device.lowercase().contains("vbox86") ||
+            genericBrand
 
-    return false
+    return fingerprintSaysEmulator ||
+        hardwareSaysEmulator ||
+        modelSaysEmulator ||
+        productSaysEmulator ||
+        vendorSaysEmulator
 }

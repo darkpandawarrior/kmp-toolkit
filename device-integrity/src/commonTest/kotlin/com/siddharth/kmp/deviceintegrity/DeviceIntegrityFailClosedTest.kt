@@ -12,13 +12,14 @@ class DeviceIntegrityFailClosedTest {
     @Test
     fun anUninspectedReportIsCompromisedEvenThoughEveryFlagIsFalse() {
         // Exactly the shape the Android actual returns when no Context was installed.
-        val report = DeviceIntegrityReport(
-            rooted = false,
-            emulator = false,
-            debuggerAttached = false,
-            signals = listOf("no Context installed"),
-            inspected = false,
-        )
+        val report =
+            DeviceIntegrityReport(
+                rooted = false,
+                emulator = false,
+                debuggerAttached = false,
+                signals = listOf("no Context installed"),
+                inspected = false,
+            )
         assertFalse(report.rooted)
         assertFalse(report.debuggerAttached)
         assertTrue(report.isCompromised, "an un-run inspection must fail closed, not report clean")

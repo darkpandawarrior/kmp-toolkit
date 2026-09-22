@@ -14,6 +14,12 @@ import kotlin.math.abs
  * browser preview.
  */
 public object AlgorithmHarness {
+    /**
+     * Slack allowed when comparing a resumed run against an uninterrupted one, in metres. Half a
+     * metre absorbs double rounding across two independent accumulations without being large
+     * enough to hide a real extra leg (the shortest leg any algorithm here banks is metres).
+     */
+    private const val RESUME_COMPARISON_TOLERANCE_M = 0.5
 
     /**
      * Feed [trace] through [algorithm] in order and collect a report.
@@ -103,7 +109,7 @@ public object AlgorithmHarness {
         // single leg is correct behaviour, not a failure.
         val a = whole.snapshot()
         val b = second.snapshot()
-        return b.cleanedM <= a.cleanedM + 0.5
+        return b.cleanedM <= a.cleanedM + RESUME_COMPARISON_TOLERANCE_M
     }
 }
 
@@ -139,11 +145,12 @@ public data class RunReport(
         )
     }
 
-    override fun toString(): String = buildString {
-        append("$algorithmId: ${fixCount} fixes -> ")
-        append("cleaned ${fmt(cleanedKm)}km / original ${fmt(originalKm)}km, ")
-        append("accepted ${finalState.accepted}, rejected ${finalState.rejected}")
-    }
+    override fun toString(): String =
+        buildString {
+            append("$algorithmId: $fixCount fixes -> ")
+            append("cleaned ${fmt(cleanedKm)}km / original ${fmt(originalKm)}km, ")
+            append("accepted ${finalState.accepted}, rejected ${finalState.rejected}")
+        }
 }
 
 public data class Scorecard(
@@ -156,9 +163,11 @@ public data class Scorecard(
     val rejectedFixes: Int,
 ) {
     override fun toString(): String =
-        "$algorithmId: ${fmt(measuredM / 1000.0)}km vs truth ${fmt(truthM / 1000.0)}km " +
+        "$algorithmId: ${fmt(measuredM / METERS_PER_KM)}km vs truth ${fmt(truthM / METERS_PER_KM)}km " +
             "(${if (errorM >= 0) "+" else ""}${fmt(errorM)}m, ${fmt(absErrorPercent)}%)"
 }
+
+private const val METERS_PER_KM = 1000.0
 
 private fun fmt(v: Double): String {
     val scaled = kotlin.math.round(v * 100.0) / 100.0

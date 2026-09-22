@@ -25,36 +25,38 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class CapturableUiTest {
     @Test
-    fun modifierRecordsTheSubtreeOnDraw() = runComposeUiTest {
-        lateinit var controller: CaptureController
-        setContent {
-            controller = rememberCaptureController()
-            Box(
-                Modifier
-                    .size(20.dp)
-                    .capturable(controller)
-                    .background(Color.Red),
+    fun modifierRecordsTheSubtreeOnDraw() =
+        runComposeUiTest {
+            lateinit var controller: CaptureController
+            setContent {
+                controller = rememberCaptureController()
+                Box(
+                    Modifier
+                        .size(20.dp)
+                        .capturable(controller)
+                        .background(Color.Red),
+                )
+            }
+            waitForIdle()
+            assertTrue(
+                controller.hasRecorded,
+                "capturable() drew without recording into the layer — capture would return a blank image",
             )
         }
-        waitForIdle()
-        assertTrue(
-            controller.hasRecorded,
-            "capturable() drew without recording into the layer — capture would return a blank image",
-        )
-    }
 
     @Test
-    fun controllerRefusesToCaptureContentThatNeverDrew() = runComposeUiTest {
-        lateinit var controller: CaptureController
-        setContent {
-            // Controller created but capturable() deliberately never applied to anything.
-            controller = rememberCaptureController()
-            Box(Modifier.size(20.dp).background(Color.Blue))
+    fun controllerRefusesToCaptureContentThatNeverDrew() =
+        runComposeUiTest {
+            lateinit var controller: CaptureController
+            setContent {
+                // Controller created but capturable() deliberately never applied to anything.
+                controller = rememberCaptureController()
+                Box(Modifier.size(20.dp).background(Color.Blue))
+            }
+            waitForIdle()
+            assertFalse(
+                controller.hasRecorded,
+                "nothing was marked capturable, so the layer must not be considered recorded",
+            )
         }
-        waitForIdle()
-        assertFalse(
-            controller.hasRecorded,
-            "nothing was marked capturable, so the layer must not be considered recorded",
-        )
-    }
 }

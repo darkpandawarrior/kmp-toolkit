@@ -13,10 +13,13 @@ data class Money(
 ) {
     init {
         require(amountMinor >= 0) { "amountMinor must be non-negative, was $amountMinor" }
-        require(currency.length == 3) { "currency must be an ISO-4217 code, was '$currency'" }
+        require(currency.length == ISO_4217_CODE_LENGTH) { "currency must be an ISO-4217 code, was '$currency'" }
     }
 
     companion object {
+        /** An ISO-4217 alphabetic currency code is exactly three letters. */
+        const val ISO_4217_CODE_LENGTH = 3
+
         fun inr(rupees: Long): Money = Money(rupees * 100, "INR")
 
         fun usd(dollars: Long): Money = Money(dollars * 100, "USD")

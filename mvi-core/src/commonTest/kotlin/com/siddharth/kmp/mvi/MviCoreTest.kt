@@ -8,15 +8,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MviCoreTest {
-
     @Test
-    fun effectEmitter_emit_deliversValueThroughEffects() = runTest {
-        val emitter = EffectEmitter<String>(this)
-        emitter.emit("navigate")
-        assertEquals("navigate", emitter.effects.first())
-    }
+    fun effectEmitter_emit_deliversValueThroughEffects() =
+        runTest {
+            val emitter = EffectEmitter<String>(this)
+            emitter.emit("navigate")
+            assertEquals("navigate", emitter.effects.first())
+        }
 
-    private class TestStateViewModel(initial: Int) : StateViewModel<Int>(initial) {
+    private class TestStateViewModel(
+        initial: Int,
+    ) : StateViewModel<Int>(initial) {
         fun increment() = setState { this + 1 }
     }
 
@@ -41,11 +43,12 @@ class MviCoreTest {
     }
 
     @Test
-    fun effectEmitter_deliversEffectsInEmissionOrder() = runTest {
-        val emitter = EffectEmitter<Int>(this)
-        emitter.emit(1)
-        emitter.emit(2)
-        emitter.emit(3)
-        assertEquals(listOf(1, 2, 3), emitter.effects.take(3).toList())
-    }
+    fun effectEmitter_deliversEffectsInEmissionOrder() =
+        runTest {
+            val emitter = EffectEmitter<Int>(this)
+            emitter.emit(1)
+            emitter.emit(2)
+            emitter.emit(3)
+            assertEquals(listOf(1, 2, 3), emitter.effects.take(3).toList())
+        }
 }

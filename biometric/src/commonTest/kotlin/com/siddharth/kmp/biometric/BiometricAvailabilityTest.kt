@@ -34,7 +34,8 @@ class BiometricAvailabilityTest {
     @Test
     fun onlyAvailableIsAvailable() {
         assertTrue(BiometricAvailability.Available.isAvailable)
-        all.filter { it != BiometricAvailability.Available }
+        all
+            .filter { it != BiometricAvailability.Available }
             .forEach { assertFalse(it.isAvailable, "$it must not report itself available") }
     }
 

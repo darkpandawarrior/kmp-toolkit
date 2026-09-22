@@ -50,10 +50,23 @@ object Redactor {
         return if (sensitive) mask(value) else value
     }
 
+    /** Characters kept in clear at each end, so a value stays recognisable without being readable. */
+    private const val VISIBLE_PREFIX = 2
+    private const val VISIBLE_SUFFIX = 2
+
+    /** Below this length there is nothing left to show once both ends are kept — mask it whole. */
+    private const val MIN_MASKABLE_LENGTH = VISIBLE_PREFIX + VISIBLE_SUFFIX
+
+    /** Cap on the bullet run, so a long token does not leak its length through the mask. */
+    private const val MAX_MASK_BULLETS = 8
+
     /** Preserve enough shape to be recognizable (first 2 / last 2 chars) without revealing the value. */
     private fun mask(value: String): String =
         when {
-            value.length <= 4 -> "••••"
-            else -> value.take(2) + "•".repeat((value.length - 4).coerceAtMost(8)) + value.takeLast(2)
+            value.length <= MIN_MASKABLE_LENGTH -> "••••"
+            else ->
+                value.take(VISIBLE_PREFIX) +
+                    "•".repeat((value.length - MIN_MASKABLE_LENGTH).coerceAtMost(MAX_MASK_BULLETS)) +
+                    value.takeLast(VISIBLE_SUFFIX)
         }
 }

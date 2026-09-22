@@ -26,7 +26,9 @@ sealed interface FetchPolicy {
      * [NetworkWithCache] read semantics plus a periodic background refresh every [intervalMs].
      * [intervalMs] must be positive; sub-second cadences are wasteful on mobile.
      */
-    data class Periodic(val intervalMs: Long) : FetchPolicy {
+    data class Periodic(
+        val intervalMs: Long,
+    ) : FetchPolicy {
         init {
             require(intervalMs > 0) { "Periodic.intervalMs must be > 0, was $intervalMs" }
         }

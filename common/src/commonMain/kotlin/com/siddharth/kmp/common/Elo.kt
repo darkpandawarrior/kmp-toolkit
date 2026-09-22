@@ -15,11 +15,23 @@ object Elo {
     /** Default K-factor — the maximum single-game swing magnitude. Moderate, for a casual ladder. */
     const val DEFAULT_K: Double = 32.0
 
+    /**
+     * The ELO rating scale: a gap of this many points makes the stronger player a 10:1 favourite.
+     * 400 is ELO's own constant, not a tuning knob — changing it changes what a rating means.
+     */
+    const val RATING_SCALE: Double = 400.0
+
+    /** Base of the logistic curve, paired with [RATING_SCALE] by ELO's definition. */
+    private const val CURVE_BASE: Double = 10.0
+
+    /** Default upper clamp — ten [RATING_SCALE] steps above the floor, well past any casual ladder. */
+    const val DEFAULT_CEILING: Int = 4000
+
     /** Expected score for [rating] against [opponent] — the logistic ELO curve, in (0,1). */
     fun expectedScore(
         rating: Int,
         opponent: Int,
-    ): Double = 1.0 / (1.0 + 10.0.pow((opponent - rating) / 400.0))
+    ): Double = 1.0 / (1.0 + CURVE_BASE.pow((opponent - rating) / RATING_SCALE))
 
     /**
      * One ELO step. Returns the NEW rating after a bout vs [opponentRating], where [won] is the
@@ -33,7 +45,7 @@ object Elo {
         won: Boolean,
         k: Double = DEFAULT_K,
         floor: Int = 0,
-        ceiling: Int = 4000,
+        ceiling: Int = DEFAULT_CEILING,
     ): Int {
         val expected = expectedScore(rating, opponentRating)
         val actual = if (won) 1.0 else 0.0

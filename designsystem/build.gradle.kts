@@ -5,9 +5,9 @@ plugins {
     alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.roborazzi)
     `maven-publish`
 }
-
 
 kotlin {
     // Must be explicit: the template is applied automatically ONLY while no source set declares its
@@ -49,6 +49,10 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            // The @Preview annotation, in commonMain. DesignSystemPreviews.kt records why the
+            // annotation this artifact publishes is `androidx.compose.ui.tooling.preview.Preview`
+            // and not the deprecated org.jetbrains one.
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.kotlinx.coroutines.core)
             // StepTimeline node icons (Check/Close) — core set only, no need for `-extended`.
             implementation(libs.material.icons.core)
@@ -94,6 +98,18 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
 
+        // Screenshot tests are GENERATED from the @Preview functions in commonMain, so there is no
+        // hand-maintained list of what is covered: a preview added to DesignSystemPreviews.kt is
+        // gated by construction. The alternative — a test class importing each preview by name — is
+        // what a consumer app in this family already does, and every preview written after someone
+        // last updated that list is silently ungated.
+        jvmTest.dependencies {
+            implementation(libs.roborazzi.compose.desktop)
+            implementation(libs.roborazzi.desktop.preview.scanner)
+            implementation(libs.composable.preview.scanner)
+            implementation(libs.junit)
+        }
+
         // `runComposeUiTest` renders the composables for real. Deliberately NOT in commonTest: the
         // Android leg is `withHostTest {}`, a bare JVM against the stubbed android.jar, where
         // `Build.FINGERPRINT` is null and the harness NPEs on startup. Making it run there means
@@ -102,15 +118,58 @@ kotlin {
         //
         // iOS and wasm are precisely where this reaches UI that Robolectric/Roborazzi cannot, which
         // is the whole point of gap #5 in the 2026-07-24 absorption note. So it runs exactly there.
-        val composeUiTest = create("composeUiTest") {
-            dependsOn(commonTest.get())
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.compose.ui.test)
+        val composeUiTest =
+            create("composeUiTest") {
+                dependsOn(commonTest.get())
+                dependencies {
+                    implementation(kotlin("test"))
+                    implementation(libs.compose.ui.test)
+                }
             }
-        }
         iosArm64Test.get().dependsOn(composeUiTest)
         iosSimulatorArm64Test.get().dependsOn(composeUiTest)
         wasmJsTest.get().dependsOn(composeUiTest)
+    }
+}
+
+// The preview RENDERER — a different artifact from the annotation above, and Android-only: preview
+// rendering in Compose Multiplatform is Android tooling underneath, so a commonMain @Preview is
+// drawn by the Android renderer and requires this module's `android {}` target to exist.
+//
+// `androidRuntimeClasspath`, not `debugImplementation`: this module uses AGP 9's
+// com.android.kotlin.multiplatform.library plugin (the `android { }` block inside `kotlin { }`),
+// which does not create the per-variant debug*/release* configurations the old Android library
+// plugin did. Wiring `debugImplementation` here fails with "configuration not found"; wiring
+// nothing at all is worse — the previews compile and the IDE gutter silently renders nothing.
+dependencies {
+    androidRuntimeClasspath(libs.compose.ui.tooling)
+}
+
+// Generates a JUnit screenshot test per @Preview found in `packages`, renders each on the jvm()
+// target's Compose Desktop renderer and diffs it against a committed golden.
+//
+// Desktop rather than Robolectric because this module's android target is `withHostTest {}`, which
+// cannot render Compose by design. That choice has a consequence worth stating: desktop renders
+// through host Skia and Robolectric renders through the Android framework, so these goldens are a
+// separate corpus from the consumer apps' and the two can never be cross-checked.
+//
+//   ./gradlew :designsystem:recordRoborazziJvm   # write goldens
+//   ./gradlew :designsystem:verifyRoborazziJvm   # the gate
+roborazzi {
+    // Goldens live in the repo, not in build/. The default output directory is
+    // build/outputs/roborazzi, which is wiped by `clean` and never committed — a gate comparing
+    // against images that do not survive a checkout passes on a fresh clone no matter what changed.
+    outputDir.set(file("screenshots"))
+
+    @OptIn(com.github.takahirom.roborazzi.ExperimentalRoborazziApi::class)
+    generateComposePreviewDesktopTests {
+        enable = true
+        packages = listOf("com.siddharth.kmp.designsystem")
+        // The previews are private so they stay out of a published library's API surface. The
+        // scanner defaults to skipping private functions, which is why this is not optional here:
+        // without it the generated test class has zero parameters, every Roborazzi task passes,
+        // and nothing is captured. That green-but-empty state is worse than having no gate, since
+        // it reads as coverage. Verified by counting PNGs, not by the build's exit code.
+        includePrivatePreviews = true
     }
 }

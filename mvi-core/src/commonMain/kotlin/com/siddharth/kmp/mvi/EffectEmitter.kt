@@ -14,7 +14,9 @@ import kotlinx.coroutines.launch
  * `androidx.lifecycle.ViewModel` (e.g. a hand-rolled presenter). Pure coroutines, no platform
  * dependency, so it compiles on every target this library declares.
  */
-class EffectEmitter<E : Any>(private val scope: CoroutineScope) {
+class EffectEmitter<E : Any>(
+    private val scope: CoroutineScope,
+) {
     private val channel = Channel<E>(Channel.BUFFERED)
     val effects: Flow<E> = channel.receiveAsFlow()
 

@@ -21,39 +21,48 @@ import kotlin.test.assertTrue
 
 // Same Dispatchers.Unconfined rationale as the other providers' tests: keeps the mock response on
 // the calling thread so it resolves synchronously under runTest's virtual clock.
-private fun sseMockEngine(vararg sseLines: String, status: HttpStatusCode = HttpStatusCode.OK) =
-    MockEngine(
-        MockEngineConfig().apply {
-            dispatcher = Dispatchers.Unconfined
-            addHandler {
-                respond(
-                    content = sseLines.joinToString("\n"),
-                    status = status,
-                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
-                )
-            }
-        },
-    )
+private fun sseMockEngine(
+    vararg sseLines: String,
+    status: HttpStatusCode = HttpStatusCode.OK,
+) = MockEngine(
+    MockEngineConfig().apply {
+        dispatcher = Dispatchers.Unconfined
+        addHandler {
+            respond(
+                content = sseLines.joinToString("\n"),
+                status = status,
+                headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+            )
+        }
+    },
+)
 
-private fun errorMockEngine(status: HttpStatusCode, body: String, retryAfter: String? = null) =
-    MockEngine(
-        MockEngineConfig().apply {
-            dispatcher = Dispatchers.Unconfined
-            addHandler {
-                respond(
-                    content = body,
-                    status = status,
-                    headers =
-                        Headers.build {
-                            append(HttpHeaders.ContentType, "application/json")
-                            retryAfter?.let { append(HttpHeaders.RetryAfter, it) }
-                        },
-                )
-            }
-        },
-    )
+private fun errorMockEngine(
+    status: HttpStatusCode,
+    body: String,
+    retryAfter: String? = null,
+) = MockEngine(
+    MockEngineConfig().apply {
+        dispatcher = Dispatchers.Unconfined
+        addHandler {
+            respond(
+                content = body,
+                status = status,
+                headers =
+                    Headers.build {
+                        append(HttpHeaders.ContentType, "application/json")
+                        retryAfter?.let { append(HttpHeaders.RetryAfter, it) }
+                    },
+            )
+        }
+    },
+)
 
-private class HttpChatCapturedRequest(val url: String, val headers: Map<String, String>, val body: String)
+private class HttpChatCapturedRequest(
+    val url: String,
+    val headers: Map<String, String>,
+    val body: String,
+)
 
 private fun capturingSseMockEngine(vararg sseLines: String): Pair<MockEngine, () -> HttpChatCapturedRequest?> {
     var captured: HttpChatCapturedRequest? = null

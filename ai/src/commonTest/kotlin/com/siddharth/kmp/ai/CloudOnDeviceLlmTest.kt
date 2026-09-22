@@ -134,7 +134,8 @@ class CloudOnDeviceLlmTest {
     @Test
     fun capabilities_delegatesToTheFirstAvailableProvidersOwnAnswer() =
         runTest {
-            val caps = AiCapabilities(streaming = true, multimodal = false, honoredConfigFields = setOf("temperature"), unavailableReason = null)
+            val caps =
+                AiCapabilities(streaming = true, multimodal = false, honoredConfigFields = setOf("temperature"), unavailableReason = null)
             val anthropic = FakeProvider("anthropic", available = false)
             val openAi = FakeProvider("openai", available = true, ownCapabilities = caps)
             val llm = CloudOnDeviceLlm(listOf(anthropic, openAi))

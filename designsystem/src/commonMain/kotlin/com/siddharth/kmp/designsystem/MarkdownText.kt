@@ -94,7 +94,17 @@ private fun MdBullet(
     ordered: String?,
 ) {
     Row(Modifier.padding(start = DesignTokens.Spacing.s)) {
-        Text(if (ordered != null) "$ordered. " else "• ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        Text(
+            if (ordered !=
+                null
+            ) {
+                "$ordered. "
+            } else {
+                "• "
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
         Text(inline(text), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -111,14 +121,24 @@ private fun MdTable(rows: List<String>) {
     Column(Modifier.fillMaxWidth().padding(vertical = DesignTokens.Spacing.s)) {
         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
             header.forEach { cell ->
-                Text(cell, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(
+                    cell,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
         body.drop(1).forEach { cells ->
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                 cells.forEach { cell ->
-                    Text(inline(cell), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Text(
+                        inline(cell),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)))

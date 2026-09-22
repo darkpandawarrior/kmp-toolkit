@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.composeCompiler) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.ktlint) apply false
     // Applied (not `apply false`) — the root project is the aggregator that stitches every module's
     // docs into one site. See the dokka block below.
     alias(libs.plugins.dokka)
@@ -30,12 +31,49 @@ subprojects {
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
         buildUponDefaultConfig = true
         parallel = true
-        // Findings that predate the gate are grandfathered so this lands green; new code is gated.
+        // THERE ARE NO BASELINE FILES IN THIS REPO ANY MORE. The 116 findings the 18 per-module
+        // baselines used to grandfather were fixed in code, and detekt runs clean without them.
+        // The wiring stays so a genuinely-wrong finding can be parked deliberately, with a reason,
+        // rather than by appearing in a file nobody reads — but a new `detekt-baseline.xml` is a
+        // decision to defend in review, not a way to make a number go down.
         baseline = file("detekt-baseline.xml")
         source.setFrom(layout.projectDirectory.dir("src"))
     }
     tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
         exclude("**/build/**", "**/generated/**")
+    }
+}
+
+// Formatting. detekt judges structure; ktlint judges layout, and until now nothing judged layout
+// here at all — a detekt gate with no formatting gate behind it. The single number for line length
+// lives in .editorconfig (140) and nowhere else: detekt's style.MaxLineLength is `active: false`
+// precisely so the two tools cannot enforce one rule at two different values, which is how the
+// consumer apps ended up with 235 dead MaxLineLength baseline entries.
+//
+// Four rules are `disabled` in .editorconfig, each paired with the matching `active: false` in
+// config/detekt/detekt.yml. Changing one side without the other makes the two tools contradict
+// each other; the reasons are written out next to both halves.
+// `expect`/`actual` CLASSES (as opposed to functions) are still a Beta Kotlin feature, and the
+// compiler emits one warning per declaration telling you to opt in — 38 of them across this repo's
+// expect classes (SecureStore, LanDiscovery, SecureKeyStore, BiometricAuthenticator, …).
+//
+// This flag is the opt-in the warning itself names (KT-61573), not a way of hiding a defect: it
+// acknowledges a language feature whose API may still change, and it silences nothing else. There
+// is no alternative fix — a KMP library cannot express a platform-varying class without them, and
+// leaving 38 warnings in every build is how a real warning gets missed.
+// Remove once expect/actual classes leave Beta.
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+        compilerOptions.freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+}
+
+subprojects {
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        // Same exclusion as detekt's: KSP / Compose-resources / Kotlin-JS output is machine-written
+        // and rewritten on every build. `.editorconfig` also carries it, for the IDE's benefit.
+        filter { exclude { it.file.invariantSeparatorsPath.contains("/build/") } }
     }
 }
 
@@ -50,13 +88,63 @@ subprojects {
 // site rather than 37 disconnected ones.
 subprojects {
     apply(plugin = "org.jetbrains.dokka")
+
+    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+        // `configureEach` rather than naming source sets: it covers commonMain, androidMain,
+        // iosMain, jvmMain and wasmJsMain in every module without a list that goes stale when a
+        // module adds a target — the same drift the detekt `source` setting above was changed to
+        // avoid.
+        dokkaSourceSets.configureEach {
+            // Every rendered declaration gets a "source" link back to GitHub. Without this the
+            // whole published site is a dead end: you can read a signature but not reach the
+            // implementation, which for a utility and design-system library is most of the reason
+            // anyone opens API docs. `localDirectory = rootDir` lets this one block cover every
+            // module and every source set — Dokka resolves each file's path relative to that root.
+            //
+            // The link points at `tree/main`, so a link from an older docs build resolves against
+            // whatever main looks like today and a line number can drift once a file is edited.
+            // Pinning to a release tag is the correct fix and needs a tag to exist at doc-build
+            // time, which the current build-on-every-main-push flow does not provide. The drift is
+            // accepted deliberately; the alternative is a release-gated docs build.
+            sourceLink {
+                localDirectory.set(rootDir)
+                remoteUrl("https://github.com/darkpandawarrior/kmp-toolkit/tree/main")
+                remoteLineSuffix.set("#L")
+            }
+
+            // Turns `Flow<T>`, `HttpClient`, `Instant` and `@Serializable` types in public
+            // signatures from inert grey text into links into the upstream docs. For a library
+            // that is deliberately a thin layer over coroutines and ktor, most of the interesting
+            // types in a signature belong to someone else.
+            //
+            // These are fetched at doc-generation time, which is the cost: three external
+            // dependencies in a build that was otherwise hermetic. They degrade rather than fail —
+            // an unreachable package-list produces unlinked types and a warning — but note that
+            // `failOnWarning` is false below, so that degradation is silent. Registered by name so
+            // DGPv2 derives `packageListUrl` as url + "package-list" automatically.
+            externalDocumentationLinks.register("coroutines") {
+                url("https://kotlinlang.org/api/kotlinx.coroutines/")
+            }
+            externalDocumentationLinks.register("ktor") {
+                url("https://api.ktor.io/")
+            }
+            externalDocumentationLinks.register("serialization") {
+                url("https://kotlinlang.org/api/kotlinx.serialization/")
+            }
+        }
+    }
 }
 
 dependencies {
     // Derived from `subprojects` rather than listing modules by hand — a new module joins the docs
     // by existing, with no second place to remember to update. The provider:* leaves alone would
     // make a hand-written list 19 entries longer and immediately stale.
-    subprojects.forEach { dokka(it) }
+    //
+    // `project(it.path)` rather than `it`: passing a Project object straight in as a dependency
+    // notation is deprecated and fails with an error in Gradle 10. This was one of the four
+    // "Deprecated Gradle features were used in this build" entries, and the only one originating
+    // in this repo's own scripts rather than in a plugin.
+    subprojects.forEach { dokka(project(it.path)) }
 }
 
 dokka {

@@ -36,14 +36,24 @@ object TrackingQualityScorer {
     const val PENALTY_GPS_OFF = 20
     const val STABLE_BONUS = 5
 
+    // Accuracy tiers, in metres. 15 m is roughly a clear-sky consumer GPS fix, 35 m an urban
+    // canyon, 75 m a cell/wifi-derived position; past that the fix is barely a position claim.
+    private const val ACCURACY_GOOD_M = 15f
+    private const val ACCURACY_FAIR_M = 35f
+    private const val ACCURACY_POOR_M = 75f
+
+    private const val PENALTY_ACCURACY_FAIR = 5
+    private const val PENALTY_ACCURACY_POOR = 10
+    private const val PENALTY_ACCURACY_UNUSABLE = 20
+
     /** Accuracy-tier penalty (m). 0 (unknown) is treated as no penalty. */
     private fun accuracyPenalty(accuracyM: Float): Int =
         when {
             accuracyM <= 0f -> 0
-            accuracyM <= 15f -> 0
-            accuracyM <= 35f -> 5
-            accuracyM <= 75f -> 10
-            else -> 20
+            accuracyM <= ACCURACY_GOOD_M -> 0
+            accuracyM <= ACCURACY_FAIR_M -> PENALTY_ACCURACY_FAIR
+            accuracyM <= ACCURACY_POOR_M -> PENALTY_ACCURACY_POOR
+            else -> PENALTY_ACCURACY_UNUSABLE
         }
 
     fun score(inputs: QualityInputs): Int {

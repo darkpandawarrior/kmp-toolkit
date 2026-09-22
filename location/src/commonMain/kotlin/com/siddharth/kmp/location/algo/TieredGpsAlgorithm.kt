@@ -33,7 +33,6 @@ public class TieredGpsAlgorithm(
     private val profile: TuningProfile = milewayV1Profile(),
     private val envelope: DeviceEnvelope = DeviceEnvelope.Default,
 ) : MileageAlgorithm {
-
     override val id: AlgorithmId = AlgorithmId.TieredGps
     override val knobs: List<KnobSpec> = ALL_KNOBS
 
@@ -104,46 +103,34 @@ public class TieredGpsAlgorithm(
         if (fix.accuracyM <= hardAccuracyMinM || fix.accuracyM >= hardAccuracyMaxM) {
             state = state.copy(rejected = state.rejected + 1)
             return FixResult(
-                FixVerdict.REJECTED_ACCURACY, null, 0.0, 0.0, DistanceBucket.NONE,
+                FixVerdict.REJECTED_ACCURACY,
+                null,
+                0.0,
+                0.0,
+                DistanceBucket.NONE,
                 "accuracy ${fix.accuracyM}m outside hard gate [$hardAccuracyMinM, $hardAccuracyMaxM]",
             )
         }
 
         val speed = fix.speedMps ?: 0.0
-        // Soft accuracy gate: persisted but excluded from cleaned distance, unless the device is
-        // reliably stationary with recent movement history (drift, not noise).
-        val exceptionalStationary =
-            speed <= exceptionalStationarySpeedMps &&
-                fix.accuracyM < exceptionalStationaryAccuracyM &&
-                hasMovementHistory()
-        val accuracyGated = fix.accuracyM > softAccuracyCeilingM && !exceptionalStationary
+        val accuracyGated = isAccuracyGated(fix, speed)
 
         val prev = last
-        // Smooth up front so distance + classification use the filtered position. Kalman off ⇒
-        // effFix === fix and the rest of the pipeline is unaffected.
-        val effFix =
-            if (enableKalman) {
-                val (sLat, sLng) = kalman.smooth(fix.lat, fix.lng, fix.accuracyM.toFloat(), fix.timeMs)
-                fix.copy(lat = sLat, lng = sLng)
-            } else {
-                fix
-            }
+        val effFix = smoothed(fix)
 
         val displacement = if (prev != null) haversineMeters(prev.lat, prev.lng, effFix.lat, effFix.lng) else 0.0
         val dtSec = if (prev != null) max(1L, (fix.timeMs - prev.timeMs) / 1000L) else 1L
         val impliedSpeed = displacement / dtSec
 
-        // Speed-adaptive jitter suppression: only for normal sampling, never across a time gap,
-        // never for a mock fix. A small wander below the speed-tuned gate is dropped while parked
-        // unless recent history shows real movement — the anchor (`last`) is kept unchanged so a
-        // later genuine move is measured from the last *persisted* point.
-        if (prev != null && !fix.isMock && dtSec < gapMinSec) {
-            val gate = minDisplacementForSpeed(speed)
-            val stationaryMicroJitter = speed < stationarySpeedMps && displacement < stationaryJitterM
-            if ((displacement < gate || stationaryMicroJitter) && !hasMovementHistory()) {
-                state = state.copy(rejected = state.rejected + 1)
-                return FixResult(FixVerdict.JITTER, null, displacement, 0.0, DistanceBucket.NONE, "jitter")
-            }
+        // Speed-adaptive jitter suppression applies only to normal sampling: a real previous fix,
+        // a live (non-mock) reading, and no time gap in between. A small wander below the
+        // speed-tuned gate is then dropped while parked unless recent history shows real movement
+        // — the anchor (`last`) is kept unchanged so a later genuine move is measured from the
+        // last *persisted* point.
+        val normalSampling = prev != null && !fix.isMock && dtSec < gapMinSec
+        if (normalSampling && isJitter(speed, displacement)) {
+            state = state.copy(rejected = state.rejected + 1)
+            return FixResult(FixVerdict.JITTER, null, displacement, 0.0, DistanceBucket.NONE, "jitter")
         }
 
         val abnormal = prev != null && isAbnormal(displacement, impliedSpeed, dtSec)
@@ -157,54 +144,14 @@ public class TieredGpsAlgorithm(
         var verdict = FixVerdict.ACCEPTED
 
         if (prev != null) {
-            bucket = when {
-                fix.isMock -> DistanceBucket.MOCK
-                isHardSpike -> DistanceBucket.SPIKE
-                abnormal -> DistanceBucket.ABNORMAL
-                accuracyGated -> DistanceBucket.NONE
-                else -> DistanceBucket.CLEANED
-            }
-            delta = if (bucket == DistanceBucket.NONE) 0.0 else displacement
-            verdict = when {
-                fix.isMock -> FixVerdict.ABNORMAL
-                isHardSpike -> FixVerdict.SPIKE
-                abnormal -> FixVerdict.ABNORMAL
-                accuracyGated -> FixVerdict.REJECTED_ACCURACY
-                dtSec >= gapMinSec -> FixVerdict.GAP_RECOVERED
-                else -> FixVerdict.ACCEPTED
-            }
-
-            // Spike is excluded from originalM by the seam's documented invariant (a teleport was
-            // never travelled). Every other bucket, including the accuracy-gated NONE bucket,
-            // still counts toward original — it was measured, just not trusted for cleaned.
-            val addToOriginal = bucket != DistanceBucket.SPIKE
-            state = state.copy(
-                originalM = state.originalM + (if (addToOriginal) displacement else 0.0),
-                cleanedM = if (bucket == DistanceBucket.CLEANED) state.cleanedM + delta else state.cleanedM,
-                abnormalM = if (bucket == DistanceBucket.ABNORMAL) state.abnormalM + delta else state.abnormalM,
-                mockM = if (bucket == DistanceBucket.MOCK) state.mockM + delta else state.mockM,
-                spikeM = if (bucket == DistanceBucket.SPIKE) state.spikeM + delta else state.spikeM,
-                consecutiveNormal = if (abnormal) 0 else state.consecutiveNormal + 1,
-            )
+            val leg = classify(fix, displacement, dtSec, abnormal, isHardSpike, accuracyGated)
+            bucket = leg.bucket
+            delta = leg.delta
+            verdict = leg.verdict
+            bankLeg(leg, displacement, abnormal)
         }
 
-        if (!abnormal && !fix.isMock) {
-            speedSampleSum += speed
-            speedSampleCount++
-        }
-
-        // Rolling movement-history window, recorded for every fix that reached this point
-        // (bounds/hard-accuracy/jitter all return earlier and never touch it).
-        recentSpeedHistory.addLast(speed)
-        if (recentSpeedHistory.size > speedHistorySize) recentSpeedHistory.removeFirst()
-
-        state = state.copy(
-            accepted = state.accepted + 1,
-            avgSpeedMps = if (speedSampleCount > 0) speedSampleSum / speedSampleCount else 0.0,
-            maxSpeedMps = if (!abnormal && !fix.isMock) maxOf(state.maxSpeedMps, speed) else state.maxSpeedMps,
-            lastFix = effFix,
-        )
-        last = effFix
+        recordAccepted(fix, effFix, speed, abnormal)
 
         return FixResult(
             verdict = verdict,
@@ -213,6 +160,140 @@ public class TieredGpsAlgorithm(
             distanceDeltaM = delta,
             bucket = bucket,
         )
+    }
+
+    /**
+     * Soft accuracy gate: the fix is persisted but excluded from cleaned distance, unless the
+     * device is reliably stationary with recent movement history — that is drift, not noise.
+     */
+    private fun isAccuracyGated(
+        fix: Fix,
+        speed: Double,
+    ): Boolean {
+        val exceptionalStationary =
+            speed <= exceptionalStationarySpeedMps &&
+                fix.accuracyM < exceptionalStationaryAccuracyM &&
+                hasMovementHistory()
+        return fix.accuracyM > softAccuracyCeilingM && !exceptionalStationary
+    }
+
+    /**
+     * Speed-adaptive jitter suppression. A small wander below the speed-tuned gate is noise while
+     * parked, unless recent history shows real movement. The caller applies the sampling-context
+     * preconditions (not a mock fix, not across a time gap) before asking.
+     */
+    private fun isJitter(
+        speed: Double,
+        displacement: Double,
+    ): Boolean {
+        val gate = minDisplacementForSpeed(speed)
+        val stationaryMicroJitter = speed < stationarySpeedMps && displacement < stationaryJitterM
+        return (displacement < gate || stationaryMicroJitter) && !hasMovementHistory()
+    }
+
+    /**
+     * Bookkeeping for a fix that survived every gate: speed sampling, the rolling movement-history
+     * window, and the accepted-fix totals. Only reached by fixes that were not rejected earlier,
+     * which is why the history window never sees a bounds/accuracy/jitter reject.
+     */
+    private fun recordAccepted(
+        fix: Fix,
+        effFix: Fix,
+        speed: Double,
+        abnormal: Boolean,
+    ) {
+        val counts = !abnormal && !fix.isMock
+        if (counts) {
+            speedSampleSum += speed
+            speedSampleCount++
+        }
+        recentSpeedHistory.addLast(speed)
+        if (recentSpeedHistory.size > speedHistorySize) recentSpeedHistory.removeFirst()
+
+        state =
+            state.copy(
+                accepted = state.accepted + 1,
+                avgSpeedMps = if (speedSampleCount > 0) speedSampleSum / speedSampleCount else 0.0,
+                maxSpeedMps = if (counts) maxOf(state.maxSpeedMps, speed) else state.maxSpeedMps,
+                lastFix = effFix,
+            )
+        last = effFix
+    }
+
+    /**
+     * Kalman filtering, hoisted out of [process] so the pipeline reads as one line. With
+     * `enableKalman` off this returns the argument unchanged and nothing downstream is affected.
+     */
+    private fun smoothed(fix: Fix): Fix =
+        if (enableKalman) {
+            val (sLat, sLng) = kalman.smooth(fix.lat, fix.lng, fix.accuracyM.toFloat(), fix.timeMs)
+            fix.copy(lat = sLat, lng = sLng)
+        } else {
+            fix
+        }
+
+    /** What one leg was judged to be. Pure data, so [classify] can stay a pure function. */
+    private data class Leg(
+        val bucket: DistanceBucket,
+        val delta: Double,
+        val verdict: FixVerdict,
+    )
+
+    /**
+     * Pure classification of one leg. Split out of [process] with its arms unchanged: the two
+     * `when`s below carried ten of that method's branches between them, and they answer a question
+     * ("what kind of leg was this?") that is independent of the state bookkeeping around them.
+     */
+    private fun classify(
+        fix: Fix,
+        displacement: Double,
+        dtSec: Long,
+        abnormal: Boolean,
+        isHardSpike: Boolean,
+        accuracyGated: Boolean,
+    ): Leg {
+        val bucket =
+            when {
+                fix.isMock -> DistanceBucket.MOCK
+                isHardSpike -> DistanceBucket.SPIKE
+                abnormal -> DistanceBucket.ABNORMAL
+                accuracyGated -> DistanceBucket.NONE
+                else -> DistanceBucket.CLEANED
+            }
+        val verdict =
+            when {
+                fix.isMock -> FixVerdict.ABNORMAL
+                isHardSpike -> FixVerdict.SPIKE
+                abnormal -> FixVerdict.ABNORMAL
+                accuracyGated -> FixVerdict.REJECTED_ACCURACY
+                dtSec >= gapMinSec -> FixVerdict.GAP_RECOVERED
+                else -> FixVerdict.ACCEPTED
+            }
+        return Leg(bucket, if (bucket == DistanceBucket.NONE) 0.0 else displacement, verdict)
+    }
+
+    /**
+     * Fold one classified leg into the running totals.
+     *
+     * Spike is excluded from originalM by the seam's documented invariant (a teleport was never
+     * travelled). Every other bucket, including the accuracy-gated NONE bucket, still counts toward
+     * original — it was measured, just not trusted for cleaned.
+     */
+    private fun bankLeg(
+        leg: Leg,
+        displacement: Double,
+        abnormal: Boolean,
+    ) {
+        val addToOriginal = leg.bucket != DistanceBucket.SPIKE
+        state =
+            state.copy(
+                originalM = state.originalM + (if (addToOriginal) displacement else 0.0),
+                cleanedM = if (leg.bucket == DistanceBucket.CLEANED) state.cleanedM + leg.delta else state.cleanedM,
+                abnormalM = if (leg.bucket == DistanceBucket.ABNORMAL) state.abnormalM + leg.delta else state.abnormalM,
+                mockM = if (leg.bucket == DistanceBucket.MOCK) state.mockM + leg.delta else state.mockM,
+                spikeM = if (leg.bucket == DistanceBucket.SPIKE) state.spikeM + leg.delta else state.spikeM,
+                consecutiveNormal = if (abnormal) 0 else state.consecutiveNormal + 1,
+            )
     }
 
     override fun snapshot(): AlgorithmState = state
@@ -234,18 +315,18 @@ public class TieredGpsAlgorithm(
 
     /** Minimum displacement (m) a fix must cover to escape jitter suppression, by speed band. */
     private fun minDisplacementForSpeed(speedMps: Double): Double {
-        val bandJitter = when {
-            speedMps < walkingMaxMps -> walkingJitterM
-            speedMps < cyclingMaxMps -> cyclingJitterM
-            else -> drivingJitterM
-        }
+        val bandJitter =
+            when {
+                speedMps < walkingMaxMps -> walkingJitterM
+                speedMps < cyclingMaxMps -> cyclingJitterM
+                else -> drivingJitterM
+            }
         // The user-set floor only ever raises the gate; 0.0 (default) is a no-op.
         return max(bandJitter, minDisplacementFloorM)
     }
 
     /** True when the recent window shows sustained movement, so a small step isn't jitter. */
-    private fun hasMovementHistory(): Boolean =
-        recentSpeedHistory.isNotEmpty() && recentSpeedHistory.average() >= movementHistoryMps
+    private fun hasMovementHistory(): Boolean = recentSpeedHistory.isNotEmpty() && recentSpeedHistory.average() >= movementHistoryMps
 
     /**
      * Classify a step as abnormal. For normal sampling (<gapMinSec) a hard-gate jump is an
@@ -253,7 +334,11 @@ public class TieredGpsAlgorithm(
      * gaps the cap is relaxed by tier; beyond the longest tier a flat distance gate replaces the
      * speed test.
      */
-    private fun isAbnormal(displacement: Double, impliedSpeed: Double, dtSec: Long): Boolean =
+    private fun isAbnormal(
+        displacement: Double,
+        impliedSpeed: Double,
+        dtSec: Long,
+    ): Boolean =
         when {
             dtSec < gapMinSec -> displacement > spikeHardGateM || impliedSpeed > maxPlausibleSpeedMps
             dtSec <= gap5mSec -> impliedSpeed > gapTier5mMps
@@ -273,112 +358,294 @@ public class TieredGpsAlgorithm(
         private const val COORD_LNG_MIN = -180.0
         private const val COORD_LNG_MAX = 180.0
 
-        public val MaxPlausibleSpeed: KnobSpec = KnobSpec(
-            name = "maxPlausibleSpeedMps", default = 70.0, min = 10.0, max = 200.0, step = 5.0, unit = "m/s",
-            description = "Implied speed above this during normal sampling is a spike.",
-        )
-        public val SoftAccuracyCeiling: KnobSpec = KnobSpec(
-            name = "softAccuracyCeilingM", default = 50.0, min = 0.0, max = 500.0, step = 5.0, unit = "m",
-            description = "Fixes worse than this are persisted but excluded from cleaned distance.",
-        )
-        public val MinDisplacementFloor: KnobSpec = KnobSpec(
-            name = "minDisplacementFloorM", default = 0.0, min = 0.0, max = 50.0, step = 1.0, unit = "m",
-            description = "User-set floor over the per-band jitter gate.",
-        )
-        public val HardAccuracyMin: KnobSpec = KnobSpec(
-            name = "hardAccuracyMinM", default = 0.1, min = 0.0, max = 5.0, step = 0.1, unit = "m",
-            description = "Accuracy at or below this is impossibly precise; the fix is rejected outright.",
-        )
-        public val HardAccuracyMax: KnobSpec = KnobSpec(
-            name = "hardAccuracyMaxM", default = 250.0, min = 10.0, max = 1000.0, step = 10.0, unit = "m",
-            description = "Accuracy at or above this is hopelessly noisy; the fix is rejected outright.",
-        )
-        public val ExceptionalStationarySpeed: KnobSpec = KnobSpec(
-            name = "exceptionalStationarySpeedMps", default = 0.1, min = 0.0, max = 5.0, step = 0.1, unit = "m/s",
-        )
-        public val ExceptionalStationaryAccuracy: KnobSpec = KnobSpec(
-            name = "exceptionalStationaryAccuracyM", default = 20.0, min = 0.0, max = 100.0, step = 1.0, unit = "m",
-        )
-        public val WalkingMax: KnobSpec = KnobSpec(
-            name = "walkingMaxMps", default = 2.5, min = 0.5, max = 10.0, step = 0.5, unit = "m/s",
-        )
-        public val CyclingMax: KnobSpec = KnobSpec(
-            name = "cyclingMaxMps", default = 7.0, min = 1.0, max = 20.0, step = 0.5, unit = "m/s",
-        )
-        public val WalkingJitter: KnobSpec = KnobSpec(
-            name = "walkingJitterM", default = 2.0, min = 0.0, max = 20.0, step = 0.5, unit = "m",
-        )
-        public val CyclingJitter: KnobSpec = KnobSpec(
-            name = "cyclingJitterM", default = 3.0, min = 0.0, max = 20.0, step = 0.5, unit = "m",
-        )
-        public val DrivingJitter: KnobSpec = KnobSpec(
-            name = "drivingJitterM", default = 5.0, min = 0.0, max = 30.0, step = 0.5, unit = "m",
-        )
-        public val StationarySpeed: KnobSpec = KnobSpec(
-            name = "stationarySpeedMps", default = 1.2, min = 0.0, max = 5.0, step = 0.1, unit = "m/s",
-        )
-        public val StationaryJitter: KnobSpec = KnobSpec(
-            name = "stationaryJitterM", default = 1.2, min = 0.0, max = 10.0, step = 0.1, unit = "m",
-        )
-        public val SpeedHistorySize: KnobSpec = KnobSpec(
-            name = "speedHistorySize", default = 5.0, min = 1.0, max = 20.0, step = 1.0, unit = "samples",
-        )
-        public val MovementHistory: KnobSpec = KnobSpec(
-            name = "movementHistoryMps", default = 1.5, min = 0.0, max = 10.0, step = 0.1, unit = "m/s",
-        )
-        public val SpikeHardGate: KnobSpec = KnobSpec(
-            name = "spikeHardGateM", default = 5_000.0, min = 500.0, max = 20_000.0, step = 500.0, unit = "m",
-            description = "Displacement above this during normal sampling is an instant teleport.",
-        )
-        public val GapMinSec: KnobSpec = KnobSpec(
-            name = "gapMinSec", default = 30.0, min = 5.0, max = 120.0, step = 5.0, unit = "s",
-            description = "Below this, sampling is 'normal'; at or above, a recovery tier applies.",
-        )
-        public val Gap5mSec: KnobSpec = KnobSpec(
-            name = "gap5mSec", default = 300.0, min = 60.0, max = 1_800.0, step = 60.0, unit = "s",
-        )
-        public val Gap1hSec: KnobSpec = KnobSpec(
-            name = "gap1hSec", default = 3_600.0, min = 600.0, max = 14_400.0, step = 300.0, unit = "s",
-        )
-        public val Gap6hSec: KnobSpec = KnobSpec(
-            name = "gap6hSec", default = 21_600.0, min = 3_600.0, max = 86_400.0, step = 1_800.0, unit = "s",
-        )
-        public val GapTier5mMps: KnobSpec = KnobSpec(
-            name = "gapTier5mMps", default = 150.0, min = 10.0, max = 400.0, step = 10.0, unit = "m/s",
-        )
-        public val GapTier1hMps: KnobSpec = KnobSpec(
-            name = "gapTier1hMps", default = 100.0, min = 10.0, max = 400.0, step = 10.0, unit = "m/s",
-        )
-        public val GapTier6hMps: KnobSpec = KnobSpec(
-            name = "gapTier6hMps", default = 60.0, min = 5.0, max = 400.0, step = 5.0, unit = "m/s",
-        )
-        public val GapMaxDistance: KnobSpec = KnobSpec(
-            name = "gapMaxDistanceM", default = 10_000.0, min = 1_000.0, max = 100_000.0, step = 1_000.0, unit = "m",
-            description = "Beyond the longest gap tier, a flat distance gate replaces the speed test.",
-        )
-        public val KalmanProcessNoise: KnobSpec = KnobSpec(
-            name = "kalmanProcessNoiseMps", default = 1.0, min = 0.0, max = 20.0, step = 0.5, unit = "m/s",
-        )
+        public val MaxPlausibleSpeed: KnobSpec =
+            KnobSpec(
+                name = "maxPlausibleSpeedMps",
+                default = 70.0,
+                min = 10.0,
+                max = 200.0,
+                step = 5.0,
+                unit = "m/s",
+                description = "Implied speed above this during normal sampling is a spike.",
+            )
+        public val SoftAccuracyCeiling: KnobSpec =
+            KnobSpec(
+                name = "softAccuracyCeilingM",
+                default = 50.0,
+                min = 0.0,
+                max = 500.0,
+                step = 5.0,
+                unit = "m",
+                description = "Fixes worse than this are persisted but excluded from cleaned distance.",
+            )
+        public val MinDisplacementFloor: KnobSpec =
+            KnobSpec(
+                name = "minDisplacementFloorM",
+                default = 0.0,
+                min = 0.0,
+                max = 50.0,
+                step = 1.0,
+                unit = "m",
+                description = "User-set floor over the per-band jitter gate.",
+            )
+        public val HardAccuracyMin: KnobSpec =
+            KnobSpec(
+                name = "hardAccuracyMinM",
+                default = 0.1,
+                min = 0.0,
+                max = 5.0,
+                step = 0.1,
+                unit = "m",
+                description = "Accuracy at or below this is impossibly precise; the fix is rejected outright.",
+            )
+        public val HardAccuracyMax: KnobSpec =
+            KnobSpec(
+                name = "hardAccuracyMaxM",
+                default = 250.0,
+                min = 10.0,
+                max = 1000.0,
+                step = 10.0,
+                unit = "m",
+                description = "Accuracy at or above this is hopelessly noisy; the fix is rejected outright.",
+            )
+        public val ExceptionalStationarySpeed: KnobSpec =
+            KnobSpec(
+                name = "exceptionalStationarySpeedMps",
+                default = 0.1,
+                min = 0.0,
+                max = 5.0,
+                step = 0.1,
+                unit = "m/s",
+            )
+        public val ExceptionalStationaryAccuracy: KnobSpec =
+            KnobSpec(
+                name = "exceptionalStationaryAccuracyM",
+                default = 20.0,
+                min = 0.0,
+                max = 100.0,
+                step = 1.0,
+                unit = "m",
+            )
+        public val WalkingMax: KnobSpec =
+            KnobSpec(
+                name = "walkingMaxMps",
+                default = 2.5,
+                min = 0.5,
+                max = 10.0,
+                step = 0.5,
+                unit = "m/s",
+            )
+        public val CyclingMax: KnobSpec =
+            KnobSpec(
+                name = "cyclingMaxMps",
+                default = 7.0,
+                min = 1.0,
+                max = 20.0,
+                step = 0.5,
+                unit = "m/s",
+            )
+        public val WalkingJitter: KnobSpec =
+            KnobSpec(
+                name = "walkingJitterM",
+                default = 2.0,
+                min = 0.0,
+                max = 20.0,
+                step = 0.5,
+                unit = "m",
+            )
+        public val CyclingJitter: KnobSpec =
+            KnobSpec(
+                name = "cyclingJitterM",
+                default = 3.0,
+                min = 0.0,
+                max = 20.0,
+                step = 0.5,
+                unit = "m",
+            )
+        public val DrivingJitter: KnobSpec =
+            KnobSpec(
+                name = "drivingJitterM",
+                default = 5.0,
+                min = 0.0,
+                max = 30.0,
+                step = 0.5,
+                unit = "m",
+            )
+        public val StationarySpeed: KnobSpec =
+            KnobSpec(
+                name = "stationarySpeedMps",
+                default = 1.2,
+                min = 0.0,
+                max = 5.0,
+                step = 0.1,
+                unit = "m/s",
+            )
+        public val StationaryJitter: KnobSpec =
+            KnobSpec(
+                name = "stationaryJitterM",
+                default = 1.2,
+                min = 0.0,
+                max = 10.0,
+                step = 0.1,
+                unit = "m",
+            )
+        public val SpeedHistorySize: KnobSpec =
+            KnobSpec(
+                name = "speedHistorySize",
+                default = 5.0,
+                min = 1.0,
+                max = 20.0,
+                step = 1.0,
+                unit = "samples",
+            )
+        public val MovementHistory: KnobSpec =
+            KnobSpec(
+                name = "movementHistoryMps",
+                default = 1.5,
+                min = 0.0,
+                max = 10.0,
+                step = 0.1,
+                unit = "m/s",
+            )
+        public val SpikeHardGate: KnobSpec =
+            KnobSpec(
+                name = "spikeHardGateM",
+                default = 5_000.0,
+                min = 500.0,
+                max = 20_000.0,
+                step = 500.0,
+                unit = "m",
+                description = "Displacement above this during normal sampling is an instant teleport.",
+            )
+        public val GapMinSec: KnobSpec =
+            KnobSpec(
+                name = "gapMinSec",
+                default = 30.0,
+                min = 5.0,
+                max = 120.0,
+                step = 5.0,
+                unit = "s",
+                description = "Below this, sampling is 'normal'; at or above, a recovery tier applies.",
+            )
+        public val Gap5mSec: KnobSpec =
+            KnobSpec(
+                name = "gap5mSec",
+                default = 300.0,
+                min = 60.0,
+                max = 1_800.0,
+                step = 60.0,
+                unit = "s",
+            )
+        public val Gap1hSec: KnobSpec =
+            KnobSpec(
+                name = "gap1hSec",
+                default = 3_600.0,
+                min = 600.0,
+                max = 14_400.0,
+                step = 300.0,
+                unit = "s",
+            )
+        public val Gap6hSec: KnobSpec =
+            KnobSpec(
+                name = "gap6hSec",
+                default = 21_600.0,
+                min = 3_600.0,
+                max = 86_400.0,
+                step = 1_800.0,
+                unit = "s",
+            )
+        public val GapTier5mMps: KnobSpec =
+            KnobSpec(
+                name = "gapTier5mMps",
+                default = 150.0,
+                min = 10.0,
+                max = 400.0,
+                step = 10.0,
+                unit = "m/s",
+            )
+        public val GapTier1hMps: KnobSpec =
+            KnobSpec(
+                name = "gapTier1hMps",
+                default = 100.0,
+                min = 10.0,
+                max = 400.0,
+                step = 10.0,
+                unit = "m/s",
+            )
+        public val GapTier6hMps: KnobSpec =
+            KnobSpec(
+                name = "gapTier6hMps",
+                default = 60.0,
+                min = 5.0,
+                max = 400.0,
+                step = 5.0,
+                unit = "m/s",
+            )
+        public val GapMaxDistance: KnobSpec =
+            KnobSpec(
+                name = "gapMaxDistanceM",
+                default = 10_000.0,
+                min = 1_000.0,
+                max = 100_000.0,
+                step = 1_000.0,
+                unit = "m",
+                description = "Beyond the longest gap tier, a flat distance gate replaces the speed test.",
+            )
+        public val KalmanProcessNoise: KnobSpec =
+            KnobSpec(
+                name = "kalmanProcessNoiseMps",
+                default = 1.0,
+                min = 0.0,
+                max = 20.0,
+                step = 0.5,
+                unit = "m/s",
+            )
 
-        public val ALL_KNOBS: List<KnobSpec> = listOf(
-            MaxPlausibleSpeed, SoftAccuracyCeiling, MinDisplacementFloor, HardAccuracyMin, HardAccuracyMax,
-            ExceptionalStationarySpeed, ExceptionalStationaryAccuracy, WalkingMax, CyclingMax, WalkingJitter,
-            CyclingJitter, DrivingJitter, StationarySpeed, StationaryJitter, SpeedHistorySize, MovementHistory,
-            SpikeHardGate, GapMinSec, Gap5mSec, Gap1hSec, Gap6hSec, GapTier5mMps, GapTier1hMps, GapTier6hMps,
-            GapMaxDistance, KalmanProcessNoise,
-        )
+        public val ALL_KNOBS: List<KnobSpec> =
+            listOf(
+                MaxPlausibleSpeed,
+                SoftAccuracyCeiling,
+                MinDisplacementFloor,
+                HardAccuracyMin,
+                HardAccuracyMax,
+                ExceptionalStationarySpeed,
+                ExceptionalStationaryAccuracy,
+                WalkingMax,
+                CyclingMax,
+                WalkingJitter,
+                CyclingJitter,
+                DrivingJitter,
+                StationarySpeed,
+                StationaryJitter,
+                SpeedHistorySize,
+                MovementHistory,
+                SpikeHardGate,
+                GapMinSec,
+                Gap5mSec,
+                Gap1hSec,
+                Gap6hSec,
+                GapTier5mMps,
+                GapTier1hMps,
+                GapTier6hMps,
+                GapMaxDistance,
+                KalmanProcessNoise,
+            )
 
         /**
          * Knob defaults reproduce `LocationProcessor` + `AbnormalDetectionConfig.DEFAULT` +
          * `LocationTrackingConstants` exactly — this profile with [DeviceEnvelope.Default] is
          * numerically identical to the algorithm shipping in Mileway today.
          */
-        public fun milewayV1Profile(): TuningProfile =
-            TuningProfile(algorithmId = AlgorithmId.TieredGps, profileId = "mileway.v1")
+        public fun milewayV1Profile(): TuningProfile = TuningProfile(algorithmId = AlgorithmId.TieredGps, profileId = "mileway.v1")
 
-        private fun scaledSec(baseSec: Double, multiplier: Double): Long =
-            (baseSec * multiplier).toLong().coerceAtLeast(1L)
+        private fun scaledSec(
+            baseSec: Double,
+            multiplier: Double,
+        ): Long = (baseSec * multiplier).toLong().coerceAtLeast(1L)
 
-        private fun Double.inRange(min: Double, max: Double): Boolean = this in min..max
+        private fun Double.inRange(
+            min: Double,
+            max: Double,
+        ): Boolean = this in min..max
     }
 }

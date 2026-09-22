@@ -9,7 +9,9 @@ import com.siddharth.kmp.settings.SecureSettingsFactory
  *
  * Takes an application [Context]; anything else would outlive its owner.
  */
-actual class SecureStore(context: Context) {
+actual class SecureStore(
+    context: Context,
+) {
     private val delegate =
         SettingsSecureStore { SecureSettingsFactory(context.applicationContext).create() }
 

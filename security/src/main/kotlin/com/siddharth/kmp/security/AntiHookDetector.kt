@@ -55,6 +55,13 @@ object AntiHookDetector {
     private val FRIDA_PORTS = listOf(27042, 27043)
 
     /**
+     * Loopback connect timeout. Short on purpose: this runs on the caller's thread during a
+     * security sweep, and a closed port on loopback refuses immediately — the timeout only bounds
+     * the pathological case where something is filtering the connection.
+     */
+    private const val LOOPBACK_CONNECT_TIMEOUT_MS = 120
+
+    /**
      * Runs every hook check and returns the signal strings that fired.
      * @return list of signals; empty when nothing was detected.
      */
@@ -83,7 +90,9 @@ object AntiHookDetector {
                 .map { it.name.lowercase() }
                 .firstOrNull { name -> SUSPICIOUS_THREAD_NAMES.any { name.contains(it) } }
                 ?.let { "hook: suspicious thread name '$it' (Frida agent)" }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // A SecurityManager or a hooked Thread API can make the enumeration throw. No
+            // enumeration means no evidence, which is the correct answer for a best-effort probe.
             null
         }
 
@@ -95,7 +104,8 @@ object AntiHookDetector {
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Unreadable /proc — no evidence, not a positive.
             null
         }
 
@@ -103,11 +113,11 @@ object AntiHookDetector {
         for (port in FRIDA_PORTS) {
             try {
                 Socket().use { socket ->
-                    socket.connect(InetSocketAddress("127.0.0.1", port), 120)
+                    socket.connect(InetSocketAddress("127.0.0.1", port), LOOPBACK_CONNECT_TIMEOUT_MS)
                     return "hook: Frida default port $port is open on loopback"
                 }
-            } catch (e: Exception) {
-                // Connection refused is the good case — port not listening.
+            } catch (ignored: Exception) {
+                // Connection refused / timed out is the good case — nothing is listening.
             }
         }
         return null
@@ -119,24 +129,21 @@ object AntiHookDetector {
             try {
                 Class.forName(className)
                 return "hook: Xposed/LSPosed marker class present ($className)"
-            } catch (e: ClassNotFoundException) {
-                // Good — not present.
-            } catch (e: Throwable) {
-                // Ignore other loader failures.
+            } catch (ignored: ClassNotFoundException) {
+                // Good — the marker class is not present.
+            } catch (ignored: Throwable) {
+                // A hooked or broken class loader can throw anything here; treat every failure as
+                // "could not prove it is present", never as a positive.
             }
         }
-        // Stack-trace marker probe.
-        return try {
-            throw Exception("xposed-probe")
-        } catch (e: Exception) {
-            e.stackTrace
-                .firstOrNull {
-                    it.className.contains(
-                        "de.robv.android.xposed",
-                    ) ||
-                        it.className.contains("XposedBridge")
-                }?.let { "hook: Xposed frame in stack trace (${it.className})" }
-        }
+        // Stack-trace marker probe. `Throwable()` captures the current stack at construction, so
+        // the frames are available without throwing and catching a generic Exception to get at
+        // them — same evidence, no control flow abused to collect it.
+        return Throwable("xposed-stack-probe")
+            .stackTrace
+            .firstOrNull {
+                it.className.contains("de.robv.android.xposed") || it.className.contains("XposedBridge")
+            }?.let { "hook: Xposed frame in stack trace (${it.className})" }
     }
 }
 

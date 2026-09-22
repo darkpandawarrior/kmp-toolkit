@@ -19,7 +19,11 @@ data class PermissionFlowState(
     val current: PermissionStep? get() = steps.getOrNull(currentIndex)
     val isComplete: Boolean get() = currentIndex >= steps.size
     val allGranted: Boolean get() = steps.all { it.result == PermissionResult.Granted }
-    val denied: List<AppPermission> get() = steps.filter { it.result != PermissionResult.Granted && it.result != null }.map { it.permission }
+    val denied: List<AppPermission> get() =
+        steps
+            .filter {
+                it.result != PermissionResult.Granted && it.result != null
+            }.map { it.permission }
 }
 
 /**

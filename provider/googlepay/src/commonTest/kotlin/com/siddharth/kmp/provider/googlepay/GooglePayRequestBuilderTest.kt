@@ -38,9 +38,21 @@ class GooglePayRequestBuilderTest {
     fun isReadyToPayRequestDeclaresCardAsTheOnlyPaymentMethod() {
         val json = builder.isReadyToPayRequest()
 
-        assertEquals(2, json.getValue("apiVersion").jsonPrimitive.content.toInt())
+        assertEquals(
+            2,
+            json
+                .getValue("apiVersion")
+                .jsonPrimitive.content
+                .toInt(),
+        )
         assertEquals(1, json.methods().size)
-        assertEquals("CARD", json.firstMethod().getValue("type").jsonPrimitive.content)
+        assertEquals(
+            "CARD",
+            json
+                .firstMethod()
+                .getValue("type")
+                .jsonPrimitive.content,
+        )
     }
 
     @Test
@@ -87,12 +99,22 @@ class GooglePayRequestBuilderTest {
         val customConfig =
             config.copy(allowedCardNetworks = setOf(CardNetwork.VISA), allowedAuthMethods = listOf("PAN_ONLY"))
         val parameters =
-            GooglePayRequestBuilder(customConfig).isReadyToPayRequest().firstMethod().getValue("parameters").jsonObject
+            GooglePayRequestBuilder(customConfig)
+                .isReadyToPayRequest()
+                .firstMethod()
+                .getValue("parameters")
+                .jsonObject
 
         val networks = parameters.getValue("allowedCardNetworks").jsonArray
         assertEquals(1, networks.size)
         // CardNetwork.VISA must serialize as Google's own wire spelling, not as "Visa".
         assertEquals("VISA", networks[0].jsonPrimitive.content)
-        assertEquals("PAN_ONLY", parameters.getValue("allowedAuthMethods").jsonArray[0].jsonPrimitive.content)
+        assertEquals(
+            "PAN_ONLY",
+            parameters
+                .getValue("allowedAuthMethods")
+                .jsonArray[0]
+                .jsonPrimitive.content,
+        )
     }
 }

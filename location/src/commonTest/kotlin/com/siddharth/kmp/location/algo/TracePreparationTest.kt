@@ -6,9 +6,11 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class TracePreparationTest {
-
     // ~111.19 m per 0.001 deg of latitude at the equator — same constant TraceCodecTest uses.
-    private fun straightLine(count: Int, stepSec: Long = 5): List<Fix> =
+    private fun straightLine(
+        count: Int,
+        stepSec: Long = 5,
+    ): List<Fix> =
         (0 until count).map {
             Fix(lat = 12.9 + it * 0.001, lng = 77.6, timeMs = 1000L + it * stepSec * 1000L, accuracyM = 6.0)
         }
@@ -98,8 +100,7 @@ class TracePreparationTest {
         )
     }
 
-    private fun trueDistanceM(fixes: List<Fix>): Double =
-        fixes.zipWithNext { a, b -> haversineMeters(a.lat, a.lng, b.lat, b.lng) }.sum()
+    private fun trueDistanceM(fixes: List<Fix>): Double = fixes.zipWithNext { a, b -> haversineMeters(a.lat, a.lng, b.lat, b.lng) }.sum()
 
     @Test
     fun stitching_a_chunked_trace_matches_the_unchunked_ground_truth() {

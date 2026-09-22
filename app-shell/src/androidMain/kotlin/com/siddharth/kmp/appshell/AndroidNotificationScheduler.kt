@@ -42,7 +42,8 @@ class AndroidNotificationScheduler(
     ) {
         if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
         val notification =
-            NotificationCompat.Builder(context, channelId)
+            NotificationCompat
+                .Builder(context, channelId)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)

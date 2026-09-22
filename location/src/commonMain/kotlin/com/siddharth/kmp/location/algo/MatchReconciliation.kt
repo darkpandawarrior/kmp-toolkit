@@ -20,7 +20,6 @@ import kotlin.math.abs
  *    bad fit than a large bias correction, so it is flagged for review rather than trusted blindly.
  */
 public object MatchReconciliation {
-
     public fun reconcile(
         clientDistanceM: Double,
         matched: MatchedRoute,
@@ -35,21 +34,23 @@ public object MatchReconciliation {
         val diffRatio = relativeDifference(clientDistanceM, matched.distanceM)
         val trustworthy = matched.confidence >= minConfidence
 
-        val verdict = when {
-            diffRatio <= agreeToleranceRatio -> ReconciliationVerdict.AGREE
-            trustworthy && diffRatio <= disputeRatio -> ReconciliationVerdict.PREFER_MATCHED
-            else -> ReconciliationVerdict.DISPUTE
-        }
+        val verdict =
+            when {
+                diffRatio <= agreeToleranceRatio -> ReconciliationVerdict.AGREE
+                trustworthy && diffRatio <= disputeRatio -> ReconciliationVerdict.PREFER_MATCHED
+                else -> ReconciliationVerdict.DISPUTE
+            }
 
         // AGREE and DISPUTE both keep the client figure: on AGREE the two are close enough that
         // overriding buys nothing, and on DISPUTE the matched figure has not earned an override —
         // either it is untrusted (low confidence) or it disagrees more than a plausible bias
         // correction should. PREFER_MATCHED is the only verdict allowed to change what is shown.
-        val presentedDistanceM = if (verdict == ReconciliationVerdict.PREFER_MATCHED) {
-            matched.distanceM
-        } else {
-            clientDistanceM
-        }
+        val presentedDistanceM =
+            if (verdict == ReconciliationVerdict.PREFER_MATCHED) {
+                matched.distanceM
+            } else {
+                clientDistanceM
+            }
 
         return Reconciliation(
             verdict = verdict,
@@ -65,7 +66,10 @@ public object MatchReconciliation {
      * `|a - b| / max(a, b)`, made total: two zero distances agree perfectly, and any distance
      * against a zero disagrees completely, instead of dividing by zero.
      */
-    private fun relativeDifference(a: Double, b: Double): Double {
+    private fun relativeDifference(
+        a: Double,
+        b: Double,
+    ): Double {
         val denom = maxOf(a, b)
         if (denom <= 0.0) return 0.0
         return abs(a - b) / denom

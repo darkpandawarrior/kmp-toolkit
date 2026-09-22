@@ -1,4 +1,6 @@
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+// BetaInteropApi covers `alloc<ObjCObjectVar<NSError?>>()`, the standard Objective-C
+// error-out-parameter shape LocalAuthentication requires.
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
 
 package com.siddharth.kmp.biometric
 
@@ -80,9 +82,10 @@ private fun NSError?.toAvailability(): BiometricAvailability =
         BIOMETRY_LOCKOUT -> BiometricAvailability.LockedOut
         // NSFaceIDUsageDescription missing from Info.plist lands here, as an -6 with a description
         // saying so — which is why the reason is carried through verbatim rather than flattened.
-        else -> BiometricAvailability.Unavailable(
-            this?.localizedDescription ?: "Biometric authentication is unavailable on this device.",
-        )
+        else ->
+            BiometricAvailability.Unavailable(
+                this?.localizedDescription ?: "Biometric authentication is unavailable on this device.",
+            )
     }
 
 private fun toResult(

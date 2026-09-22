@@ -85,7 +85,12 @@ class HttpChatProvider(
                 // the wire, not sent as `"mode": null` — a backend with a closed mode allowlist
                 // (e.g. exactly "compose" | "jd", chat being the absent case) 400s on any `mode`
                 // key it doesn't recognize, null included.
-                json(Json { ignoreUnknownKeys = true; explicitNulls = false })
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        explicitNulls = false
+                    },
+                )
             }
         }
     }

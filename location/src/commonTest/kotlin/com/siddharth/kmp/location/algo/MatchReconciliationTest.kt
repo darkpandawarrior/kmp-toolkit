@@ -5,9 +5,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 class MatchReconciliationTest {
-
-    private fun route(distanceM: Double, confidence: Double) =
-        MatchedRoute(distanceM = distanceM, confidence = confidence, pointMatched = listOf(true, true))
+    private fun route(
+        distanceM: Double,
+        confidence: Double,
+    ) = MatchedRoute(distanceM = distanceM, confidence = confidence, pointMatched = listOf(true, true))
 
     @Test
     fun close_figures_agree_and_present_the_client_distance() {

@@ -94,10 +94,11 @@ class AdaptiveTest {
 
     @Test
     fun eachLadderGrowsMonotonically() {
-        val ladders = mapOf(
-            "handheld" to listOf(CompactTokens, MediumTokens, ExpandedTokens),
-            "tv" to listOf(TvTokens, TvMediumTokens, TvExpandedTokens),
-        )
+        val ladders =
+            mapOf(
+                "handheld" to listOf(CompactTokens, MediumTokens, ExpandedTokens),
+                "tv" to listOf(TvTokens, TvMediumTokens, TvExpandedTokens),
+            )
         ladders.forEach { (name, ladder) ->
             ladder.zipWithNext { small, large ->
                 assertTrue(large.screenPadding > small.screenPadding, "$name screenPadding")
@@ -113,13 +114,23 @@ class AdaptiveTest {
 
     @Test
     fun spacingStaysOnTheFourDpGrid() {
-        val all = listOf(
-            CompactTokens, MediumTokens, ExpandedTokens,
-            WatchTokens, TvTokens, TvMediumTokens, TvExpandedTokens,
-        )
+        val all =
+            listOf(
+                CompactTokens,
+                MediumTokens,
+                ExpandedTokens,
+                WatchTokens,
+                TvTokens,
+                TvMediumTokens,
+                TvExpandedTokens,
+            )
         all.forEach { t ->
             listOf(
-                t.screenPadding, t.itemSpacing, t.sectionSpacing, t.toolbarHeight, t.overscanPadding,
+                t.screenPadding,
+                t.itemSpacing,
+                t.sectionSpacing,
+                t.toolbarHeight,
+                t.overscanPadding,
             ).forEach {
                 assertTrue(it.value.toInt() % 4 == 0, "$it is off the 4dp grid")
             }

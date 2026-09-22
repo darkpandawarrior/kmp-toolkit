@@ -1,6 +1,5 @@
 package com.siddharth.kmp.location.algo
 
-import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -37,15 +36,17 @@ import kotlin.math.min
  * ponytail: a decorator, not a fork. Re-implementing the delegate's Kalman/band/gap/spike logic to
  * add three rules would double the surface that has to stay correct, and the two copies would drift.
  */
+private const val MILLIS_PER_SECOND = 1000.0
+
 public class SegmentedTripAlgorithm(
     private val profile: TuningProfile = defaultProfile(),
     private val envelope: DeviceEnvelope = DeviceEnvelope.Default,
-    private val delegate: MileageAlgorithm = TieredGpsAlgorithm(
-        TuningProfile(AlgorithmId.TieredGps, "mileway.v1"),
-        envelope,
-    ),
+    private val delegate: MileageAlgorithm =
+        TieredGpsAlgorithm(
+            TuningProfile(AlgorithmId.TieredGps, "mileway.v1"),
+            envelope,
+        ),
 ) : MileageAlgorithm {
-
     override val id: AlgorithmId = Id
     override val knobs: List<KnobSpec> = ALL_KNOBS + delegate.knobs
 
@@ -99,26 +100,30 @@ public class SegmentedTripAlgorithm(
     }
 
     /** Fold one emitted result into the running totals. Exactly one bucket per leg. */
-    private fun bank(r: FixResult, fix: Fix?): FixResult {
+    private fun bank(
+        r: FixResult,
+        fix: Fix?,
+    ): FixResult {
         val d = r.distanceDeltaM
         val counted = r.bucket != DistanceBucket.NONE
         val n = if (counted) own.accepted + 1 else own.accepted
         val speed = fix?.speedMps ?: 0.0
-        own = own.copy(
-            // A spike was never travelled, so it is excluded from `originalM` by design — that is
-            // what makes the invariant `cleaned == original - abnormal - mock` hold.
-            originalM = if (counted && r.bucket != DistanceBucket.SPIKE) own.originalM + d else own.originalM,
-            cleanedM = if (r.bucket == DistanceBucket.CLEANED) own.cleanedM + d else own.cleanedM,
-            abnormalM = if (r.bucket == DistanceBucket.ABNORMAL) own.abnormalM + d else own.abnormalM,
-            mockM = if (r.bucket == DistanceBucket.MOCK) own.mockM + d else own.mockM,
-            spikeM = if (r.bucket == DistanceBucket.SPIKE) own.spikeM + d else own.spikeM,
-            accepted = n,
-            rejected = if (r.emitted == null) own.rejected + 1 else own.rejected,
-            consecutiveNormal = if (r.bucket == DistanceBucket.CLEANED) own.consecutiveNormal + 1 else 0,
-            maxSpeedMps = max(own.maxSpeedMps, speed),
-            avgSpeedMps = if (n > 0) ((own.avgSpeedMps * (n - 1)) + speed) / n else own.avgSpeedMps,
-            lastFix = fix ?: own.lastFix,
-        )
+        own =
+            own.copy(
+                // A spike was never travelled, so it is excluded from `originalM` by design — that is
+                // what makes the invariant `cleaned == original - abnormal - mock` hold.
+                originalM = if (counted && r.bucket != DistanceBucket.SPIKE) own.originalM + d else own.originalM,
+                cleanedM = if (r.bucket == DistanceBucket.CLEANED) own.cleanedM + d else own.cleanedM,
+                abnormalM = if (r.bucket == DistanceBucket.ABNORMAL) own.abnormalM + d else own.abnormalM,
+                mockM = if (r.bucket == DistanceBucket.MOCK) own.mockM + d else own.mockM,
+                spikeM = if (r.bucket == DistanceBucket.SPIKE) own.spikeM + d else own.spikeM,
+                accepted = n,
+                rejected = if (r.emitted == null) own.rejected + 1 else own.rejected,
+                consecutiveNormal = if (r.bucket == DistanceBucket.CLEANED) own.consecutiveNormal + 1 else 0,
+                maxSpeedMps = max(own.maxSpeedMps, speed),
+                avgSpeedMps = if (n > 0) ((own.avgSpeedMps * (n - 1)) + speed) / n else own.avgSpeedMps,
+                lastFix = fix ?: own.lastFix,
+            )
         return r
     }
 
@@ -164,7 +169,19 @@ public class SegmentedTripAlgorithm(
             return bank(result, fix)
         }
 
-        // ── Inside a candidate stop ───────────────────────────────────────────────────────────────
+        return insideCandidateStop(fix, result, speed)
+    }
+
+    /**
+     * The half of [process] that only runs once a candidate stop is open: decide whether this fix
+     * refutes it, confirms it, or extends it. Split out so [process] states the pipeline once
+     * (jitter gate, delegate, stop entry) instead of carrying two unrelated phases and five exits.
+     */
+    private fun insideCandidateStop(
+        fix: Fix,
+        result: FixResult,
+        speed: Double,
+    ): FixResult {
         val fromCentroid = haversineMeters(stopCentroidLat, stopCentroidLng, fix.lat, fix.lng)
 
         // Refuted: the vehicle was crawling, not parked. Every held metre is real after all.
@@ -188,7 +205,7 @@ public class SegmentedTripAlgorithm(
 
         // Confirmed: long enough inside the radius that this is parking, not traffic. The held
         // metres were drift around a stationary vehicle and are discarded permanently.
-        val heldSec = (fix.timeMs - stopSinceMs) / 1000.0
+        val heldSec = (fix.timeMs - stopSinceMs) / MILLIS_PER_SECOND
         if (heldSec >= stopConfirmSec) {
             stopsConfirmed += 1.0
             pendingStopDistanceM = 0.0
@@ -230,8 +247,9 @@ public class SegmentedTripAlgorithm(
                 displacementM = 0.0,
                 distanceDeltaM = 0.0,
                 bucket = DistanceBucket.NONE,
-                reason = "trip ended inside a stop: discarded $legs leg(s), ${fmt1(discarded)}m" +
-                    (at?.let { " at ${it.lat},${it.lng}" } ?: ""),
+                reason =
+                    "trip ended inside a stop: discarded $legs leg(s), ${fmt1(discarded)}m" +
+                        (at?.let { " at ${it.lat},${it.lng}" } ?: ""),
             ),
         )
     }
@@ -241,15 +259,16 @@ public class SegmentedTripAlgorithm(
         // still carried through so its private continuation state (Kalman covariance and the like)
         // survives a resume.
         return own.copy(
-            opaque = delegate.snapshot().opaque +
-                mapOf(
-                    OPAQUE_STOPS_CONFIRMED to stopsConfirmed,
-                    OPAQUE_SPEED_DISAGREEMENTS to speedDisagreements,
-                    OPAQUE_ACCURACY_GATED to accuracyGated,
-                    // Held metres are part of the resumable state: a process death mid-stop must not
-                    // silently convert "undecided" into "counted".
-                    OPAQUE_PENDING_STOP_M to pendingStopDistanceM,
-                ),
+            opaque =
+                delegate.snapshot().opaque +
+                    mapOf(
+                        OPAQUE_STOPS_CONFIRMED to stopsConfirmed,
+                        OPAQUE_SPEED_DISAGREEMENTS to speedDisagreements,
+                        OPAQUE_ACCURACY_GATED to accuracyGated,
+                        // Held metres are part of the resumable state: a process death mid-stop must not
+                        // silently convert "undecided" into "counted".
+                        OPAQUE_PENDING_STOP_M to pendingStopDistanceM,
+                    ),
         )
     }
 
@@ -294,14 +313,18 @@ public class SegmentedTripAlgorithm(
      * a real bug class, not a hypothetical. When the two disagree wildly, take the lower: on a
      * reimbursement claim, the conservative number is the defensible one.
      */
-    internal fun speedFor(fix: Fix, prev: Fix?): Double {
+    internal fun speedFor(
+        fix: Fix,
+        prev: Fix?,
+    ): Double {
         val doppler = fix.speedMps?.takeIf { preferDoppler && it >= 0.0 && fix.accuracyM <= dopplerMaxAccuracyM }
-        val dtSec = if (prev == null) 0.0 else (fix.timeMs - prev.timeMs) / 1000.0
-        val derived = if (prev != null && dtSec >= derivedSpeedMinDtSec) {
-            haversineMeters(prev.lat, prev.lng, fix.lat, fix.lng) / dtSec
-        } else {
-            null
-        }
+        val dtSec = if (prev == null) 0.0 else (fix.timeMs - prev.timeMs) / MILLIS_PER_SECOND
+        val derived =
+            if (prev != null && dtSec >= derivedSpeedMinDtSec) {
+                haversineMeters(prev.lat, prev.lng, fix.lat, fix.lng) / dtSec
+            } else {
+                null
+            }
 
         return when {
             doppler != null && derived != null -> {
@@ -328,54 +351,121 @@ public class SegmentedTripAlgorithm(
         public const val OPAQUE_ACCURACY_GATED: String = "accuracyGated"
         public const val OPAQUE_PENDING_STOP_M: String = "pendingStopM"
 
-        public val DopplerMaxAccuracy: KnobSpec = KnobSpec(
-            "dopplerMaxAccuracyM", 30.0, 5.0, 100.0, 5.0, "m",
-            "Above this reported accuracy, the chipset's Doppler speed is not trusted either.",
-        )
-        public val DerivedSpeedMinDt: KnobSpec = KnobSpec(
-            "derivedSpeedMinDtSec", 1.0, 0.2, 10.0, 0.2, "s",
-            "Below this gap, position-differenced speed divides noise by a tiny dt. Do not compute it.",
-        )
-        public val SpeedDisagreementRatio: KnobSpec = KnobSpec(
-            "speedDisagreementRatio", 3.0, 1.5, 10.0, 0.5, "x",
-            "When Doppler and derived speed differ by more than this, take the lower one.",
-        )
-        public val JitterAccuracyFactor: KnobSpec = KnobSpec(
-            "jitterAccuracyFactor", 0.5, 0.0, 3.0, 0.1, "x",
-            "Reject displacement below accuracy x this. 0.0 disables, giving exact delegate parity.",
-        )
-        public val StopSpeed: KnobSpec = KnobSpec(
-            "stopSpeedMps", 0.8, 0.0, 5.0, 0.1, "m/s", "Below this speed a stop becomes a candidate.",
-        )
-        public val StopRadius: KnobSpec = KnobSpec(
-            "stopRadiusM", 25.0, 5.0, 200.0, 5.0, "m", "Candidate-stop centroid radius.",
-        )
-        public val StopExitRadius: KnobSpec = KnobSpec(
-            "stopExitRadiusM", 40.0, 10.0, 300.0, 5.0, "m", "Leaving this radius refutes the stop.",
-        )
-        public val StopConfirmSec: KnobSpec = KnobSpec(
-            // Deliberately far above a traffic-light cycle. Stop suppression is the one rule here
-            // that can UNDER-count, and stop-and-go city driving is the market's documented weak
-            // spot, so this errs heavily towards counting.
-            "stopConfirmSec", 120.0, 15.0, 900.0, 15.0, "s",
-            "Time inside the radius before a stop is confirmed and its drift discarded.",
-        )
+        public val DopplerMaxAccuracy: KnobSpec =
+            KnobSpec(
+                "dopplerMaxAccuracyM",
+                30.0,
+                5.0,
+                100.0,
+                5.0,
+                "m",
+                "Above this reported accuracy, the chipset's Doppler speed is not trusted either.",
+            )
+        public val DerivedSpeedMinDt: KnobSpec =
+            KnobSpec(
+                "derivedSpeedMinDtSec",
+                1.0,
+                0.2,
+                10.0,
+                0.2,
+                "s",
+                "Below this gap, position-differenced speed divides noise by a tiny dt. Do not compute it.",
+            )
+        public val SpeedDisagreementRatio: KnobSpec =
+            KnobSpec(
+                "speedDisagreementRatio",
+                3.0,
+                1.5,
+                10.0,
+                0.5,
+                "x",
+                "When Doppler and derived speed differ by more than this, take the lower one.",
+            )
+        public val JitterAccuracyFactor: KnobSpec =
+            KnobSpec(
+                "jitterAccuracyFactor",
+                0.5,
+                0.0,
+                3.0,
+                0.1,
+                "x",
+                "Reject displacement below accuracy x this. 0.0 disables, giving exact delegate parity.",
+            )
+        public val StopSpeed: KnobSpec =
+            KnobSpec(
+                "stopSpeedMps",
+                0.8,
+                0.0,
+                5.0,
+                0.1,
+                "m/s",
+                "Below this speed a stop becomes a candidate.",
+            )
+        public val StopRadius: KnobSpec =
+            KnobSpec(
+                "stopRadiusM",
+                25.0,
+                5.0,
+                200.0,
+                5.0,
+                "m",
+                "Candidate-stop centroid radius.",
+            )
+        public val StopExitRadius: KnobSpec =
+            KnobSpec(
+                "stopExitRadiusM",
+                40.0,
+                10.0,
+                300.0,
+                5.0,
+                "m",
+                "Leaving this radius refutes the stop.",
+            )
+        public val StopConfirmSec: KnobSpec =
+            KnobSpec(
+                // Deliberately far above a traffic-light cycle. Stop suppression is the one rule here
+                // that can UNDER-count, and stop-and-go city driving is the market's documented weak
+                // spot, so this errs heavily towards counting.
+                "stopConfirmSec",
+                120.0,
+                15.0,
+                900.0,
+                15.0,
+                "s",
+                "Time inside the radius before a stop is confirmed and its drift discarded.",
+            )
 
-        public val ALL_KNOBS: List<KnobSpec> = listOf(
-            DopplerMaxAccuracy, DerivedSpeedMinDt, SpeedDisagreementRatio,
-            JitterAccuracyFactor, StopSpeed, StopRadius, StopExitRadius, StopConfirmSec,
-        )
+        public val ALL_KNOBS: List<KnobSpec> =
+            listOf(
+                DopplerMaxAccuracy,
+                DerivedSpeedMinDt,
+                SpeedDisagreementRatio,
+                JitterAccuracyFactor,
+                StopSpeed,
+                StopRadius,
+                StopExitRadius,
+                StopConfirmSec,
+            )
 
         public fun defaultProfile(): TuningProfile = TuningProfile(Id, "segmented.v1")
 
         /** Every addition disabled — provably identical to the bare delegate. */
-        public fun parityProfile(): TuningProfile = TuningProfile(Id, "parity.tiered-gps")
-            .with(JitterAccuracyFactor.name, 0.0)
-            .with(FLAG_ENABLE_STOP_SUPPRESSION, false)
+        public fun parityProfile(): TuningProfile =
+            TuningProfile(Id, "parity.tiered-gps")
+                .with(JitterAccuracyFactor.name, 0.0)
+                .with(FLAG_ENABLE_STOP_SUPPRESSION, false)
 
+        /**
+         * One decimal place, for the human-readable `reason` strings.
+         *
+         * This previously read `if (abs(r) >= 1e6) r.toString() else r.toString()` — a condition
+         * whose two branches were the same expression, so it decided nothing. Deleted rather than
+         * guessed at: if large values ever need a different format, that is a new requirement with
+         * a test, not a branch that has never done anything.
+         */
         private fun fmt1(v: Double): String {
             val r = kotlin.math.round(v * 10.0) / 10.0
-            return if (abs(r) >= 1e6) r.toString() else r.toString()
+            return r.toString()
         }
     }
 }

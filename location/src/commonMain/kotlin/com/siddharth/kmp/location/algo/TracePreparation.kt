@@ -17,8 +17,9 @@ import kotlin.math.min
  *    context it needs there. The overlap then has to be un-double-counted on the way back out,
  *    which is what [stitchMatchedDistanceM] is for.
  */
-public object TracePreparation {
+private const val MILLIS_PER_SECOND = 1000.0
 
+public object TracePreparation {
     /**
      * Thin [fixes] so consecutive kept points are at least [targetIntervalSec] apart, without
      * moving or dropping the first or last fix.
@@ -32,7 +33,10 @@ public object TracePreparation {
      * simplifier optimizes for shape fidelity; what a map matcher needs is a sane number of points
      * per unit time. Revisit only if OSRM keeps fragmenting matches on a gated trace.
      */
-    public fun downsample(fixes: List<Fix>, targetIntervalSec: Double): List<Fix> {
+    public fun downsample(
+        fixes: List<Fix>,
+        targetIntervalSec: Double,
+    ): List<Fix> {
         require(targetIntervalSec > 0.0) { "targetIntervalSec must be positive, got $targetIntervalSec" }
         if (fixes.size <= 2) return fixes
 
@@ -41,7 +45,7 @@ public object TracePreparation {
         var lastKeptMs = fixes.first().timeMs
         for (i in 1 until fixes.size - 1) {
             val f = fixes[i]
-            if ((f.timeMs - lastKeptMs) / 1000.0 >= targetIntervalSec) {
+            if ((f.timeMs - lastKeptMs) / MILLIS_PER_SECOND >= targetIntervalSec) {
                 kept.add(f)
                 lastKeptMs = f.timeMs
             }
@@ -103,7 +107,10 @@ public object TracePreparation {
      * correct stitching impossible, so this refuses rather than approximate one from the aggregate
      * [MatchedRoute.distanceM].
      */
-    public fun stitchMatchedDistanceM(chunks: List<TraceChunk>, routes: List<MatchedRoute>): Double {
+    public fun stitchMatchedDistanceM(
+        chunks: List<TraceChunk>,
+        routes: List<MatchedRoute>,
+    ): Double {
         require(chunks.size == routes.size) {
             "chunks (${chunks.size}) and routes (${routes.size}) must be the same size — one route per chunk"
         }

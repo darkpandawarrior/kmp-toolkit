@@ -138,7 +138,8 @@ class MediaPipeOnDeviceLlm(
             if (it.signature == signature) return it.inference
             it.inference.close()
         }
-        return LlmInference.createFromOptions(context, buildInferenceOptions())
+        return LlmInference
+            .createFromOptions(context, buildInferenceOptions())
             .also { cached = CachedInference(it, signature) }
     }
 
@@ -151,8 +152,7 @@ class MediaPipeOnDeviceLlm(
                 // setMaxTopK is the load-time ceiling a session's topK must stay under.
                 config?.topK?.let { setMaxTopK(it) }
                 config?.accelerator?.let { setPreferredBackend(it.toBackend()) }
-            }
-            .build()
+            }.build()
 
     private fun buildSessionOptions(): LlmInferenceSession.LlmInferenceSessionOptions =
         LlmInferenceSession.LlmInferenceSessionOptions
@@ -161,8 +161,7 @@ class MediaPipeOnDeviceLlm(
                 config?.topK?.let { setTopK(it) }
                 config?.topP?.let { setTopP(it) }
                 config?.temperature?.let { setTemperature(it) }
-            }
-            .build()
+            }.build()
 
     // No sampler override → the simple one-shot path. Otherwise a session carries topK/topP/temperature
     // (the only place MediaPipe's API accepts them).
@@ -177,9 +176,16 @@ class MediaPipeOnDeviceLlm(
         }
     }
 
-    private data class ModelSignature(val path: String, val lastModified: Long, val length: Long)
+    private data class ModelSignature(
+        val path: String,
+        val lastModified: Long,
+        val length: Long,
+    )
 
-    private class CachedInference(val inference: LlmInference, val signature: ModelSignature)
+    private class CachedInference(
+        val inference: LlmInference,
+        val signature: ModelSignature,
+    )
 
     private companion object {
         const val MAX_TOKENS = 512

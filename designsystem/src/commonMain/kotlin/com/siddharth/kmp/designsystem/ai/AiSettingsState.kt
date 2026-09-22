@@ -13,7 +13,6 @@ import com.siddharth.kmp.llmchat.OpenAiProvider
 import com.siddharth.kmp.llmchat.ProviderId
 import com.siddharth.kmp.result.AiCapabilities
 import com.siddharth.kmp.result.AiFailure
-import com.siddharth.kmp.result.Result
 import com.siddharth.kmp.result.fold
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -117,7 +116,7 @@ class AiSettingsState(
 ) {
     private val licenseAckByModelId: Map<String, Boolean> = manifest.associate { it.id to it.requiresLicenseAck }
 
-    private val _state =
+    private val _uiState =
         MutableStateFlow(
             AiSettingsUiState(
                 aiConsentGiven = consentStore.consentGiven() ?: false,
@@ -127,12 +126,12 @@ class AiSettingsState(
                 selectedProvider = ProviderId.OFFLINE_FALLBACK,
             ),
         )
-    val uiState: StateFlow<AiSettingsUiState> = _state.asStateFlow()
+    val uiState: StateFlow<AiSettingsUiState> = _uiState.asStateFlow()
 
     init {
         scope.launch {
             val caps = onDeviceLlm.capabilities()
-            _state.update { it.copy(onDeviceCapabilities = caps) }
+            _uiState.update { it.copy(onDeviceCapabilities = caps) }
         }
         // One collector per manifest model rather than per ModelManager.models() entry: a model
         // absent from models() today (not yet on this platform's manifest) still gets observed the
@@ -140,7 +139,7 @@ class AiSettingsState(
         manifest.forEach { entry ->
             scope.launch {
                 modelManager.observe(entry.id).collect { updated ->
-                    _state.update { s -> s.replaceModel(updated) }
+                    _uiState.update { s -> s.replaceModel(updated) }
                 }
             }
         }
@@ -148,11 +147,11 @@ class AiSettingsState(
 
     fun setAiConsent(consent: Boolean) {
         consentStore.setConsent(consent)
-        _state.update { it.copy(aiConsentGiven = consent) }
+        _uiState.update { it.copy(aiConsentGiven = consent) }
     }
 
     fun selectProvider(providerId: ProviderId) {
-        _state.update { it.copy(selectedProvider = providerId) }
+        _uiState.update { it.copy(selectedProvider = providerId) }
     }
 
     /** Saves (or, when [apiKey] is null/blank, clears) the key for [providerId]. */
@@ -161,7 +160,7 @@ class AiSettingsState(
         apiKey: String?,
     ) {
         setKey(providerId, apiKey)
-        _state.update { s -> s.replaceProvider(toProviderRow(providerId)) }
+        _uiState.update { s -> s.replaceProvider(toProviderRow(providerId)) }
     }
 
     fun clearProviderKey(providerId: ProviderId) = setProviderKey(providerId, null)
@@ -175,13 +174,15 @@ class AiSettingsState(
         val key = getKey(providerId)
         val provider = key?.takeIf { it.isNotBlank() }?.let { providerFactory(providerId, it) }
         if (provider == null) {
-            _state.update { s -> s.updateProvider(providerId) { it.copy(testOutcome = KeyTestOutcome.FAILED, testFailure = AiFailure.NoKey) } }
+            _uiState.update { s ->
+                s.updateProvider(providerId) { it.copy(testOutcome = KeyTestOutcome.FAILED, testFailure = AiFailure.NoKey) }
+            }
             return
         }
-        _state.update { s -> s.updateProvider(providerId) { it.copy(testOutcome = KeyTestOutcome.TESTING, testFailure = null) } }
+        _uiState.update { s -> s.updateProvider(providerId) { it.copy(testOutcome = KeyTestOutcome.TESTING, testFailure = null) } }
         scope.launch {
             val result = provider.complete(listOf(AiMessage(AiMessage.Role.USER, TEST_PROMPT)), AiConfig(maxTokens = TEST_MAX_TOKENS))
-            _state.update { s ->
+            _uiState.update { s ->
                 s.updateProvider(providerId) { row ->
                     result.fold(
                         onSuccess = { row.copy(testOutcome = KeyTestOutcome.OK, testFailure = null) },
@@ -225,8 +226,7 @@ class AiSettingsState(
 
     private fun toRow(info: ModelInfo) = OnDeviceModelRow(info, licenseAckByModelId[info.id] == true)
 
-    private fun toProviderRow(providerId: ProviderId) =
-        ProviderRow(providerId = providerId, hasKey = !getKey(providerId).isNullOrBlank())
+    private fun toProviderRow(providerId: ProviderId) = ProviderRow(providerId = providerId, hasKey = !getKey(providerId).isNullOrBlank())
 
     private fun AiSettingsUiState.replaceModel(updated: ModelInfo): AiSettingsUiState =
         copy(models = models.map { row -> if (row.info.id == updated.id) row.copy(info = updated) else row })

@@ -38,23 +38,39 @@ object PaymentCertificatePinning {
             "api.stripe.com",
         )
 
+    /** Always pin two keys per host: the current leaf/intermediate plus a rotation backup. */
+    private const val PINS_REQUIRED_PER_HOST = 2
+
     /**
-     * Builds a [CertificatePinner] pinning two placeholder keys per provider host. Returns a
-     * fully-formed pinner so the pattern is wired end-to-end, but until [isPinningActive] is true
-     * the pins are inert placeholders.
+     * Real base64 SHA-256 SPKI pins, keyed by host. Empty while the placeholders above stand in.
+     *
+     * This map is the single fact both [pinner] and [isPinningActive] read. It replaces a hardcoded
+     * `fun isPinningActive() = false`, which was a value pretending to be a computation: whoever
+     * eventually pasted real pins in had to remember to flip a separate boolean, and nothing would
+     * have caught them forgetting. Fill this in and both functions become correct together.
+     */
+    private val REAL_PINS: Map<String, List<String>> = emptyMap()
+
+    private fun pinsFor(host: String): List<String> = REAL_PINS[host] ?: listOf(PLACEHOLDER_PRIMARY, PLACEHOLDER_BACKUP)
+
+    /**
+     * Builds a [CertificatePinner] for every host in [PINNED_HOSTS]. Returns a fully-formed pinner
+     * so the pattern is wired end-to-end, but until [isPinningActive] is true the pins are inert
+     * placeholders.
      */
     fun pinner(): CertificatePinner {
         val builder = CertificatePinner.Builder()
         PINNED_HOSTS.forEach { host ->
-            builder.add(host, PLACEHOLDER_PRIMARY, PLACEHOLDER_BACKUP)
+            builder.add(host, *pinsFor(host).toTypedArray())
         }
         return builder.build()
     }
 
     /**
-     * `false` while the pins above are placeholders. Flip to a real check (or just return `true`)
-     * once real SPKI hashes are in place — callers can use this to decide whether to actually attach
-     * the pinner to their OkHttp client in a production build.
+     * True only when every pinned host has its full set of real pins. Callers use this to decide
+     * whether to attach [pinner] to their OkHttp client in a production build.
      */
-    fun isPinningActive(): Boolean = false
+    fun isPinningActive(): Boolean =
+        PINNED_HOSTS.isNotEmpty() &&
+            PINNED_HOSTS.all { host -> REAL_PINS[host].orEmpty().size >= PINS_REQUIRED_PER_HOST }
 }

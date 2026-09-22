@@ -71,6 +71,9 @@ data class PlaceName(
     val displayLabel: String get() = name ?: coordinates
 
     companion object {
+        /** Decimal places in the fallback coordinate string — ~11 m at the equator. */
+        private const val COORD_DECIMALS = 4
+
         /** Format a coordinate pair to the canonical `18.5207, 73.8570` fallback string. */
         fun formatCoordinates(
             latitude: Double,
@@ -80,7 +83,7 @@ data class PlaceName(
                 val scaled = kotlin.math.round(v * 10_000.0) / 10_000.0
                 val whole = scaled.toLong()
                 val frac = kotlin.math.abs(kotlin.math.round((scaled - whole) * 10_000.0).toLong())
-                return "$whole.${frac.toString().padStart(4, '0')}"
+                return "$whole.${frac.toString().padStart(COORD_DECIMALS, '0')}"
             }
             return "${fmt(latitude)}, ${fmt(longitude)}"
         }
@@ -99,10 +102,16 @@ interface DocumentScanner {
 }
 
 /** A plain lat/lng pair — the forward-geocoding counterpart of [PlaceName]'s coordinate string. */
-data class GeoCoordinates(val latitude: Double, val longitude: Double)
+data class GeoCoordinates(
+    val latitude: Double,
+    val longitude: Double,
+)
 
 /** A place suggestion: a human-readable [label] plus its resolvable [coordinates]. */
-data class GeoPlace(val label: String, val coordinates: GeoCoordinates)
+data class GeoPlace(
+    val label: String,
+    val coordinates: GeoCoordinates,
+)
 
 /**
  * Resolves free-text address input to coordinates (forward geocoding — the counterpart to

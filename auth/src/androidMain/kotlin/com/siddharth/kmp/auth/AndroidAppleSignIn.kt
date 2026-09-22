@@ -59,9 +59,10 @@ class AndroidAppleSignIn(
             return AppleWebStart.Unavailable(SignInAvailability.NOT_CONFIGURED, problem)
         }
         val pending = AppleWebFlow.begin(config, rawNonce = nonceSource(), state = stateSource())
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(pending.authorizeUrl)).apply {
-            if (context !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        val intent =
+            Intent(Intent.ACTION_VIEW, Uri.parse(pending.authorizeUrl)).apply {
+                if (context !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         return try {
             context.startActivity(intent)
             AppleWebStart.Launched(pending)
@@ -74,13 +75,20 @@ class AndroidAppleSignIn(
     }
 
     /** Reads the deep link your server bounced back. Pure; see [AppleWebFlow.complete]. */
-    fun complete(pending: AppleWebPending, callbackUrl: String): SignInOutcome =
-        AppleWebFlow.complete(pending, callbackUrl)
+    fun complete(
+        pending: AppleWebPending,
+        callbackUrl: String,
+    ): SignInOutcome = AppleWebFlow.complete(pending, callbackUrl)
 }
 
 /** Result of [AndroidAppleSignIn.begin] — either the browser is up, or the reason it is not. */
 sealed interface AppleWebStart {
-    data class Launched(val pending: AppleWebPending) : AppleWebStart
+    data class Launched(
+        val pending: AppleWebPending,
+    ) : AppleWebStart
 
-    data class Unavailable(val reason: SignInAvailability, val detail: String) : AppleWebStart
+    data class Unavailable(
+        val reason: SignInAvailability,
+        val detail: String,
+    ) : AppleWebStart
 }

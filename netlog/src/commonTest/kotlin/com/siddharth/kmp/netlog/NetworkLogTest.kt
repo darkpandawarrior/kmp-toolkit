@@ -16,8 +16,10 @@ class NetworkLogTest {
         private const val FAKE_TOKEN = "sk_" + "live_" + "supersecret"
     }
 
-    private fun entry(headers: Map<String, String> = emptyMap(), body: String? = null) =
-        NetworkLogEntry(method = "POST", url = "https://api.example.com/v1/pay", requestHeaders = headers, requestBody = body)
+    private fun entry(
+        headers: Map<String, String> = emptyMap(),
+        body: String? = null,
+    ) = NetworkLogEntry(method = "POST", url = "https://api.example.com/v1/pay", requestHeaders = headers, requestBody = body)
 
     @Test
     fun curlRedactsCredentialsByDefault() {

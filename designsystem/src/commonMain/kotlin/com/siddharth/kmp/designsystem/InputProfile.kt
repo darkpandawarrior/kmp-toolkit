@@ -47,12 +47,13 @@ data class InputProfile(
          * integration is switched off. Deliberately the same defaults [LocalInputProfile] carries, so
          * a preview that never called [enableMediaQuery] behaves identically to one that did.
          */
-        val Touch = InputProfile(
-            pointer = Pointer.Coarse,
-            keyboard = Keyboard.Virtual,
-            posture = Posture.Flat,
-            distance = Distance.Medium,
-        )
+        val Touch =
+            InputProfile(
+                pointer = Pointer.Coarse,
+                keyboard = Keyboard.Virtual,
+                posture = Posture.Flat,
+                distance = Distance.Medium,
+            )
     }
 }
 
@@ -103,27 +104,31 @@ fun rememberInputProfile(): InputProfile {
     if (!ComposeUiFlags.isMediaQueryIntegrationEnabled) return InputProfile.Touch
     return mediaQuery {
         InputProfile(
-            pointer = when (pointerPrecision) {
-                UiMediaScope.PointerPrecision.Fine -> InputProfile.Pointer.Fine
-                UiMediaScope.PointerPrecision.Blunt -> InputProfile.Pointer.Blunt
-                UiMediaScope.PointerPrecision.None -> InputProfile.Pointer.None
-                else -> InputProfile.Pointer.Coarse
-            },
-            keyboard = when (keyboardKind) {
-                UiMediaScope.KeyboardKind.Physical -> InputProfile.Keyboard.Physical
-                UiMediaScope.KeyboardKind.None -> InputProfile.Keyboard.None
-                else -> InputProfile.Keyboard.Virtual
-            },
-            posture = when (windowPosture) {
-                UiMediaScope.Posture.Book -> InputProfile.Posture.Book
-                UiMediaScope.Posture.Tabletop -> InputProfile.Posture.Tabletop
-                else -> InputProfile.Posture.Flat
-            },
-            distance = when (viewingDistance) {
-                UiMediaScope.ViewingDistance.Near -> InputProfile.Distance.Near
-                UiMediaScope.ViewingDistance.Far -> InputProfile.Distance.Far
-                else -> InputProfile.Distance.Medium
-            },
+            pointer =
+                when (pointerPrecision) {
+                    UiMediaScope.PointerPrecision.Fine -> InputProfile.Pointer.Fine
+                    UiMediaScope.PointerPrecision.Blunt -> InputProfile.Pointer.Blunt
+                    UiMediaScope.PointerPrecision.None -> InputProfile.Pointer.None
+                    else -> InputProfile.Pointer.Coarse
+                },
+            keyboard =
+                when (keyboardKind) {
+                    UiMediaScope.KeyboardKind.Physical -> InputProfile.Keyboard.Physical
+                    UiMediaScope.KeyboardKind.None -> InputProfile.Keyboard.None
+                    else -> InputProfile.Keyboard.Virtual
+                },
+            posture =
+                when (windowPosture) {
+                    UiMediaScope.Posture.Book -> InputProfile.Posture.Book
+                    UiMediaScope.Posture.Tabletop -> InputProfile.Posture.Tabletop
+                    else -> InputProfile.Posture.Flat
+                },
+            distance =
+                when (viewingDistance) {
+                    UiMediaScope.ViewingDistance.Near -> InputProfile.Distance.Near
+                    UiMediaScope.ViewingDistance.Far -> InputProfile.Distance.Far
+                    else -> InputProfile.Distance.Medium
+                },
         )
     }
 }
@@ -140,8 +145,9 @@ fun rememberInputProfile(): InputProfile {
  * [AdaptiveTokens] already points at — do not grow [AdaptiveTokens] for it.
  */
 @Composable
-fun minTargetForPointer(): androidx.compose.ui.unit.Dp = when (LocalInputProfile.current.pointer) {
-    InputProfile.Pointer.Fine -> DesignTokens.Size.minTouch * 0.75f
-    InputProfile.Pointer.Blunt -> DesignTokens.Size.minTouch * 1.5f
-    else -> DesignTokens.Size.minTouch
-}
+fun minTargetForPointer(): androidx.compose.ui.unit.Dp =
+    when (LocalInputProfile.current.pointer) {
+        InputProfile.Pointer.Fine -> DesignTokens.Size.minTouch * 0.75f
+        InputProfile.Pointer.Blunt -> DesignTokens.Size.minTouch * 1.5f
+        else -> DesignTokens.Size.minTouch
+    }
