@@ -35,6 +35,12 @@ razorpay = "1.6.41"
 cashfree = "2.6.0"
 robolectric = "4.17"
 dokka = "2.3.0-Beta"
+# Screenshot testing for :designsystem. The DESKTOP path, not the Robolectric one the consumer
+# apps use: this module's android target is `withHostTest {}`, a bare JVM against a stubbed
+# android.jar that deliberately cannot render Compose, so Robolectric has nothing to render into.
+# The jvm() target does, and rendering there is 4-6x faster for skipping the Android environment.
+roborazzi = "1.75.0"
+composable-preview-scanner = "0.9.3"
 # Maven Central publishing: handles signing, POM, sources+javadoc jars and the Central Portal upload.
 vanniktechMavenPublish = "0.37.0"
 compose-webview-multiplatform = "2.0.3"
@@ -130,6 +136,12 @@ zoomable = { module = "net.engawapg.lib:zoomable", version.ref = "zoomable" }
 # `runComposeUiTest` — the multiplatform Compose UI test harness. Reaches iOS/wasm/desktop UI, which
 # Robolectric and Roborazzi cannot; see the 2026-07-24 absorption note (gap #5).
 compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose-multiplatform" }
+roborazzi-compose-desktop = { module = "io.github.takahirom.roborazzi:roborazzi-compose-desktop", version.ref = "roborazzi" }
+roborazzi-desktop-preview-scanner = { module = "io.github.takahirom.roborazzi:roborazzi-compose-desktop-preview-scanner-support", version.ref = "roborazzi" }
+# Finds the @Preview functions the generated tests render. Despite the `android` artifact name this
+# is a plain JVM jar — it scans for the annotation on the classpath, which since CMP 1.10 is the
+# multiplatform androidx.compose.ui.tooling.preview.Preview, so it sees commonMain previews.
+composable-preview-scanner = { module = "io.github.sergio-sastre.ComposablePreviewScanner:android", version.ref = "composable-preview-scanner" }
 material-icons-core = { module = "org.jetbrains.compose.material:material-icons-core", version.ref = "material-icons" }
 kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "kotlinx-collections-immutable" }
 
@@ -217,5 +229,6 @@ room = { id = "androidx.room", version.ref = "room" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 # API docs for all 37 modules — aggregated into one browsable site by the root project.
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 vanniktechMavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
 mokkery = { id = "dev.mokkery", version.ref = "mokkery" }
