@@ -88,6 +88,51 @@ subprojects {
 // site rather than 37 disconnected ones.
 subprojects {
     apply(plugin = "org.jetbrains.dokka")
+
+    extensions.configure<org.jetbrains.dokka.gradle.DokkaExtension> {
+        // `configureEach` rather than naming source sets: it covers commonMain, androidMain,
+        // iosMain, jvmMain and wasmJsMain in every module without a list that goes stale when a
+        // module adds a target — the same drift the detekt `source` setting above was changed to
+        // avoid.
+        dokkaSourceSets.configureEach {
+            // Every rendered declaration gets a "source" link back to GitHub. Without this the
+            // whole published site is a dead end: you can read a signature but not reach the
+            // implementation, which for a utility and design-system library is most of the reason
+            // anyone opens API docs. `localDirectory = rootDir` lets this one block cover every
+            // module and every source set — Dokka resolves each file's path relative to that root.
+            //
+            // The link points at `tree/main`, so a link from an older docs build resolves against
+            // whatever main looks like today and a line number can drift once a file is edited.
+            // Pinning to a release tag is the correct fix and needs a tag to exist at doc-build
+            // time, which the current build-on-every-main-push flow does not provide. The drift is
+            // accepted deliberately; the alternative is a release-gated docs build.
+            sourceLink {
+                localDirectory.set(rootDir)
+                remoteUrl("https://github.com/darkpandawarrior/kmp-toolkit/tree/main")
+                remoteLineSuffix.set("#L")
+            }
+
+            // Turns `Flow<T>`, `HttpClient`, `Instant` and `@Serializable` types in public
+            // signatures from inert grey text into links into the upstream docs. For a library
+            // that is deliberately a thin layer over coroutines and ktor, most of the interesting
+            // types in a signature belong to someone else.
+            //
+            // These are fetched at doc-generation time, which is the cost: three external
+            // dependencies in a build that was otherwise hermetic. They degrade rather than fail —
+            // an unreachable package-list produces unlinked types and a warning — but note that
+            // `failOnWarning` is false below, so that degradation is silent. Registered by name so
+            // DGPv2 derives `packageListUrl` as url + "package-list" automatically.
+            externalDocumentationLinks.register("coroutines") {
+                url("https://kotlinlang.org/api/kotlinx.coroutines/")
+            }
+            externalDocumentationLinks.register("ktor") {
+                url("https://api.ktor.io/")
+            }
+            externalDocumentationLinks.register("serialization") {
+                url("https://kotlinlang.org/api/kotlinx.serialization/")
+            }
+        }
+    }
 }
 
 dependencies {
