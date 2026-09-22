@@ -6,7 +6,6 @@ plugins {
     `maven-publish`
 }
 
-
 kotlin {
     jvm()
     iosArm64()

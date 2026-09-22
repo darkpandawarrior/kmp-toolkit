@@ -10,7 +10,9 @@ interface ReviewStateStore {
 }
 
 /** Process-lifetime in-memory store (default / test double; resets on cold start). */
-class InMemoryReviewStateStore(initial: ReviewState = ReviewState()) : ReviewStateStore {
+class InMemoryReviewStateStore(
+    initial: ReviewState = ReviewState(),
+) : ReviewStateStore {
     private var current = initial
 
     override suspend fun load(): ReviewState = current

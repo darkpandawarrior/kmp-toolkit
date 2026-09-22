@@ -14,10 +14,13 @@ import kotlin.test.assertTrue
  * A new algorithm added later should be able to reuse the contract tests verbatim.
  */
 class MileageAlgorithmTest {
-
     // ~111.32 m per 0.001 deg of latitude at the equator; a straight north-bound walk makes the
     // expected distance something that can be reasoned about by hand rather than recorded blind.
-    private fun straightLineTrace(points: Int, stepDeg: Double = 0.001, startMs: Long = 1_000L): List<Fix> =
+    private fun straightLineTrace(
+        points: Int,
+        stepDeg: Double = 0.001,
+        startMs: Long = 1_000L,
+    ): List<Fix> =
         (0 until points).map { i ->
             Fix(
                 lat = 12.9000 + i * stepDeg,
@@ -95,9 +98,10 @@ class MileageAlgorithmTest {
 
     @Test
     fun accuracy_ceiling_is_honoured_when_configured() {
-        val strict = PassThroughAlgorithm(
-            PassThroughAlgorithm.defaultProfile().with(PassThroughAlgorithm.MaxAccuracy.name, 10.0),
-        )
+        val strict =
+            PassThroughAlgorithm(
+                PassThroughAlgorithm.defaultProfile().with(PassThroughAlgorithm.MaxAccuracy.name, 10.0),
+            )
         strict.reset(SessionContext(0L))
         val r = strict.process(Fix(12.9, 77.6, timeMs = 1L, accuracyM = 40.0))
         assertEquals(FixVerdict.REJECTED_ACCURACY, r.verdict)
@@ -129,7 +133,9 @@ class MileageAlgorithmTest {
             private var state = AlgorithmState()
 
             override fun reset(session: SessionContext) {
-                pending = null; last = null; state = AlgorithmState()
+                pending = null
+                last = null
+                state = AlgorithmState()
             }
 
             override fun process(fix: Fix): FixResult {
@@ -143,18 +149,27 @@ class MileageAlgorithmTest {
             }
 
             private fun commit(r: FixResult) {
-                state = state.copy(
-                    originalM = state.originalM + r.distanceDeltaM,
-                    cleanedM = state.cleanedM + r.distanceDeltaM,
-                    accepted = state.accepted + 1,
-                )
+                state =
+                    state.copy(
+                        originalM = state.originalM + r.distanceDeltaM,
+                        cleanedM = state.cleanedM + r.distanceDeltaM,
+                        accepted = state.accepted + 1,
+                    )
             }
 
             override fun flush(): List<FixResult> =
-                pending?.let { pending = null; commit(it); listOf(it) } ?: emptyList()
+                pending?.let {
+                    pending = null
+                    commit(it)
+                    listOf(it)
+                } ?: emptyList()
 
             override fun snapshot() = state
-            override fun restore(state: AlgorithmState) { this.state = state; last = null }
+
+            override fun restore(state: AlgorithmState) {
+                this.state = state
+                last = null
+            }
         }
 
         val trace = straightLineTrace(11)
@@ -176,8 +191,9 @@ class MileageAlgorithmTest {
 
     @Test
     fun registry_creates_by_id_and_reports_unknown_ids_clearly() {
-        val registry = MileageAlgorithmRegistry()
-            .register(AlgorithmId.PassThrough) { p, _ -> PassThroughAlgorithm(p) }
+        val registry =
+            MileageAlgorithmRegistry()
+                .register(AlgorithmId.PassThrough) { p, _ -> PassThroughAlgorithm(p) }
 
         val algo = registry.create(PassThroughAlgorithm.defaultProfile())
         assertEquals(AlgorithmId.PassThrough, algo.id)

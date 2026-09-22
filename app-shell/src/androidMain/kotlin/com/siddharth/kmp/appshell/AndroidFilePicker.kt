@@ -12,7 +12,9 @@ import com.mohamedrejeb.calf.io.readByteArray
  * reporting no file rather than crashing. File bytes are read via Calf's `KmpFile` I/O, which is
  * plain suspend code, not Compose-bound.
  */
-class AndroidFilePicker(private val context: Context) : FilePicker {
+class AndroidFilePicker(
+    private val context: Context,
+) : FilePicker {
     /** Wired/cleared by the host activity: launches the Calf file picker, resumes with the picked file. */
     @Volatile
     var pickBridge: (suspend () -> KmpFile?)? = null

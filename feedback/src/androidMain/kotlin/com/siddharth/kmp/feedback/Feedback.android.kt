@@ -44,6 +44,11 @@ object FeedbackAndroid {
 
 private const val SAMPLE_RATE = 44_100
 
+/** Slack added to the computed playback duration before tearing the AudioTrack down. */
+private const val PLAYBACK_TAIL_MS = 60L
+
+private const val MILLIS_PER_SECOND = 1000L
+
 private fun renderTone(
     freqHz: Double,
     durMs: Int,
@@ -56,7 +61,8 @@ private fun renderTone(
         val t = i / SAMPLE_RATE.toDouble()
         val env = exp(-decay * t)
         val sample = sin(2.0 * PI * freqHz * t) * env * amplitude
-        out[i] = (sample * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+        // 16-bit PCM: clamp to the signed-short range rather than wrapping on overload.
+        out[i] = (sample * Short.MAX_VALUE).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
     }
     return out
 }
@@ -127,7 +133,7 @@ private class AndroidSoundPlayer : SoundPlayer {
                 track.write(pcm, 0, pcm.size)
                 track.play()
                 // Hold briefly so STATIC playback finishes before release.
-                Thread.sleep((pcm.size * 1000L / SAMPLE_RATE) + 60L)
+                Thread.sleep((pcm.size * MILLIS_PER_SECOND / SAMPLE_RATE) + PLAYBACK_TAIL_MS)
                 track.stop()
                 track.release()
             }

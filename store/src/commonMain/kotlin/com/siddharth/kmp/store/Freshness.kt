@@ -24,6 +24,13 @@ enum class FreshnessBand {
 }
 
 /**
+ * Where [FreshnessBand.Stale] ends and [FreshnessBand.VeryStale] begins, as a multiple of the TTL.
+ * Three TTLs is "we have missed a couple of refreshes", which is a nudge; beyond that the data is
+ * old enough to warrant urging a retry instead.
+ */
+private const val STALE_TTL_MULTIPLE = 3
+
+/**
  * Pure staleness computation. First match wins:
  * 1. `lastError != null` → [FreshnessBand.VeryStale]
  * 2. `lastSyncedAt == null` → [FreshnessBand.Initial]
@@ -45,7 +52,7 @@ fun freshnessBand(
             val age = now - lastSyncedAt
             when {
                 age <= ttl -> FreshnessBand.Fresh
-                age <= ttl * 3 -> FreshnessBand.Stale
+                age <= ttl * STALE_TTL_MULTIPLE -> FreshnessBand.Stale
                 else -> FreshnessBand.VeryStale
             }
         }

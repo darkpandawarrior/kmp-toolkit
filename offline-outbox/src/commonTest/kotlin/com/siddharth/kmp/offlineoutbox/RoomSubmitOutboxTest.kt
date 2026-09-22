@@ -25,20 +25,33 @@ private class FakeSubmitDraftDao : SubmitDraftDao {
         rows.value = rows.value.filterNot { it.formKey == entity.formKey && it.uniqueKey == entity.uniqueKey } + entity
     }
 
-    override suspend fun updateStatus(formKey: String, uniqueKey: String, status: String, now: Long) {
-        rows.value = rows.value.map {
-            if (it.formKey == formKey && it.uniqueKey == uniqueKey) it.copy(status = status, updatedAt = now) else it
-        }
+    override suspend fun updateStatus(
+        formKey: String,
+        uniqueKey: String,
+        status: String,
+        now: Long,
+    ) {
+        rows.value =
+            rows.value.map {
+                if (it.formKey == formKey && it.uniqueKey == uniqueKey) it.copy(status = status, updatedAt = now) else it
+            }
     }
 
-    override suspend fun updateStatusWithError(formKey: String, uniqueKey: String, status: String, error: String, now: Long) {
-        rows.value = rows.value.map {
-            if (it.formKey == formKey && it.uniqueKey == uniqueKey) {
-                it.copy(status = status, errorMessage = error, updatedAt = now)
-            } else {
-                it
+    override suspend fun updateStatusWithError(
+        formKey: String,
+        uniqueKey: String,
+        status: String,
+        error: String,
+        now: Long,
+    ) {
+        rows.value =
+            rows.value.map {
+                if (it.formKey == formKey && it.uniqueKey == uniqueKey) {
+                    it.copy(status = status, errorMessage = error, updatedAt = now)
+                } else {
+                    it
+                }
             }
-        }
     }
 
     override suspend fun deleteByFormKey(formKey: String) {
@@ -48,50 +61,54 @@ private class FakeSubmitDraftDao : SubmitDraftDao {
 
 class RoomSubmitOutboxTest {
     @Test
-    fun enqueue_then_markSubmitted_updatesStatus() = runTest {
-        val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
+    fun enqueue_then_markSubmitted_updatesStatus() =
+        runTest {
+            val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
 
-        outbox.enqueue("form", "key1", 42)
-        outbox.markSubmitted("form", "key1")
+            outbox.enqueue("form", "key1", 42)
+            outbox.markSubmitted("form", "key1")
 
-        val entry = outbox.drafts("form").first().single()
-        assertEquals(DraftStatus.SUBMITTED, entry.status)
-        assertEquals(42, entry.payload)
-    }
-
-    @Test
-    fun markFailed_setsErrorMessage() = runTest {
-        val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
-
-        outbox.enqueue("form", "key1", 7)
-        outbox.markFailed("form", "key1", "network down")
-
-        val entry = outbox.drafts("form").first().single()
-        assertEquals(DraftStatus.FAILED, entry.status)
-        assertEquals("network down", entry.errorMessage)
-    }
+            val entry = outbox.drafts("form").first().single()
+            assertEquals(DraftStatus.SUBMITTED, entry.status)
+            assertEquals(42, entry.payload)
+        }
 
     @Test
-    fun clear_removesAllDraftsForFormKey() = runTest {
-        val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
+    fun markFailed_setsErrorMessage() =
+        runTest {
+            val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
 
-        outbox.enqueue("form", "key1", 1)
-        outbox.enqueue("form", "key2", 2)
-        outbox.clear("form")
+            outbox.enqueue("form", "key1", 7)
+            outbox.markFailed("form", "key1", "network down")
 
-        assertTrue(outbox.drafts("form").first().isEmpty())
-    }
+            val entry = outbox.drafts("form").first().single()
+            assertEquals(DraftStatus.FAILED, entry.status)
+            assertEquals("network down", entry.errorMessage)
+        }
 
     @Test
-    fun changeBus_notify_emitsTableSet() = runTest {
-        val received = mutableListOf<Set<String>>()
-        val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
-        val job =
-            launch(Dispatchers.Unconfined) {
-                RoomChangeBus.changes.collect { received += it }
-            }
-        outbox.enqueue("form", "key1", 1)
-        job.cancel()
-        assertEquals(setOf("submit_drafts"), received.last())
-    }
+    fun clear_removesAllDraftsForFormKey() =
+        runTest {
+            val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
+
+            outbox.enqueue("form", "key1", 1)
+            outbox.enqueue("form", "key2", 2)
+            outbox.clear("form")
+
+            assertTrue(outbox.drafts("form").first().isEmpty())
+        }
+
+    @Test
+    fun changeBus_notify_emitsTableSet() =
+        runTest {
+            val received = mutableListOf<Set<String>>()
+            val outbox = RoomSubmitOutbox(FakeSubmitDraftDao(), Json, Int.serializer())
+            val job =
+                launch(Dispatchers.Unconfined) {
+                    RoomChangeBus.changes.collect { received += it }
+                }
+            outbox.enqueue("form", "key1", 1)
+            job.cancel()
+            assertEquals(setOf("submit_drafts"), received.last())
+        }
 }

@@ -20,7 +20,9 @@ import kotlinx.coroutines.tasks.await
  * swallowed (the stream simply stays empty) rather than crashing. Permission requests are the
  * responsibility of [PermissionsProvider].
  */
-class AndroidLocationTracker(private val context: Context) : LocationTracker {
+class AndroidLocationTracker(
+    private val context: Context,
+) : LocationTracker {
     private val client = LocationServices.getFusedLocationProviderClient(context)
     private val _updates = MutableSharedFlow<GeoPoint>(extraBufferCapacity = 16)
     override val updates: Flow<GeoPoint> = _updates.asSharedFlow()
@@ -30,7 +32,8 @@ class AndroidLocationTracker(private val context: Context) : LocationTracker {
     override fun start() {
         if (callback != null) return
         val request =
-            LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 4_000L)
+            LocationRequest
+                .Builder(Priority.PRIORITY_HIGH_ACCURACY, 4_000L)
                 .setMinUpdateIntervalMillis(2_000L)
                 .build()
         val cb =
@@ -59,7 +62,9 @@ class AndroidLocationTracker(private val context: Context) : LocationTracker {
     @SuppressLint("MissingPermission")
     override suspend fun current(): GeoPoint? =
         try {
-            client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
+            client
+                .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .await()
                 ?.let { GeoPoint(it.latitude, it.longitude, it.accuracy, it.time, it.speed, it.bearing.toDouble(), it.altitude) }
         } catch (_: Exception) {
             null

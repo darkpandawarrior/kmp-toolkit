@@ -34,7 +34,10 @@ object PromptGuard {
         ).map { Regex(it, RegexOption.IGNORE_CASE) }
 
     /** The guarded prompt text, and whether [untrusted] itself matched a known override phrasing. */
-    data class Guarded(val text: String, val overrideAttemptDetected: Boolean)
+    data class Guarded(
+        val text: String,
+        val overrideAttemptDetected: Boolean,
+    )
 
     /** Wraps [untrusted] free-form text that is about to reach a model. See class doc for the shape. */
     fun wrap(untrusted: String): Guarded {

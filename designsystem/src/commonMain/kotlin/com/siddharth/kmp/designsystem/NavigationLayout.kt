@@ -58,14 +58,15 @@ fun navigationLayoutFor(
     formFactor: FormFactor,
     width: Dp,
     tabletop: Boolean = false,
-): NavigationLayout = when {
-    formFactor == FormFactor.Watch -> NavigationLayout.None
-    formFactor == FormFactor.Tv -> NavigationLayout.Rail
-    tabletop -> NavigationLayout.BottomBar
-    windowTypeFor(width, formFactor) == WindowType.Compact -> NavigationLayout.BottomBar
-    width >= DRAWER_MIN_WIDTH -> NavigationLayout.Drawer
-    else -> NavigationLayout.Rail
-}
+): NavigationLayout =
+    when {
+        formFactor == FormFactor.Watch -> NavigationLayout.None
+        formFactor == FormFactor.Tv -> NavigationLayout.Rail
+        tabletop -> NavigationLayout.BottomBar
+        windowTypeFor(width, formFactor) == WindowType.Compact -> NavigationLayout.BottomBar
+        width >= DRAWER_MIN_WIDTH -> NavigationLayout.Drawer
+        else -> NavigationLayout.Rail
+    }
 
 /**
  * Below this a permanent drawer crowds the content it is supposed to be navigating. Sits well above

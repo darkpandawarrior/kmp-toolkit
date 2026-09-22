@@ -7,19 +7,19 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class TraceCodecTest {
-
-    private val sample = Fix(
-        lat = 12.9716,
-        lng = 77.5946,
-        timeMs = 1_723_000_000_000L,
-        accuracyM = 7.5,
-        speedMps = 12.25,
-        bearingDeg = 91.0,
-        altitudeM = 920.0,
-        isMock = false,
-        provider = "fused",
-        odometerM = 45_231.0,
-    )
+    private val sample =
+        Fix(
+            lat = 12.9716,
+            lng = 77.5946,
+            timeMs = 1_723_000_000_000L,
+            accuracyM = 7.5,
+            speedMps = 12.25,
+            bearingDeg = 91.0,
+            altitudeM = 920.0,
+            isMock = false,
+            provider = "fused",
+            odometerM = 45_231.0,
+        )
 
     @Test
     fun round_trips_a_fully_populated_fix() {
@@ -40,13 +40,14 @@ class TraceCodecTest {
 
     @Test
     fun decodes_a_whole_file_skipping_header_blanks_and_comments() {
-        val text = buildString {
-            appendLine("# recorded 2026-08-09, city loop")
-            appendLine(TraceCodec.HEADER)
-            appendLine(TraceCodec.encode(sample))
-            appendLine("")
-            appendLine(TraceCodec.encode(sample.copy(timeMs = sample.timeMs + 1000)))
-        }
+        val text =
+            buildString {
+                appendLine("# recorded 2026-08-09, city loop")
+                appendLine(TraceCodec.HEADER)
+                appendLine(TraceCodec.encode(sample))
+                appendLine("")
+                appendLine(TraceCodec.encode(sample.copy(timeMs = sample.timeMs + 1000)))
+            }
         val fixes = TraceCodec.decodeAll(text)
         assertEquals(2, fixes.size)
         assertEquals(sample.timeMs, fixes[0].timeMs)
@@ -54,9 +55,10 @@ class TraceCodecTest {
 
     @Test
     fun encodeAll_output_is_readable_back_by_decodeAll() {
-        val fixes = (0 until 25).map {
-            sample.copy(timeMs = sample.timeMs + it * 1000L, lat = sample.lat + it * 0.0001)
-        }
+        val fixes =
+            (0 until 25).map {
+                sample.copy(timeMs = sample.timeMs + it * 1000L, lat = sample.lat + it * 0.0001)
+            }
         assertEquals(fixes, TraceCodec.decodeAll(TraceCodec.encodeAll(fixes)))
     }
 
@@ -92,9 +94,10 @@ class TraceCodecTest {
     @Test
     fun a_recorded_trace_replays_through_an_algorithm_and_scores() {
         // A straight 10-leg run of ~111.19 m per leg ~= 1111.9 m.
-        val fixes = (0 until 11).map {
-            Fix(lat = 12.9 + it * 0.001, lng = 77.6, timeMs = 1000L + it * 5000L, accuracyM = 6.0)
-        }
+        val fixes =
+            (0 until 11).map {
+                Fix(lat = 12.9 + it * 0.001, lng = 77.6, timeMs = 1000L + it * 5000L, accuracyM = 6.0)
+            }
         val csv = TraceCodec.encodeAll(fixes)
         val case = TraceCase("synthetic straight line", TraceCodec.decodeAll(csv), truthMeters = 1111.9)
 

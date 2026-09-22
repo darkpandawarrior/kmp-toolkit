@@ -56,8 +56,7 @@ public data class MatchRequest(
     }
 
     public companion object {
-        public fun from(fixes: List<Fix>): MatchRequest =
-            MatchRequest(fixes.map { MatchPoint(it.lat, it.lng, it.accuracyM, it.timeMs) })
+        public fun from(fixes: List<Fix>): MatchRequest = MatchRequest(fixes.map { MatchPoint(it.lat, it.lng, it.accuracyM, it.timeMs) })
     }
 }
 

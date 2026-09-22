@@ -27,89 +27,94 @@ import kotlin.test.assertEquals
  */
 @OptIn(ExperimentalTestApi::class)
 class AdaptiveWidthUiTest {
-    private fun ComposeUiTest.measure(tag: String): Dp =
-        onNodeWithTag(tag).getUnclippedBoundsInRoot().let { it.right - it.left }
+    private fun ComposeUiTest.measure(tag: String): Dp = onNodeWithTag(tag).getUnclippedBoundsInRoot().let { it.right - it.left }
 
     @Test
-    fun proseIsCappedWellShortOfAWideWindow() = runComposeUiTest {
-        setContent {
-            AdaptiveTheme(formFactor = FormFactor.Desktop, windowType = WindowType.Expanded) {
-                Box(Modifier.size(2560.dp, 400.dp)) {
-                    Box(Modifier.readableWidth().fillMaxWidth().testTag("prose"))
-                }
-            }
-        }
-        // Uncapped this is 2560dp — roughly 200 characters a line.
-        assertEquals(640.dp, measure("prose"))
-    }
-
-    @Test
-    fun theTenFootCapIsWiderThanTheDesktopOne() = runComposeUiTest {
-        // Compared at the SAME container width rather than by absolute cap: the harness root is
-        // 1024dp, so a 1100dp cap can never be reached and asserting it would only measure the
-        // harness. At 900dp the desktop cap bites and the television cap does not, which is the
-        // actual claim — a TV sets body at 18sp+, so the same character count needs more dp.
-        setContent {
-            Box(Modifier.size(900.dp, 400.dp)) {
-                AdaptiveTheme(formFactor = FormFactor.Tv, windowType = WindowType.Compact) {
-                    Box(Modifier.readableWidth().fillMaxWidth().testTag("tv"))
-                }
-            }
-        }
-        assertEquals(900.dp, measure("tv"))
-    }
-
-    @Test
-    fun theDesktopCapBitesAtTheSameWidthTheTelevisionOneDoesNot() = runComposeUiTest {
-        setContent {
-            Box(Modifier.size(900.dp, 400.dp)) {
+    fun proseIsCappedWellShortOfAWideWindow() =
+        runComposeUiTest {
+            setContent {
                 AdaptiveTheme(formFactor = FormFactor.Desktop, windowType = WindowType.Expanded) {
-                    Box(Modifier.readableWidth().fillMaxWidth().testTag("desktop"))
+                    Box(Modifier.size(2560.dp, 400.dp)) {
+                        Box(Modifier.readableWidth().fillMaxWidth().testTag("prose"))
+                    }
                 }
             }
+            // Uncapped this is 2560dp — roughly 200 characters a line.
+            assertEquals(640.dp, measure("prose"))
         }
-        assertEquals(640.dp, measure("desktop"))
-    }
 
     @Test
-    fun aWatchIsNeverCapped() = runComposeUiTest {
-        setContent {
-            AdaptiveTheme(formFactor = FormFactor.Watch, windowType = WindowType.Compact) {
-                Box(Modifier.size(200.dp, 200.dp)) {
-                    Box(Modifier.readableWidth().fillMaxWidth().testTag("prose"))
-                }
-            }
-        }
-        // Already narrower than any sensible measure; capping would only waste the screen.
-        assertEquals(200.dp, measure("prose"))
-    }
-
-    @Test
-    fun contentWidthCapsWiderThanProse() = runComposeUiTest {
-        // Both in one composition at one width, so the assertion is the relationship between them
-        // rather than two absolute numbers: a card grid reads fine where a paragraph would not.
-        setContent {
-            AdaptiveTheme(formFactor = FormFactor.Desktop, windowType = WindowType.Expanded) {
+    fun theTenFootCapIsWiderThanTheDesktopOne() =
+        runComposeUiTest {
+            // Compared at the SAME container width rather than by absolute cap: the harness root is
+            // 1024dp, so a 1100dp cap can never be reached and asserting it would only measure the
+            // harness. At 900dp the desktop cap bites and the television cap does not, which is the
+            // actual claim — a TV sets body at 18sp+, so the same character count needs more dp.
+            setContent {
                 Box(Modifier.size(900.dp, 400.dp)) {
-                    Box(Modifier.contentWidth().fillMaxWidth().testTag("grid"))
-                    Box(Modifier.readableWidth().fillMaxWidth().testTag("prose2"))
+                    AdaptiveTheme(formFactor = FormFactor.Tv, windowType = WindowType.Compact) {
+                        Box(Modifier.readableWidth().fillMaxWidth().testTag("tv"))
+                    }
                 }
             }
+            assertEquals(900.dp, measure("tv"))
         }
-        assertEquals(900.dp, measure("grid"), "contentWidth must not bite at 900dp")
-        assertEquals(640.dp, measure("prose2"), "readableWidth must bite at 900dp")
-    }
 
     @Test
-    fun screenPaddingInsetsContentByTheSurfaceToken() = runComposeUiTest {
-        setContent {
-            AdaptiveTheme(formFactor = FormFactor.Handheld, windowType = WindowType.Compact) {
-                Box(Modifier.size(400.dp, 400.dp)) {
-                    Box(Modifier.screenPadding().fillMaxWidth().testTag("body"))
+    fun theDesktopCapBitesAtTheSameWidthTheTelevisionOneDoesNot() =
+        runComposeUiTest {
+            setContent {
+                Box(Modifier.size(900.dp, 400.dp)) {
+                    AdaptiveTheme(formFactor = FormFactor.Desktop, windowType = WindowType.Expanded) {
+                        Box(Modifier.readableWidth().fillMaxWidth().testTag("desktop"))
+                    }
                 }
             }
+            assertEquals(640.dp, measure("desktop"))
         }
-        // CompactTokens.screenPadding is 16dp a side; the harness reports no system insets.
-        assertEquals(368.dp, measure("body"))
-    }
+
+    @Test
+    fun aWatchIsNeverCapped() =
+        runComposeUiTest {
+            setContent {
+                AdaptiveTheme(formFactor = FormFactor.Watch, windowType = WindowType.Compact) {
+                    Box(Modifier.size(200.dp, 200.dp)) {
+                        Box(Modifier.readableWidth().fillMaxWidth().testTag("prose"))
+                    }
+                }
+            }
+            // Already narrower than any sensible measure; capping would only waste the screen.
+            assertEquals(200.dp, measure("prose"))
+        }
+
+    @Test
+    fun contentWidthCapsWiderThanProse() =
+        runComposeUiTest {
+            // Both in one composition at one width, so the assertion is the relationship between them
+            // rather than two absolute numbers: a card grid reads fine where a paragraph would not.
+            setContent {
+                AdaptiveTheme(formFactor = FormFactor.Desktop, windowType = WindowType.Expanded) {
+                    Box(Modifier.size(900.dp, 400.dp)) {
+                        Box(Modifier.contentWidth().fillMaxWidth().testTag("grid"))
+                        Box(Modifier.readableWidth().fillMaxWidth().testTag("prose2"))
+                    }
+                }
+            }
+            assertEquals(900.dp, measure("grid"), "contentWidth must not bite at 900dp")
+            assertEquals(640.dp, measure("prose2"), "readableWidth must bite at 900dp")
+        }
+
+    @Test
+    fun screenPaddingInsetsContentByTheSurfaceToken() =
+        runComposeUiTest {
+            setContent {
+                AdaptiveTheme(formFactor = FormFactor.Handheld, windowType = WindowType.Compact) {
+                    Box(Modifier.size(400.dp, 400.dp)) {
+                        Box(Modifier.screenPadding().fillMaxWidth().testTag("body"))
+                    }
+                }
+            }
+            // CompactTokens.screenPadding is 16dp a side; the harness reports no system insets.
+            assertEquals(368.dp, measure("body"))
+        }
 }

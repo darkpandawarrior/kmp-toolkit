@@ -16,9 +16,14 @@ import kotlin.test.assertIs
  */
 class StructuredOutputTest {
     @Serializable
-    data class JobFields(val title: String, val company: String)
+    data class JobFields(
+        val title: String,
+        val company: String,
+    )
 
-    private class RecordingGenerator(private val replies: List<AiResult<String>>) {
+    private class RecordingGenerator(
+        private val replies: List<AiResult<String>>,
+    ) {
         val prompts = mutableListOf<String>()
         private var index = 0
 

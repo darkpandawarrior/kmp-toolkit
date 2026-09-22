@@ -46,6 +46,11 @@ class NmiGateway(
             params = created.providerParams,
         )
 
+    // A gateway boundary maps ANY transport or SDK failure to a typed PaymentResult.Failure — that
+    // is its whole contract, and the caller has no other way to learn what went wrong. The catch is
+    // as wide as the contract on purpose; CancellationException is rethrown first so cancelling a
+    // checkout still cancels it, and the throwable is carried into the failure rather than dropped.
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun pay(
         host: PaymentHost,
         prepared: PreparedPayment,

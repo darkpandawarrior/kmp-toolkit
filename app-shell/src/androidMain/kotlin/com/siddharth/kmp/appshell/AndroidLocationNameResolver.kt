@@ -25,7 +25,9 @@ import kotlin.coroutines.resume
  * deterministic/offline [LocationNameResolver] instead — this implementation is the production path
  * for a connected device.
  */
-class AndroidLocationNameResolver(private val context: Context) : LocationNameResolver {
+class AndroidLocationNameResolver(
+    private val context: Context,
+) : LocationNameResolver {
     override suspend fun resolve(
         latitude: Double,
         longitude: Double,

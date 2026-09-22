@@ -17,6 +17,11 @@ import kotlin.math.sin
 
 private const val SAMPLE_RATE = 44_100f
 
+/** 16-bit mono PCM, little-endian: two bytes per sample, low byte first. */
+private const val BITS_PER_SAMPLE = 16
+private const val BYTE_MASK = 0xFF
+private const val BITS_PER_BYTE = 8
+
 /**
  * Synthesises a short decaying sine "blip". [freqHz] sets the pitch; [durMs] the length;
  * [decay] how fast the exponential envelope falls (larger = snappier).
@@ -34,8 +39,8 @@ private fun renderTone(
         val env = exp(-decay * t)
         val sample = sin(2.0 * PI * freqHz * t) * env * amplitude
         val s = (sample * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767)
-        buf[i * 2] = (s and 0xFF).toByte()
-        buf[i * 2 + 1] = ((s shr 8) and 0xFF).toByte()
+        buf[i * 2] = (s and BYTE_MASK).toByte()
+        buf[i * 2 + 1] = ((s shr BITS_PER_BYTE) and BYTE_MASK).toByte()
     }
     return buf
 }
@@ -52,14 +57,14 @@ private fun renderClink(): ByteArray {
         val cur = ((out[i + 1].toInt() shl 8) or (out[i].toInt() and 0xFF)).toShort().toInt()
         val add = ((b[i + 1].toInt() shl 8) or (b[i].toInt() and 0xFF)).toShort().toInt()
         val s = (cur + add).coerceIn(-32768, 32767)
-        out[i] = (s and 0xFF).toByte()
-        out[i + 1] = ((s shr 8) and 0xFF).toByte()
+        out[i] = (s and BYTE_MASK).toByte()
+        out[i + 1] = ((s shr BITS_PER_BYTE) and BYTE_MASK).toByte()
     }
     return out
 }
 
 private class JvmSoundPlayer : SoundPlayer {
-    private val format = AudioFormat(SAMPLE_RATE, 16, 1, true, false)
+    private val format = AudioFormat(SAMPLE_RATE, BITS_PER_SAMPLE, 1, true, false)
 
     // Pre-rendered PCM, one buffer per key.
     private val samples: Map<SoundKey, ByteArray> =

@@ -8,7 +8,6 @@ plugins {
     alias(libs.plugins.mokkery)
 }
 
-
 kotlin {
     jvm()
     iosArm64()

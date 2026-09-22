@@ -60,20 +60,23 @@ fun otpCellState(
     value: String,
     fieldFocused: Boolean,
     isError: Boolean,
-): OtpCellState = when {
-    isError -> OtpCellState.Error
-    fieldFocused && index == value.length -> OtpCellState.Active
-    index < value.length -> OtpCellState.Filled
-    else -> OtpCellState.Empty
-}
+): OtpCellState =
+    when {
+        isError -> OtpCellState.Error
+        fieldFocused && index == value.length -> OtpCellState.Active
+        index < value.length -> OtpCellState.Filled
+        else -> OtpCellState.Empty
+    }
 
 /**
  * Digits only, capped at [length]. Applied to every edit, so pasting "OTP: 123 456" from a
  * notification yields "123456" rather than being rejected — the single most common way a user
  * actually enters a code.
  */
-fun sanitizeOtp(input: String, length: Int): String =
-    input.filter { it.isDigit() }.take(length)
+fun sanitizeOtp(
+    input: String,
+    length: Int,
+): String = input.filter { it.isDigit() }.take(length)
 
 @Immutable
 data class OtpFieldStyle(
@@ -101,21 +104,23 @@ object OtpFieldDefaults {
     @Composable
     fun style(
         cellShape: OtpCellShape = OtpCellShape.Box,
-        cellSize: Dp = when (LocalFormFactor.current) {
-            FormFactor.Watch -> 28.dp
-            FormFactor.Tv -> 64.dp
-            FormFactor.Handheld, FormFactor.Desktop -> 48.dp
-        },
+        cellSize: Dp =
+            when (LocalFormFactor.current) {
+                FormFactor.Watch -> 28.dp
+                FormFactor.Tv -> 64.dp
+                FormFactor.Handheld, FormFactor.Desktop -> 48.dp
+            },
     ): OtpFieldStyle {
         val tokens = LocalAdaptiveTokens.current
         return OtpFieldStyle(
             cellSize = cellSize,
             spacing = tokens.itemSpacing,
-            textStyle = LocalTextStyle.current.copy(
-                fontSize = tokens.title,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-            ),
+            textStyle =
+                LocalTextStyle.current.copy(
+                    fontSize = tokens.title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                ),
             shape = DesignTokens.Shape.badge,
             borderWidth = 2.dp,
             cellShape = cellShape,
@@ -172,10 +177,11 @@ fun OtpField(
         modifier = modifier,
         enabled = enabled,
         interactionSource = interactionSource,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.NumberPassword,
-            imeAction = ImeAction.Done,
-        ),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.NumberPassword,
+                imeAction = ImeAction.Done,
+            ),
         // The real text and caret are hidden; the decoration box below is the entire visual. Keeping
         // them transparent rather than absent preserves the field's own accessibility semantics.
         textStyle = TextStyle(color = Color.Transparent),
@@ -200,22 +206,29 @@ fun OtpField(
 }
 
 @Composable
-private fun OtpCell(char: Char?, state: OtpCellState, style: OtpFieldStyle) {
-    val color = when (state) {
-        OtpCellState.Error -> style.errorColor
-        OtpCellState.Active -> style.activeColor
-        OtpCellState.Filled -> style.filledColor
-        OtpCellState.Empty -> style.emptyColor
-    }
-    val outline = when (style.cellShape) {
-        OtpCellShape.Line -> Modifier.drawBehind {
-            val stroke = style.borderWidth.toPx()
-            val y = size.height - stroke / 2
-            drawLine(color, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
+private fun OtpCell(
+    char: Char?,
+    state: OtpCellState,
+    style: OtpFieldStyle,
+) {
+    val color =
+        when (state) {
+            OtpCellState.Error -> style.errorColor
+            OtpCellState.Active -> style.activeColor
+            OtpCellState.Filled -> style.filledColor
+            OtpCellState.Empty -> style.emptyColor
         }
-        OtpCellShape.Circle -> Modifier.border(style.borderWidth, color, CircleShape)
-        OtpCellShape.Box -> Modifier.border(style.borderWidth, color, style.shape)
-    }
+    val outline =
+        when (style.cellShape) {
+            OtpCellShape.Line ->
+                Modifier.drawBehind {
+                    val stroke = style.borderWidth.toPx()
+                    val y = size.height - stroke / 2
+                    drawLine(color, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
+                }
+            OtpCellShape.Circle -> Modifier.border(style.borderWidth, color, CircleShape)
+            OtpCellShape.Box -> Modifier.border(style.borderWidth, color, style.shape)
+        }
     Box(
         modifier = Modifier.size(style.cellSize).then(outline),
         contentAlignment = Alignment.Center,

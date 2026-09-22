@@ -25,7 +25,9 @@ import kotlinx.coroutines.launch
  *   change** and is delivered to whatever collector is active. Use for fire-and-forget signals where
  *   a missed emission is acceptable but new collectors should still receive subsequent ones.
  */
-abstract class BaseViewModel<S : Any, E : Any, A : Any>(initial: S) : ViewModel() {
+abstract class BaseViewModel<S : Any, E : Any, A : Any>(
+    initial: S,
+) : ViewModel() {
     private val _state = MutableStateFlow(initial)
     val state: StateFlow<S> = _state.asStateFlow()
 

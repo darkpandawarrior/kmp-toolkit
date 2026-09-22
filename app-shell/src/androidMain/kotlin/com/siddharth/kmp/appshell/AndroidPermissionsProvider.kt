@@ -12,7 +12,9 @@ import androidx.core.content.ContextCompat
  * [requestBridge] (ActivityResult-based); with no bridge registered (headless/no UI host) it
  * degrades to reporting the current grant state instead of crashing.
  */
-class AndroidPermissionsProvider(private val context: Context) : PermissionsProvider {
+class AndroidPermissionsProvider(
+    private val context: Context,
+) : PermissionsProvider {
     /** Wired/cleared by the host activity. Launches the system dialog, resumes with grant map. */
     @Volatile
     var requestBridge: (suspend (Array<String>) -> Map<String, Boolean>)? = null

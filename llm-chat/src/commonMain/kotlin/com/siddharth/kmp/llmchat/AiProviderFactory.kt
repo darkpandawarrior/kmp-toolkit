@@ -52,7 +52,9 @@ fun buildProviderChain(
  * // twice (once here, once at the on-device seam) — nested delimiters are harmless, just a few
  * // extra bytes; not worth threading an "already guarded" flag through two modules to avoid it.
  */
-private class GuardedAiProvider(private val delegate: AiProvider) : AiProvider {
+private class GuardedAiProvider(
+    private val delegate: AiProvider,
+) : AiProvider {
     override val id: String get() = delegate.id
     override val displayName: String get() = delegate.displayName
 

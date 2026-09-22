@@ -33,6 +33,14 @@ private const val TAG = "KeystoreCrypto"
  * fails the tag check and returns `null`.
  */
 class KeystoreCrypto {
+    // Both `encrypt` and `decrypt` catch broadly ON PURPOSE, and both LOG what they caught — this
+    // is not a swallow. A Keystore call can fail with a GeneralSecurityException, an IOException
+    // from KeyStore.load, an IllegalArgumentException from Base64, and — on real devices — a
+    // ProviderException or vendor RuntimeException when the TEE/StrongBox is wedged or the key was
+    // invalidated by a lock-screen change. Enumerating those types would still miss the OEM cases,
+    // and a crash here takes down a payment flow over a storage read. The contract is "returns null
+    // on any failure, having logged it", so the catch has to be as wide as the contract.
+    @Suppress("TooGenericExceptionCaught")
     fun encrypt(plaintext: String): String? =
         try {
             val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -51,6 +59,7 @@ class KeystoreCrypto {
             null
         }
 
+    @Suppress("TooGenericExceptionCaught") // Same contract as encrypt — see the note above.
     fun decrypt(encoded: String): String? {
         return try {
             val combined = Base64.decode(encoded, Base64.NO_WRAP)
@@ -96,7 +105,7 @@ class KeystoreCrypto {
                     KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
                 ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
+                .setKeySize(AES_KEY_SIZE_BITS)
                 // No user-auth binding here — a saved token must decrypt on cold start without a
                 // biometric prompt. Bind to auth (setUserAuthenticationRequired) for the PIN/card
                 // CVV case instead.
@@ -111,5 +120,8 @@ class KeystoreCrypto {
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private const val GCM_TAG_LENGTH_BITS = 128
         private const val IV_LENGTH_BYTES = 12
+
+        /** AES-256. The "256" in this class's KDoc and in its threat model is this constant. */
+        private const val AES_KEY_SIZE_BITS = 256
     }
 }

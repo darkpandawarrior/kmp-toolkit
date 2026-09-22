@@ -108,7 +108,9 @@ object AntiSslBypassDetector {
                         else -> null
                     }
                 }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Introspection is itself hookable, and a locked-down provider can refuse it. Either
+            // way the honest answer is "no evidence", never "clean".
             null
         }
 
@@ -123,7 +125,9 @@ object AntiSslBypassDetector {
                 val acceptsGarbage =
                     try {
                         verifier.verify("this-host-does-not.exist.invalid", null)
-                    } catch (e: Exception) {
+                    } catch (ignored: Exception) {
+                        // A verifier that throws on a garbage host is behaving correctly — it did
+                        // not rubber-stamp it, so this probe is a negative, not an error.
                         false
                     }
                 if (acceptsGarbage) {
@@ -132,7 +136,8 @@ object AntiSslBypassDetector {
                     "ssl: non-standard default HostnameVerifier ($name)"
                 }
             }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // See above: a failed probe is no evidence.
             null
         }
 
@@ -147,7 +152,8 @@ object AntiSslBypassDetector {
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
+            // Unreadable /proc maps — no evidence.
             null
         }
 }

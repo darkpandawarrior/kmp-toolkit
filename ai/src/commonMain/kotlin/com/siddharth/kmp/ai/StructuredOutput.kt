@@ -12,10 +12,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
 /** Shared by every [StructuredOutput] instance — same tolerant-parse convention `:llm-chat`'s HTTP providers already use for their own response bodies (see `SseFraming.kt`'s `sseJson`). */
-private val structuredOutputJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-}
+private val structuredOutputJson =
+    Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
 /** ```json ... ``` (or a bare fence) around an otherwise-valid reply — the single most common way a chat-tuned model wraps structured output it was asked not to explain. */
 private val jsonFence = Regex("```(?:json)?\\s*([\\s\\S]*?)```")
@@ -33,7 +34,9 @@ private val jsonFence = Regex("```(?:json)?\\s*([\\s\\S]*?)```")
  * `generate` implementation the caller supplies — this class only owns the schema/parse/retry
  * loop, not prompt safety.
  */
-class StructuredOutput<T>(private val serializer: KSerializer<T>) {
+class StructuredOutput<T>(
+    private val serializer: KSerializer<T>,
+) {
     /**
      * Runs [prompt] (with a schema hint appended) through [generate]. Parses the reply as [T]; on
      * a malformed reply, retries once with the bad reply and a "fix your JSON" nudge appended. A
@@ -76,7 +79,10 @@ class StructuredOutput<T>(private val serializer: KSerializer<T>) {
         return (fenced ?: trimmed).trim()
     }
 
-    private fun repairPrompt(hintedPrompt: String, badReply: String): String =
+    private fun repairPrompt(
+        hintedPrompt: String,
+        badReply: String,
+    ): String =
         "$hintedPrompt\n\nYour previous reply could not be parsed as that JSON shape:\n$badReply\n" +
             "Reply again with ONLY corrected JSON matching the shape above."
 

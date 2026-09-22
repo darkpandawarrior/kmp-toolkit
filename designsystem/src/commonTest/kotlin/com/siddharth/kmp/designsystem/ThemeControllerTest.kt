@@ -6,8 +6,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ThemeControllerTest {
-    private class FakeStore(private var v: Boolean? = null) : ThemeStore {
+    private class FakeStore(
+        private var v: Boolean? = null,
+    ) : ThemeStore {
         override fun darkOverride(): Boolean? = v
+
         override fun setDark(dark: Boolean) {
             v = dark
         }

@@ -89,11 +89,12 @@ class AppleWebFlowTest {
     @Test
     fun callbackCarriesTheCodeAndTheRawNonceHome() {
         val pending = AppleWebFlow.begin(configured(), RAW_NONCE, STATE)
-        val outcome = AppleWebFlow.complete(
-            pending,
-            "https://example.test/auth/apple/callback?code=c0de&id_token=jwt.jwt.jwt&state=$STATE" +
-                "&user=%7B%22name%22%3A%7B%22firstName%22%3A%22Ada%22%7D%7D",
-        )
+        val outcome =
+            AppleWebFlow.complete(
+                pending,
+                "https://example.test/auth/apple/callback?code=c0de&id_token=jwt.jwt.jwt&state=$STATE" +
+                    "&user=%7B%22name%22%3A%7B%22firstName%22%3A%22Ada%22%7D%7D",
+            )
         val identity = (outcome as SignInOutcome.Success).identity
         assertEquals("jwt.jwt.jwt", identity.idToken)
         assertEquals("c0de", identity.authorizationCode)

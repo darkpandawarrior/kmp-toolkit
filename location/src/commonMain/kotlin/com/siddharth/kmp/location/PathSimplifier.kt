@@ -5,10 +5,13 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 import kotlin.math.sqrt
 
+/** Scale for one decimal place: multiply, round to a Long, then split back on the same factor. */
+private const val ONE_DECIMAL_SCALE = 10
+
 /** KMP-safe 1-decimal format (commonMain has no String.format) — for debug strings only. */
 private fun Double.fmt1d(): String {
-    val scaled = (this * 10.0).roundToLong()
-    return "${scaled / 10}.${abs(scaled % 10)}"
+    val scaled = (this * ONE_DECIMAL_SCALE).roundToLong()
+    return "${scaled / ONE_DECIMAL_SCALE}.${abs(scaled % ONE_DECIMAL_SCALE)}"
 }
 
 /**
@@ -99,4 +102,7 @@ object PathSimplifier {
 }
 
 /** Lightweight lat/lng pair used by [PathSimplifier] and [KalmanSmoother]. */
-data class GeoPoint(val latitude: Double, val longitude: Double)
+data class GeoPoint(
+    val latitude: Double,
+    val longitude: Double,
+)

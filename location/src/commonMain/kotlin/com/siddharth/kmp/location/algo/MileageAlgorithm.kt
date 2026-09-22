@@ -31,7 +31,6 @@ import kotlin.jvm.JvmInline
  * classes that differ only in numbers are the mistake this abstraction exists to avoid.
  */
 public interface MileageAlgorithm {
-
     /** Stable identity, used for persistence, selection and shadow-mode result attribution. */
     public val id: AlgorithmId
 
@@ -83,7 +82,9 @@ public interface MileageAlgorithm {
 
 /** Stable algorithm identity. A string so that persisted rows survive refactors of the enum-ish set. */
 @JvmInline
-public value class AlgorithmId(public val value: String) {
+public value class AlgorithmId(
+    public val value: String,
+) {
     override fun toString(): String = value
 
     public companion object {
@@ -201,8 +202,7 @@ public data class AlgorithmState(
      * short. Any future algorithm that wants to attribute one leg to two buckets breaks this
      * invariant and must not be written that way.
      */
-    public fun invariantHolds(toleranceM: Double = 0.5): Boolean =
-        kotlin.math.abs(cleanedM - (originalM - abnormalM - mockM)) <= toleranceM
+    public fun invariantHolds(toleranceM: Double = 0.5): Boolean = kotlin.math.abs(cleanedM - (originalM - abnormalM - mockM)) <= toleranceM
 
     public companion object {
         public const val CURRENT_SCHEMA_VERSION: Int = 1
@@ -254,13 +254,20 @@ public data class TuningProfile(
     /** Read a knob, falling back to its declared default and clamping into its declared range. */
     public fun d(spec: KnobSpec): Double = spec.clamp(values[spec.name] ?: spec.default)
 
-    public fun b(name: String, default: Boolean): Boolean = flags[name] ?: default
+    public fun b(
+        name: String,
+        default: Boolean,
+    ): Boolean = flags[name] ?: default
 
-    public fun with(name: String, value: Double): TuningProfile =
-        copy(values = values + (name to value))
+    public fun with(
+        name: String,
+        value: Double,
+    ): TuningProfile = copy(values = values + (name to value))
 
-    public fun with(name: String, value: Boolean): TuningProfile =
-        copy(flags = flags + (name to value))
+    public fun with(
+        name: String,
+        value: Boolean,
+    ): TuningProfile = copy(flags = flags + (name to value))
 }
 
 /**
@@ -304,11 +311,12 @@ public class MileageAlgorithmRegistry(
         profile: TuningProfile,
         envelope: DeviceEnvelope = DeviceEnvelope.Default,
     ): MileageAlgorithm {
-        val factory = factories[profile.algorithmId]
-            ?: error(
-                "No algorithm registered for '${profile.algorithmId}'. " +
-                    "Registered: ${factories.keys.joinToString()}",
-            )
+        val factory =
+            factories[profile.algorithmId]
+                ?: error(
+                    "No algorithm registered for '${profile.algorithmId}'. " +
+                        "Registered: ${factories.keys.joinToString()}",
+                )
         return factory(profile, envelope)
     }
 }

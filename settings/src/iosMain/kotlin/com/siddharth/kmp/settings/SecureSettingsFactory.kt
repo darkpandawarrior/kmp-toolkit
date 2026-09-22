@@ -6,7 +6,5 @@ import com.russhwolf.settings.Settings
 
 actual class SecureSettingsFactory {
     @OptIn(ExperimentalSettingsImplementation::class)
-    actual fun create(): Settings {
-        return KeychainSettings(service = "com.siddharth.kmp.secure")
-    }
+    actual fun create(): Settings = KeychainSettings(service = "com.siddharth.kmp.secure")
 }

@@ -61,7 +61,13 @@ class Ismcts<State, Move, View, Actor>(
      * that isn't a cancellation — a rules bug that always throws is now visible instead of
      * silently producing a near-empty root; the default is a no-op so existing callers that don't
      * care still compile.
+     *
+     * `determinize`, `iterate` and the rules callbacks are all caller-supplied, which is why the
+     * catches below are broad: a search shell whose job is to survive a bad sample cannot narrow to
+     * types it does not own. Nothing is swallowed — every non-cancellation failure goes to
+     * [onSearchError], and CancellationException is rethrown first so cancellation still works.
      */
+    @Suppress("TooGenericExceptionCaught")
     suspend fun search(
         determinize: () -> State,
         legal: List<Move>,
@@ -107,45 +113,14 @@ class Ismcts<State, Move, View, Actor>(
         var currentNode = root
         var currentState = initState
 
-        // Selection + Expansion
+        // Selection + Expansion. Three of the loop's four exits — no actor, no legal move, and a
+        // move the rules rejected — are the same event: this determinization cannot be walked any
+        // further. [advance] returns null for all three, so the loop states that once.
         while (!rules.isTerminal(currentState)) {
-            val who = rules.whoActsNext(currentState) ?: break
-            val legalNow = rules.legalMoves(currentState, who)
-            if (legalNow.isEmpty()) break
-
-            // Update availability for all legal children in this determinization
-            for (move in legalNow) {
-                currentNode.children.getOrPut(move) { SearchNode(move) }.availability++
-            }
-
-            // Find unvisited legal children
-            val unvisited =
-                legalNow.filter {
-                    val child = currentNode.children[it]
-                    child == null || child.visits == 0
-                }
-
-            val chosenMove =
-                if (unvisited.isNotEmpty()) {
-                    // Expand: pick one unvisited (first for determinism)
-                    unvisited.first()
-                } else {
-                    // Select via UCB1
-                    legalNow.maxByOrNull { move ->
-                        currentNode.children[move]?.ucb(ucbExplorationConstant) ?: Double.MAX_VALUE
-                    } ?: legalNow.first()
-                }
-
-            path.add(currentNode)
-            val childNode = currentNode.children.getOrPut(chosenMove) { SearchNode(chosenMove) }
-
-            currentState =
-                when (val outcome = rules.apply(currentState, chosenMove)) {
-                    is Outcome.Accepted -> outcome.state
-                    is Outcome.Rejected -> break // this determinization is invalid at this point
-                }
-            currentNode = childNode
-            // After visiting a new node, go to rollout
+            val step = advance(currentNode, currentState, path) ?: break
+            currentNode = step.node
+            currentState = step.state
+            // A freshly expanded node has nothing to select from yet — go to rollout.
             if (currentNode.visits == 0) break
         }
         path.add(currentNode)
@@ -160,6 +135,62 @@ class Ismcts<State, Move, View, Actor>(
         }
     }
 
+    /** Where one selection step landed. */
+    private inner class Step(
+        val node: SearchNode<Move>,
+        val state: State,
+    )
+
+    /**
+     * One selection/expansion step from [node] in [state].
+     *
+     * Appends [node] to [path] exactly where the original inline loop did — BEFORE applying the
+     * chosen move — so a rules rejection still leaves the node on the path, and the caller's
+     * trailing `path.add(currentNode)` still double-counts it in that one case. That is existing
+     * behaviour, preserved deliberately: changing which nodes get backpropagated changes search
+     * results, and this refactor is about the four `break`s, not the statistics.
+     *
+     * Returns null when the walk cannot continue: nobody acts, nothing is legal, or the rules
+     * rejected the move.
+     */
+    private fun advance(
+        node: SearchNode<Move>,
+        state: State,
+        path: MutableList<SearchNode<Move>>,
+    ): Step? {
+        val who = rules.whoActsNext(state) ?: return null
+        val legalNow = rules.legalMoves(state, who)
+        if (legalNow.isEmpty()) return null
+
+        // Update availability for all legal children in this determinization
+        for (move in legalNow) {
+            node.children.getOrPut(move) { SearchNode(move) }.availability++
+        }
+
+        // Find unvisited legal children
+        val unvisited =
+            legalNow.filter {
+                val child = node.children[it]
+                child == null || child.visits == 0
+            }
+
+        val chosenMove =
+            if (unvisited.isNotEmpty()) {
+                // Expand: pick one unvisited (first for determinism)
+                unvisited.first()
+            } else {
+                // Select via UCB1
+                legalNow.maxByOrNull { move ->
+                    node.children[move]?.ucb(ucbExplorationConstant) ?: Double.MAX_VALUE
+                } ?: legalNow.first()
+            }
+
+        path.add(node)
+        val childNode = node.children.getOrPut(chosenMove) { SearchNode(chosenMove) }
+        val accepted = rules.apply(state, chosenMove) as? Outcome.Accepted ?: return null
+        return Step(childNode, accepted.state)
+    }
+
     private fun rollout(
         state: State,
         viewer: Actor,
@@ -168,26 +199,38 @@ class Ismcts<State, Move, View, Actor>(
         var currentState = state
         var plies = 0
         while (plies < rolloutHorizon && !rules.isTerminal(currentState)) {
-            val who = rules.whoActsNext(currentState) ?: break
-            val legalNow = rules.legalMoves(currentState, who)
-            if (legalNow.isEmpty()) break
-            val view = rules.redact(currentState, who)
-            val move =
-                try {
-                    rolloutPolicy().decide(view, legalNow)
-                } catch (e: Exception) {
-                    legalNow.first()
-                }
-            currentState =
-                when (val outcome = rules.apply(currentState, move)) {
-                    is Outcome.Accepted -> outcome.state
-                    is Outcome.Rejected -> break
-                }
+            currentState = advanceOnePly(currentState) ?: break
             plies++
         }
         if (rules.isTerminal(currentState)) {
             return if (rules.winner(currentState) == viewer) 1.0 else 0.0
         }
         return staticEval(currentState, viewer)
+    }
+
+    /**
+     * One rollout ply: pick a move for whoever acts next and apply it. Returns the next state, or
+     * `null` when the rollout cannot continue — nobody to act, no legal move, or the rules rejected
+     * the chosen move. Split out of [rollout] so the loop has one exit instead of three; the three
+     * "stop here" conditions are the same value (`null`) and now say so.
+     */
+    private fun advanceOnePly(currentState: State): State? {
+        val who = rules.whoActsNext(currentState) ?: return null
+        val legalNow = rules.legalMoves(currentState, who)
+        if (legalNow.isEmpty()) return null
+        val view = rules.redact(currentState, who)
+        val move =
+            try {
+                rolloutPolicy().decide(view, legalNow)
+            } catch (ignored: Exception) {
+                // A rollout is a cheap random playout, not a decision the user sees. A policy that
+                // throws on one view must not abort the search, so fall back to the first legal
+                // move and carry on — the breadth of the catch is the fallback's whole point.
+                legalNow.first()
+            }
+        return when (val outcome = rules.apply(currentState, move)) {
+            is Outcome.Accepted -> outcome.state
+            is Outcome.Rejected -> null
+        }
     }
 }

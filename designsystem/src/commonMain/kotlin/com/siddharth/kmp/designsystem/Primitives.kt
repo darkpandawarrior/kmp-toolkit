@@ -31,11 +31,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * Brand-agnostic reusable primitives — zero app/contract coupling. Extracted from HireSignal's
- * `core/designsystem/Primitives.kt` (backlog #5); HireSignal's `ScoreBadge`/`StatusChip`, which DO
- * depend on its career-data contract package, stayed behind.
- */
+// Brand-agnostic reusable primitives — zero app/contract coupling. Extracted from a consumer app's
+// `core/designsystem/Primitives.kt`; that app's `ScoreBadge`/`StatusChip`, which DO depend on its
+// career-data contract package, stayed behind.
 
 /** Page header with eyebrow, title and optional subtitle + trailing actions. */
 @Composable
@@ -85,16 +83,25 @@ fun SectionCard(
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, DesignTokens.Shape.card)
                 .padding(contentPadding),
     ) {
-        if (title != null || subtitle != null || leadingIcon != null || trailingAction != null) {
+        val hasHeader = title != null || subtitle != null || leadingIcon != null || trailingAction != null
+        if (hasHeader) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = DesignTokens.Spacing.m),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m)) {
+                Row(
+                    Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Spacing.m),
+                ) {
                     if (leadingIcon != null) {
                         Box(
-                            Modifier.clip(DesignTokens.Shape.chip).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)).padding(9.dp),
+                            Modifier
+                                .clip(
+                                    DesignTokens.Shape.chip,
+                                ).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                .padding(9.dp),
                         ) {
                             Icon(
                                 leadingIcon,
@@ -105,7 +112,11 @@ fun SectionCard(
                         }
                     }
                     Column {
-                        if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        if (title !=
+                            null
+                        ) {
+                            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        }
                         if (subtitle != null) {
                             Text(
                                 subtitle,

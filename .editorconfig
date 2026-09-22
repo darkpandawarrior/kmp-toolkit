@@ -1,0 +1,75 @@
+# =============================================================================
+# .editorconfig — repo root. ktlint owns formatting AND line length.
+#
+# Every `disabled` here is HALF A PAIR: detekt turns the same rule off in
+# config/detekt/detekt.yml. Change one side without the other and the two tools start
+# contradicting each other, which is how a codebase ends up arguing with itself and
+# absorbing the disagreement into a baseline.
+#
+# Plugin: org.jlleitschuh.gradle.ktlint 14.2.0, applied to every subproject from the root
+# build.gradle.kts alongside detekt. Before this file existed nothing formatted this repo —
+# it carried a detekt gate with no formatting gate behind it.
+# =============================================================================
+
+root = true
+
+# ARTEFACT. KSP / Compose-resources / Kotlin-JS output. Same exclusion as detekt's
+# `**/build/generated/**`: machine-written, rewritten on every build, unformattable.
+[**/build/**]
+ktlint = disabled
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+# ONE number for the family, and the only place it lives — detekt's style.MaxLineLength stays
+# `active: false` precisely so there is no second owner. 140 is wide enough for a Compose
+# modifier chain with a trailing lambda and narrow enough that a side-by-side diff still works.
+max_line_length = 140
+
+# @Composable functions are PascalCase by Compose convention. The targeted form: it exempts
+# exactly the composables and keeps ktlint checking every ordinary function's name, which
+# `ktlint_standard_function-naming = disabled` would not.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# PAIRED WITH detekt naming.MatchingDeclarationName: active: false.
+# Deliberate idiom: small related declarations are grouped per file (Freshness.kt holds
+# FreshnessBand; Feedback.android.kt holds FeedbackAndroid).
+ktlint_standard_filename = disabled
+
+# PAIRED WITH detekt style.WildcardImport: active: false.
+# Compose and the design-system modules pull dozens of symbols per file and the IDE collapses
+# the imports automatically.
+ktlint_standard_no-wildcard-imports = disabled
+
+# PAIRED WITH detekt naming.TopLevelPropertyNaming.
+# ktlint's property-naming rule demands SCREAMING_SNAKE for `const val` and has no
+# ignore-when-annotated escape, so a repo that also wants Compose's PascalCase top-level
+# constants cannot satisfy both. detekt's constantPattern is the single owner of that rule.
+ktlint_standard_property-naming = disabled
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{xml,svg}]
+indent_size = 4
+
+[*.toml]
+indent_size = 4
+
+# -----------------------------------------------------------------------------
+# NOT ADOPTED, and why.
+#
+# io.nlopez.compose.rules (ktlint and detekt flavours), the maintained fork of the Twitter
+# Compose rules — https://github.com/mrmans0n/compose-rules
+# It ADDS rules (ModifierParameterPosition, ReusedModifierInstance, MissingModifierDefaultValue,
+# ComposeFunctionName, PublicComposablePreview) and removes none of the existing findings, its
+# docs state no position on Compose Multiplatform source sets, and its detekt flavour pins to a
+# detekt 2.0 alpha on a toolchain already at Gradle 9.8-rc-2 / AGP 9.5.0-alpha06 /
+# CMP 1.13.0-alpha01. Revisit as a standalone opt-in pass once the baselines are honest.
+# -----------------------------------------------------------------------------

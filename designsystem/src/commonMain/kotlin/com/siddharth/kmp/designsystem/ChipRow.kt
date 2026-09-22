@@ -31,12 +31,13 @@ fun TagChipRow(
     selected: Set<String> = emptySet(),
     onTagClick: ((String) -> Unit)? = null,
 ) {
-    val config = remember(gap) {
-        FlexBoxConfig {
-            wrap(FlexWrap.Wrap)
-            gap(gap)
+    val config =
+        remember(gap) {
+            FlexBoxConfig {
+                wrap(FlexWrap.Wrap)
+                gap(gap)
+            }
         }
-    }
     FlexBox(modifier = modifier, config = config) {
         tags.forEach { tag ->
             TagChip(

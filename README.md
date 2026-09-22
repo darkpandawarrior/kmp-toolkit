@@ -348,7 +348,7 @@ the AI stack rather than a full app, wired into its Home panel's `AiModule`.
 | Persistence | Room `2.8.5` (KMP, `offline-outbox`) |
 | Logging | Napier `2.7.1` |
 | Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Mokkery `3.5.0`, Robolectric `4.17` |
-| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`); four modules also on Maven Central |
+| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`). Not published to any Maven repository — the `com.siddharth.kmp:*` coordinates are substitution targets only |
 | CI | GitHub Actions, `ci.yml` (`build-test` on ubuntu for android/jvm/wasm + `ios-compile` on macOS), `no-ai-attribution.yml` |
 
 ## Getting started

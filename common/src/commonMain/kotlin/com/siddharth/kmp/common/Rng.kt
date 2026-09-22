@@ -17,11 +17,18 @@ data class RngState(
 
 private const val GOLDEN: Long = -0x61c8864680b583ebL // 0x9E3779B97F4A7C15
 
+// SplitMix64's finalizer: three xor-shift/multiply rounds. The shift distances are part of the
+// published algorithm (Steele, Lea & Flood, 2014) and were chosen by search over avalanche
+// quality — they are the specification, so they get names rather than being left bare.
+private const val MIX_SHIFT_1 = 30
+private const val MIX_SHIFT_2 = 27
+private const val MIX_SHIFT_3 = 31
+
 private fun mix(z0: Long): Long {
     var z = z0
-    z = (z xor (z ushr 30)) * -0x40a7b892e31b1a47L // 0xBF58476D1CE4E5B9
-    z = (z xor (z ushr 27)) * -0x6b2fb644ecceee15L // 0x94D049BB133111EB
-    return z xor (z ushr 31)
+    z = (z xor (z ushr MIX_SHIFT_1)) * -0x40a7b892e31b1a47L // 0xBF58476D1CE4E5B9
+    z = (z xor (z ushr MIX_SHIFT_2)) * -0x6b2fb644ecceee15L // 0x94D049BB133111EB
+    return z xor (z ushr MIX_SHIFT_3)
 }
 
 data class Rng(

@@ -172,7 +172,8 @@ private fun OnDeviceModelRowContent(
             )
             row.info.downloadProgress?.let { progress ->
                 Text(
-                    "${progress.bytesPerSec / BYTES_PER_MB} MB/s" + if (progress.etaMs >= 0) " · ${progress.etaMs / MS_PER_SEC}s left" else "",
+                    "${progress.bytesPerSec / BYTES_PER_MB} MB/s" +
+                        if (progress.etaMs >= 0) " · ${progress.etaMs / MS_PER_SEC}s left" else "",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -235,7 +236,12 @@ private fun CloudProviderCard(
         TagChipRow(
             tags = CLOUD_PROVIDER_LABELS.values.toList(),
             selected = setOfNotNull(CLOUD_PROVIDER_LABELS[selectedProvider]),
-            onTagClick = { label -> CLOUD_PROVIDER_LABELS.entries.first { it.value == label }.key.let(onSelectProvider) },
+            onTagClick = { label ->
+                CLOUD_PROVIDER_LABELS.entries
+                    .first { it.value == label }
+                    .key
+                    .let(onSelectProvider)
+            },
         )
         providers.forEachIndexed { index, row ->
             Spacer(Modifier.height(DesignTokens.Spacing.m))
@@ -277,7 +283,10 @@ private fun ProviderKeyRow(
                 modifier = Modifier.weight(1f),
             )
             TextButton(
-                onClick = { onKeyChange(draft); draft = "" },
+                onClick = {
+                    onKeyChange(draft)
+                    draft = ""
+                },
                 enabled = draft.isNotBlank(),
             ) { Text("Save") }
         }
@@ -289,8 +298,17 @@ private fun ProviderKeyRow(
             TextButton(onClick = onClear, enabled = row.hasKey) { Text("Clear") }
             TextButton(onClick = onTest, enabled = row.hasKey && row.testOutcome != KeyTestOutcome.TESTING) { Text("Test key") }
             when (row.testOutcome) {
-                KeyTestOutcome.TESTING -> CircularProgressIndicator(modifier = Modifier.size(DesignTokens.Size.iconInline), strokeWidth = 2.dp)
-                KeyTestOutcome.OK -> Text("Key works", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                KeyTestOutcome.TESTING ->
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(DesignTokens.Size.iconInline),
+                        strokeWidth = 2.dp,
+                    )
+                KeyTestOutcome.OK ->
+                    Text(
+                        "Key works",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 KeyTestOutcome.FAILED ->
                     Text(
                         row.testFailure?.label() ?: "Test failed",

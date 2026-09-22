@@ -83,7 +83,8 @@ actual class BiometricAuthenticator actual constructor() {
                 )
             continuation.invokeOnCancellation { activity.runOnUiThread { dialog.cancelAuthentication() } }
             dialog.authenticate(
-                BiometricPrompt.PromptInfo.Builder()
+                BiometricPrompt.PromptInfo
+                    .Builder()
                     .setTitle(title)
                     .setSubtitle(subtitle.takeIf { it.isNotBlank() })
                     .setNegativeButtonText(cancelLabel)

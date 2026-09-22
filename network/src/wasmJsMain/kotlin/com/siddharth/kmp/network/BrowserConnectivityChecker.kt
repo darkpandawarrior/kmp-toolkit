@@ -1,3 +1,7 @@
+// `@JsFun` and every wasm-JS interop entry point is still an opt-in API; this file is the one
+// place in :network that crosses that boundary.
+@file:OptIn(kotlin.js.ExperimentalWasmJsInterop::class)
+
 package com.siddharth.kmp.network
 
 /**

@@ -25,9 +25,13 @@ import java.net.URL
 //
 // The caller (a WorkManager foreground worker, wifi-only) drives this and persists progress; scheduling
 // and the FGS notification stay app-side — this is just the transfer engine.
+
+/** 64 KiB — a whole number of filesystem pages, and the point where read() syscall overhead stops mattering. */
+private const val DEFAULT_BUFFER_BYTES = 64 * 1024
+
 class ResumableModelDownloader(
     private val bearerToken: String? = null,
-    private val bufferSize: Int = 64 * 1024,
+    private val bufferSize: Int = DEFAULT_BUFFER_BYTES,
     private val connectTimeoutMs: Int = 30_000,
     private val readTimeoutMs: Int = 30_000,
     /** Injectable clock (elapsed nanos) so the progress/speed math is testable off a real wall-clock. */

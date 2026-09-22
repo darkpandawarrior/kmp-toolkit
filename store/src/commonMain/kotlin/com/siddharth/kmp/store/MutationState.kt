@@ -12,11 +12,16 @@ sealed interface MutationState<out R> {
     data object Submitting : MutationState<Nothing>
 
     /** The mutation succeeded, carrying its [result]. */
-    data class Success<R>(val result: R) : MutationState<R>
+    data class Success<R>(
+        val result: R,
+    ) : MutationState<R>
 
     /**
      * The mutation failed. [queuedOffline] is true when the write was durably enqueued for later replay
      * (an offline/transient failure) — the UI can show "saved, will sync" rather than a hard error.
      */
-    data class Failed(val error: Throwable, val queuedOffline: Boolean = false) : MutationState<Nothing>
+    data class Failed(
+        val error: Throwable,
+        val queuedOffline: Boolean = false,
+    ) : MutationState<Nothing>
 }

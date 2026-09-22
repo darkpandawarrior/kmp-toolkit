@@ -73,6 +73,11 @@ class WalletGateway(
         )
     }
 
+    // A gateway boundary maps ANY transport or SDK failure to a typed PaymentResult.Failure — that
+    // is its whole contract, and the caller has no other way to learn what went wrong. The catch is
+    // as wide as the contract on purpose; CancellationException is rethrown first so cancelling a
+    // checkout still cancels it, and the throwable is carried into the failure rather than dropped.
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun fetchBalanceOrThrow(): Long =
         try {
             val response: WalletBalanceResponse =
@@ -85,6 +90,7 @@ class WalletGateway(
         }
 
     /** Posts the debit idempotently, keyed off the order id — replaying never double-charges. */
+    @Suppress("TooGenericExceptionCaught") // Same boundary contract as fetchBalanceOrThrow above.
     override suspend fun pay(
         host: PaymentHost,
         prepared: PreparedPayment,

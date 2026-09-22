@@ -26,12 +26,21 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private val AVAILABLE_CAPS = AiCapabilities(streaming = true, multimodal = false, honoredConfigFields = emptySet(), unavailableReason = null)
+private val AVAILABLE_CAPS =
+    AiCapabilities(streaming = true, multimodal = false, honoredConfigFields = emptySet(), unavailableReason = null)
 
 private fun entry(
     id: String,
     requiresLicenseAck: Boolean = false,
-) = ModelManifestEntry(id, id, approxSizeMb = 500, fileName = "$id.task", hfRepo = "repo/$id", hfFile = "$id.task", requiresLicenseAck = requiresLicenseAck)
+) = ModelManifestEntry(
+    id,
+    id,
+    approxSizeMb = 500,
+    fileName = "$id.task",
+    hfRepo = "repo/$id",
+    hfFile = "$id.task",
+    requiresLicenseAck = requiresLicenseAck,
+)
 
 private fun modelInfo(
     id: String,
@@ -39,7 +48,9 @@ private fun modelInfo(
     progress: Float = 0f,
 ) = ModelInfo(id, id, approxSizeMb = 500, state = state, progress = progress)
 
-private class FakeModelManager(initial: List<ModelInfo>) : ModelManager {
+private class FakeModelManager(
+    initial: List<ModelInfo>,
+) : ModelManager {
     private val flows = initial.associateTo(linkedMapOf()) { it.id to MutableStateFlow(it) }
     val downloadCalls = mutableListOf<Pair<String, Boolean>>()
     val deleteCalls = mutableListOf<String>()
@@ -86,7 +97,9 @@ private class SlowFakeModelManager : ModelManager {
     override suspend fun delete(modelId: String) = Unit
 }
 
-private class FakeOnDeviceLlm(private val caps: AiCapabilities) : OnDeviceLlm {
+private class FakeOnDeviceLlm(
+    private val caps: AiCapabilities,
+) : OnDeviceLlm {
     override fun isAvailable(): Boolean = caps.unavailableReason == null
 
     override suspend fun capabilities(): AiCapabilities = caps
@@ -95,7 +108,9 @@ private class FakeOnDeviceLlm(private val caps: AiCapabilities) : OnDeviceLlm {
 }
 
 /** A fresh instance per test, unlike [InMemoryAiConsentStore] (a process-lifetime singleton) — same reason [com.siddharth.kmp.designsystem.ThemeControllerTest] fakes [com.siddharth.kmp.designsystem.ThemeStore] instead of reusing its shared default. */
-private class FakeConsentStore(private var value: Boolean? = null) : AiConsentStore {
+private class FakeConsentStore(
+    private var value: Boolean? = null,
+) : AiConsentStore {
     override fun consentGiven(): Boolean? = value
 
     override fun setConsent(consent: Boolean) {
@@ -103,7 +118,9 @@ private class FakeConsentStore(private var value: Boolean? = null) : AiConsentSt
     }
 }
 
-private class FakeAiProvider(private val result: AiResult<String>) : AiProvider {
+private class FakeAiProvider(
+    private val result: AiResult<String>,
+) : AiProvider {
     override val id = "fake"
     override val displayName = "fake"
     var calls = 0
@@ -147,7 +164,9 @@ class AiSettingsStateTest {
             val manager = FakeModelManager(listOf(modelInfo("gated"), modelInfo("open")))
             val state = testState(manifest = manifest, modelManager = manager, scope = backgroundScope)
 
-            val rows = state.uiState.value.models.associateBy { it.info.id }
+            val rows =
+                state.uiState.value.models
+                    .associateBy { it.info.id }
             assertTrue(rows.getValue("gated").requiresLicenseAck)
             assertTrue(!rows.getValue("open").requiresLicenseAck)
         }
@@ -157,7 +176,10 @@ class AiSettingsStateTest {
         runTest {
             val state = testState(scope = backgroundScope)
 
-            val ids = state.uiState.value.providers.map { it.providerId }.toSet()
+            val ids =
+                state.uiState.value.providers
+                    .map { it.providerId }
+                    .toSet()
             assertEquals(setOf(ProviderId.ANTHROPIC, ProviderId.OPENAI, ProviderId.GEMINI), ids)
             assertEquals(ProviderId.OFFLINE_FALLBACK, state.uiState.value.selectedProvider)
         }
@@ -194,7 +216,9 @@ class AiSettingsStateTest {
             manager.push("m1", modelInfo("m1", state = ModelDownloadState.DOWNLOADING, progress = 0.4f))
             runCurrent()
 
-            val row = state.uiState.value.models.single()
+            val row =
+                state.uiState.value.models
+                    .single()
             assertEquals(ModelDownloadState.DOWNLOADING, row.info.state)
             assertEquals(0.4f, row.info.progress)
         }
@@ -203,7 +227,8 @@ class AiSettingsStateTest {
     fun startDownloadForwardsTheLicenseAcknowledgement() =
         runTest {
             val manager = FakeModelManager(listOf(modelInfo("gated")))
-            val state = testState(manifest = listOf(entry("gated", requiresLicenseAck = true)), modelManager = manager, scope = backgroundScope)
+            val state =
+                testState(manifest = listOf(entry("gated", requiresLicenseAck = true)), modelManager = manager, scope = backgroundScope)
 
             state.startDownload("gated", licenseAcknowledged = true)
             runCurrent()
@@ -249,11 +274,19 @@ class AiSettingsStateTest {
             val state = testState(keys = keys, scope = backgroundScope)
 
             state.setProviderKey(ProviderId.GEMINI, "a-key")
-            assertTrue(state.uiState.value.providers.single { it.providerId == ProviderId.GEMINI }.hasKey)
+            assertTrue(
+                state.uiState.value.providers
+                    .single { it.providerId == ProviderId.GEMINI }
+                    .hasKey,
+            )
             assertEquals("a-key", keys[ProviderId.GEMINI])
 
             state.clearProviderKey(ProviderId.GEMINI)
-            assertTrue(!state.uiState.value.providers.single { it.providerId == ProviderId.GEMINI }.hasKey)
+            assertTrue(
+                !state.uiState.value.providers
+                    .single { it.providerId == ProviderId.GEMINI }
+                    .hasKey,
+            )
             assertNull(keys[ProviderId.GEMINI])
         }
 
@@ -261,11 +294,17 @@ class AiSettingsStateTest {
     fun testKeyWithNoSavedKeyFailsWithNoKeyWithoutTouchingTheNetwork() =
         runTest {
             var factoryCalls = 0
-            val state = testState(providerFactory = { _, _ -> factoryCalls++; null }, scope = backgroundScope)
+            val state =
+                testState(providerFactory = { _, _ ->
+                    factoryCalls++
+                    null
+                }, scope = backgroundScope)
 
             state.testKey(ProviderId.ANTHROPIC)
 
-            val row = state.uiState.value.providers.single { it.providerId == ProviderId.ANTHROPIC }
+            val row =
+                state.uiState.value.providers
+                    .single { it.providerId == ProviderId.ANTHROPIC }
             assertEquals(KeyTestOutcome.FAILED, row.testOutcome)
             assertEquals(AiFailure.NoKey, row.testFailure)
             assertEquals(0, factoryCalls)
@@ -279,10 +318,17 @@ class AiSettingsStateTest {
             val state = testState(keys = keys, providerFactory = { _, _ -> provider }, scope = backgroundScope)
 
             state.testKey(ProviderId.ANTHROPIC)
-            assertEquals(KeyTestOutcome.TESTING, state.uiState.value.providers.single { it.providerId == ProviderId.ANTHROPIC }.testOutcome)
+            assertEquals(
+                KeyTestOutcome.TESTING,
+                state.uiState.value.providers
+                    .single { it.providerId == ProviderId.ANTHROPIC }
+                    .testOutcome,
+            )
             runCurrent()
 
-            val row = state.uiState.value.providers.single { it.providerId == ProviderId.ANTHROPIC }
+            val row =
+                state.uiState.value.providers
+                    .single { it.providerId == ProviderId.ANTHROPIC }
             assertEquals(KeyTestOutcome.OK, row.testOutcome)
             assertNull(row.testFailure)
             assertEquals(1, provider.calls)
@@ -298,7 +344,9 @@ class AiSettingsStateTest {
             state.testKey(ProviderId.OPENAI)
             runCurrent()
 
-            val row = state.uiState.value.providers.single { it.providerId == ProviderId.OPENAI }
+            val row =
+                state.uiState.value.providers
+                    .single { it.providerId == ProviderId.OPENAI }
             assertEquals(KeyTestOutcome.FAILED, row.testOutcome)
             assertEquals(AiFailure.Unauthorized, row.testFailure)
         }

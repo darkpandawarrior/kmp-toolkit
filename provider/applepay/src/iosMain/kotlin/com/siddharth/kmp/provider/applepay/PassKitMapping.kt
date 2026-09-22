@@ -22,7 +22,7 @@ import platform.PassKit.PKPaymentNetworkVisa
  * invented one is not rejected — it is silently ignored by `canMakePaymentsUsingNetworks`, so a typo
  * shows up as "the user has no cards" rather than as an error.
  */
-internal fun toPKPaymentNetwork(network: CardNetwork): PKPaymentNetwork? =
+internal fun toPKPaymentNetwork(network: CardNetwork): PKPaymentNetwork =
     when (network) {
         CardNetwork.VISA -> PKPaymentNetworkVisa
         CardNetwork.MASTERCARD -> PKPaymentNetworkMasterCard
@@ -34,7 +34,7 @@ internal fun toPKPaymentNetwork(network: CardNetwork): PKPaymentNetwork? =
     }
 
 /** `PKPaymentNetwork` constant → shared enum. Null for any network this toolkit has no name for. */
-internal fun fromPKPaymentNetwork(network: PKPaymentNetwork?): CardNetwork? =
+internal fun fromPKPaymentNetwork(network: PKPaymentNetwork): CardNetwork? =
     when (network) {
         null -> null
         PKPaymentNetworkVisa -> CardNetwork.VISA

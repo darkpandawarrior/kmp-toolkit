@@ -19,13 +19,18 @@ sealed interface ScreenState<out T> {
     data object Empty : ScreenState<Nothing>
 
     /** Offline with no cached data. [isCaptivePortal] is true behind a hotel/airport WiFi login wall. */
-    data class NoNetwork(val isCaptivePortal: Boolean = false) : ScreenState<Nothing>
+    data class NoNetwork(
+        val isCaptivePortal: Boolean = false,
+    ) : ScreenState<Nothing>
 
     /** Auth required (401/403 / token expiry) with no usable cache — send the user to sign-in. */
     data object Unauthenticated : ScreenState<Nothing>
 
     /** A non-network error with no usable cache. */
-    data class Error(val error: Throwable, val isNetworkError: Boolean = false) : ScreenState<Nothing>
+    data class Error(
+        val error: Throwable,
+        val isNetworkError: Boolean = false,
+    ) : ScreenState<Nothing>
 
     /** Data to show, with freshness metadata. [isRefreshing] drives a background-refresh indicator. */
     @OptIn(ExperimentalTime::class)
