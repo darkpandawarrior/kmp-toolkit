@@ -68,7 +68,12 @@ jobs:
   # Deliberately NOT gated behind build-test — a Kotlin/Native break and a JVM break are independent,
   # and finding both in one run beats finding them in two.
   ios-compile:
-    runs-on: macos-15
+    # macos-latest, not macos-15: the macos-15 image defaults to Xcode 16.4, whose SDK has no
+    # _LocationEssentials framework. Kotlin 2.4.20's Kotlin/Native links it for any module touching
+    # CoreLocation (:app-shell does), so linkDebugTestIosSimulatorArm64 fails with
+    # "ld: framework '_LocationEssentials' not found". Every other repo in the family already uses
+    # macos-latest; this was the only one pinned back.
+    runs-on: macos-latest
     defaults:
       run:
         working-directory: kmp-toolkit
