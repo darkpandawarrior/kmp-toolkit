@@ -24,12 +24,12 @@ axes:
     # consecutive releases failing identically said this was a deliberate change in how library
     # resources are wired, not a regression — so waiting for beta04 was waiting for nothing.
     #
-    # The real fault was ours: PaymentsLab's core/designsystem carried a brand typeface inside a
+    # The real fault was ours: PaymentsLab-KMP's core/designsystem carried a brand typeface inside a
     # brand-neutral design-system library, which its own contract forbids. Moving the font to the
-    # app as a plain Android res/font resource (PaymentsLab#16) removed the compose-resources
+    # app as a plain Android res/font resource (PaymentsLab-KMP#16) removed the compose-resources
     # dependency entirely, and core/designsystem + :app + :web all compile on beta03.
     #
-    # Mileway also carries compose resources in libraries (core/ui, feature/whatsnew) and was
+    # Doori also carries compose resources in libraries (core/ui, feature/whatsnew) and was
     # verified green on beta03 independently — its core/ui targets desktop rather than wasmJs, which
     # is what made it immune all along and is the strongest evidence for the wasmJs trigger.
     #
