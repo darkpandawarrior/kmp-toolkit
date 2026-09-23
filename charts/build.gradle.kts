@@ -30,7 +30,7 @@ kotlin {
     }
 
     sourceSets {
-        // Deliberately NOT in :designsystem. That module is consumed by Mileway's Wear target and
+        // Deliberately NOT in :designsystem. That module is consumed by Doori's Wear target and
         // a chart library has no business in a watch build. :charts depends on :designsystem for
         // tokens; never the reverse.
         //

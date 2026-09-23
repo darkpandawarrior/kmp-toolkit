@@ -22,7 +22,7 @@ kotlin {
 
     sourceSets {
         // Generic ISMCTS search shell (Policy/GameRules/Ismcts/SearchBudget) — extracted from
-        // Kursi's ai->engine inversion; the domain-specific rollout/leaf-eval/determinization stays
+        // Gaddi's ai->engine inversion; the domain-specific rollout/leaf-eval/determinization stays
         // in the consuming app. kotlinx-coroutines-core is the one dependency: search() is
         // cancellable, so it needs ensureActive()/CancellationException from that artifact.
         commonMain.dependencies {

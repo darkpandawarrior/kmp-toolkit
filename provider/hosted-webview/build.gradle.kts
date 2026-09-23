@@ -11,7 +11,7 @@ kotlin {
     iosSimulatorArm64()
     // wasmJs gets the pure archetype (config/gateway/relay/di) only — the WebView screen lives in
     // webviewMain (android + ios), because compose-webview-multiplatform has no wasm target. A web
-    // consumer resolves relay requests itself (e.g. PaymentsLab :web auto-resolves in MOCK_MODE).
+    // consumer resolves relay requests itself (e.g. PaymentsLab-KMP :web auto-resolves in MOCK_MODE).
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
         browser()

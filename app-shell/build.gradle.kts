@@ -26,7 +26,7 @@ kotlin {
             implementation(libs.core.ktx)
             implementation(libs.kotlinx.coroutines.android)
             // AndroidLocationTracker: fused location + Task.await(). Same dependency the extracted
-            // Mileway core:platform carried unconditionally on both its gms and noGms build flavors —
+            // Doori core:platform carried unconditionally on both its gms and noGms build flavors —
             // relocated here as-is, not a new coupling.
             implementation(libs.play.services.location)
             implementation(libs.kotlinx.coroutines.play.services)
