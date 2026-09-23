@@ -57,7 +57,7 @@ data class TimelineStep(
  * ACTIVE pulses in the primary colour, DONE shows a check, ERROR shows a cross, PENDING is muted.
  * Any step's payload key/value rows render inline beneath its title.
  *
- * Extracted from PaymentsLab's `core/designsystem/StepTimeline.kt` (backlog #30) — the
+ * Extracted from PaymentsLab-KMP's `core/designsystem/StepTimeline.kt` (backlog #30) — the
  * payment-domain step mapping (`StepMapper.kt`) stayed app-side; this file is domain-free.
  */
 @Composable
@@ -260,7 +260,7 @@ private fun StepState.nodeColor(): Color =
         StepState.ERROR -> TimelineDangerColor
     }
 
-// ponytail: PaymentsLab's StepTimeline read app-tuned `StatusColors.Success`/`.Danger` (same
+// ponytail: PaymentsLab-KMP's StepTimeline read app-tuned `StatusColors.Success`/`.Danger` (same
 // package, internal to that module). StatusColors stays app-side (GatewayStatusBadge, which is
 // branded, still needs the full 5-tone set) — these two literal values are copied here so the
 // timeline node colours are unchanged. Promote to a shared semantic-color token if a 3rd

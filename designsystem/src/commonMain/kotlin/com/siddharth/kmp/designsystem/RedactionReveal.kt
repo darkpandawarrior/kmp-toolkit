@@ -22,7 +22,7 @@ private const val SCRAMBLE_STEP_MS = 45L
  * through a few random glyphs before settling — makes the redaction happen visibly instead of the
  * masked string just appearing, which is the whole point of showing it at all.
  *
- * Extracted from PaymentsLab's `core/designsystem/RedactionReveal.kt` (backlog #31). The original
+ * Extracted from PaymentsLab-KMP's `core/designsystem/RedactionReveal.kt` (backlog #31). The original
  * read a `LocalReducedMotion` CompositionLocal owned by that app; a shared component shouldn't bind
  * to one host's CompositionLocal instance, so [reducedMotion] is now an explicit parameter — the
  * caller passes its own `LocalReducedMotion.current`.

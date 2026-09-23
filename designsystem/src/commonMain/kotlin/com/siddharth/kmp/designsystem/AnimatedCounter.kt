@@ -16,7 +16,7 @@ import kotlin.math.roundToInt
  * Counts up from zero to [target] on first composition — e.g. "62 gateways integrated" or a "94%"
  * success rate. [suffix] is appended verbatim after the number (e.g. "%").
  *
- * Extracted from PaymentsLab's `core/designsystem/AnimatedCounter.kt` (backlog #31). The original
+ * Extracted from PaymentsLab-KMP's `core/designsystem/AnimatedCounter.kt` (backlog #31). The original
  * read a `LocalReducedMotion` CompositionLocal owned by that app; [reducedMotion] is now an
  * explicit parameter for the same reason documented on [RedactionReveal].
  */
