@@ -29,7 +29,7 @@ class NetworkLogTest {
         // FAKE_TOKEN has to *look* like a real key or this test proves nothing — redaction working
         // on an obviously-harmless string says nothing about redaction working on a live one. That
         // realism trips secret scanners: Trivy reports it as a CRITICAL Stripe key in every repo
-        // that vendors this module, which is what turned HireSignal's security scan into noise.
+        // that vendors this module, which is what turned Candidai's security scan into noise.
         // trivy:ignore:stripe-secret-token
         val curl = entry(mapOf("Authorization" to "Bearer $FAKE_TOKEN", "Accept" to "application/json")).toCurl()
         assertFalse(curl.contains(FAKE_TOKEN), "curl leaked the token: $curl")

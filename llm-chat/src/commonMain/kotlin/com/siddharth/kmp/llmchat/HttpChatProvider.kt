@@ -59,7 +59,7 @@ data class HttpChatConfig(
 /**
  * [AiProvider] over a caller-supplied HTTP endpoint speaking the same `data: <json>` / `data:
  * [DONE]` SSE contract as [AnthropicProvider]/[OpenAiProvider]/[GeminiProvider] — the shape
- * `cv-siddharth-kmp` and HireSignal were each hand-rolling their own parser for. Every reply frame
+ * `cv-siddharth-kmp` and Candidai were each hand-rolling their own parser for. Every reply frame
  * decodes as [HttpChatStreamEvent]; the backend is expected to emit `{"text":"..."}` per token and
  * close the stream (optionally preceded by a `data: [DONE]` line, discarded rather than decoded)
  * rather than any vendor-specific event shape. See [HttpChatConfig.requireDoneSentinel] for a
