@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * module-graph — regenerate the module dependency diagram in README.md.
+ * module-graph — regenerate module counts and the module dependency diagram in README.md.
  *
  *   node scripts/module-graph.mjs           # rewrite the block in README.md
  *   node scripts/module-graph.mjs --check   # exit 1 if the README block is stale (CI-friendly)
@@ -79,14 +79,23 @@ if (start === -1 || stop === -1) {
   console.error(`  README.md has no ${BEGIN} / ${END} markers. Add them where the diagram belongs.`)
   process.exit(1)
 }
-const next = readme.slice(0, start) + lines + readme.slice(stop + END.length)
+const providers = modules.filter((module) => module.startsWith('provider:')).length
+const counts = `<!-- module-counts:begin -->
+> **At a glance:** **${modules.length} modules**, comprising **${modules.length - providers} core/leaf modules**
+> and **${providers} payment-gateway provider modules**. Generated from \`settings.gradle.kts\`.
+<!-- module-counts:end -->`
+const countBlock = /<!-- module-counts:begin -->[\s\S]*?<!-- module-counts:end -->/
+if (!countBlock.test(readme)) throw new Error('README.md is missing module-counts markers')
+const next = (readme.slice(0, start) + lines + readme.slice(stop + END.length))
+  .replace(countBlock, counts)
+  .replace(/(img\.shields\.io\/badge\/modules-)\d+(-)/, `$1${modules.length}$2`)
 
 if (args.includes('--check')) {
   if (next === readme) {
     console.log(`  [OK]   module graph current (${modules.length} modules, ${edges.length} edges)`)
     process.exit(0)
   }
-  console.error('  [STALE] README module graph does not match the build files. Run without --check.')
+  console.error('  [STALE] README module counts or graph do not match the build files. Run without --check.')
   process.exit(1)
 }
 

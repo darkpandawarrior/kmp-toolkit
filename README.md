@@ -5,14 +5,14 @@
 ### A Kotlin Multiplatform toolkit, a family of small, focused, production-grade libraries extracted from real apps.
 
 A single monorepo housing every small, reusable KMP library I've pulled out of my own production
-apps, never designed as a "platform" up front. 40 modules today, from a typed `Result` primitive to a
-19-provider payment-gateway abstraction, each targeting exactly the platforms its real consumers need.
+apps, never designed as a "platform" up front. Shared modules range from a typed `Result` primitive to a
+payment-gateway abstraction, each targeting exactly the platforms its real consumers need.
 
 **Adoption is uneven, on purpose and by accident both.** Measured across the four consuming apps
 (Doori, PaymentsLab-KMP, Candidai, Gaddi) by actual imports, not just declared substitutions:
 `common`, `mvi-core`, `network`, `ai` and `result` are used by all four; `security` by three (all but
 Gaddi); `designsystem` and `llm-chat` by three (all but Doori). The rest have one consumer or none:
-`ai-testing`, `settings` and `app-shell` are Doori-only so far, the 20 payment-gateway leaves serve
+`ai-testing`, `settings` and `app-shell` are Doori-only so far, the payment-gateway leaves serve
 PaymentsLab-KMP alone by design, while `device-integrity`, `store`, `auth`, `netlog` and `charts` are
 extractions still waiting for their first. Treat this as a staging ground where a few modules are
 proven across four apps and others are candidates, rather than a uniformly battle-tested platform.
@@ -22,7 +22,7 @@ proven across four apps and others are candidates, rather than a uniformly battl
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20MP-1.13.0--alpha01-4285F4?logo=jetpackcompose&logoColor=white)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS%20%7C%20JVM%20%7C%20Wasm%20%7C%20watchOS-4285F4)
-![Modules](https://img.shields.io/badge/modules-40-0EA5E9)
+![Modules](https://img.shields.io/badge/modules-43-0EA5E9)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 **[Why](#why-kmp-toolkit)** · **[Highlights](#highlights)** · **[Modules](#modules)** · **[Architecture](#family-architecture)** · **[Tech stack](#tech-stack)** · **[Getting started](#getting-started)** · **[Roadmap](#roadmap)** · **[API reference](https://darkpandawarrior.github.io/kmp-toolkit/)**
@@ -63,7 +63,7 @@ proven across four apps and others are candidates, rather than a uniformly battl
 - [location](#location)
 - [app-shell](#app-shell)
 - [payments-api](#payments-api)
-- [provider:\* (20 payment-gateway leaves)](#provider--20-payment-gateway-leaves)
+- [provider:\* (payment-gateway leaves)](#provider--payment-gateway-leaves)
 - [offline-outbox](#offline-outbox)
 - [store](#store)
 - [bots-policy](#bots-policy)
@@ -75,11 +75,10 @@ proven across four apps and others are candidates, rather than a uniformly battl
 
 </details>
 
-> **At a glance**, **43-module** monorepo: **23 core/leaf modules** (9 original extractions +
-> `llm-chat` / `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` /
-> `app-shell` / `store` + `auth` / `netlog` / `charts` + `ai-testing` + `biometric` / `secure-store`)
-> and **20** `provider:*` payment-gateway leaves, each published
-> independently under `com.siddharth.kmp:<name>`. *Numbers verified against `settings.gradle.kts`.*
+<!-- module-counts:begin -->
+> **At a glance:** **43 modules**, comprising **23 core/leaf modules**
+> and **20 payment-gateway provider modules**. Generated from `settings.gradle.kts`.
+<!-- module-counts:end -->
 
 ## Why kmp-toolkit
 
@@ -89,8 +88,8 @@ separate repos, each extracted from a production app the moment its logic was ne
 and `designsystem` and `ai` out of Candidai's `core:*` modules, `feedback` out of Gaddi. None of
 them were designed up front as a "platform", each is the smallest reusable slice of a real screen,
 published once the second consumer showed up. `location` joined right after the merge, and the
-monorepo has since grown to **40 modules**: `llm-chat` (cloud LLM chat), the `payments-api` +
-19-provider payment-gateway family, `offline-outbox` (the first Room module here), `bots-policy`
+monorepo has since grown to include `llm-chat` (cloud LLM chat), the `payments-api` +
+payment-gateway family, `offline-outbox` (the first Room module here), `bots-policy`
 (a generic ISMCTS search shell), `ai-testing` (scriptable `OnDeviceLlm` test doubles), and seven
 more standalone/utility leaves `device-integrity`, `settings`, `app-shell`, `store`, `auth`,
 `netlog`, `charts`, see [Roadmap](#roadmap) for what shipped when.
@@ -109,13 +108,13 @@ monorepo.
 
 ## Highlights
 
-- 🧩 **43 Gradle modules, one dependency graph.** 23 core/leaf modules (9 original + `llm-chat` /
+- 🧩 **Shared Gradle modules, one dependency graph.** Core/leaf modules (9 original + `llm-chat` /
   `payments-api` / `offline-outbox` / `bots-policy` + `device-integrity` / `settings` / `app-shell` /
-  `store` + `auth` / `netlog` / `charts` + `ai-testing` + `biometric` / `secure-store`) and 20
+  `store` + `auth` / `netlog` / `charts` + `ai-testing` + `biometric` / `secure-store`) and
   `provider:*` payment-gateway leaves,
   every one published independently under `com.siddharth.kmp:<name>`, and a consumer only pulls in
   the modules it needs.
-- 💳 **`payments-api` + 20 providers is a real gateway-abstraction exercise, not a toy.** One
+- 💳 **`payments-api` and its providers is a real gateway-abstraction exercise, not a toy.** One
   `PaymentGateway`/`PaymentBackend` contract in `payments-api`, then a thin Android-only adapter per
   provider (`stripe`, `razorpay`, `cashfree`, `square`, `mpesa`, `wallet`, `stripe-connect`,
   `hosted-webview`, …), `StubGateway`/`SimulatedPayment` let the contract be exercised with zero live
@@ -135,7 +134,7 @@ monorepo.
   zero dependencies on any other module here, so each one is a single-line, no-side-effect pull.
 - ✅ **CI runs the full multiplatform matrix on every push**: `assemble check` (aggregating
   `jvmTest`/`testAndroidHostTest`/`testDebugUnitTest`/`wasmJsBrowserTest`/lint per module) across all
-  40 modules, plus a dedicated no-AI-attribution check workflow.
+  the declared modules, plus a dedicated no-AI-attribution check workflow.
 
 ## Modules
 
@@ -160,8 +159,8 @@ monorepo.
 | [**feedback**](#feedback) | `com.siddharth.kmp:feedback` | Game-feel toolkit, synthesised sound + haptics, four real backends | Android · JVM · iOS · Wasm | Gaddi |
 | [**location**](#location) | `com.siddharth.kmp:location` | Pure GPS-track math, Kalman smoothing, path simplification, dynamic polling, fix-quality scoring | Android · JVM · iOS · Wasm | Doori (`feature:tracking`) |
 | [**app-shell**](#app-shell) | `com.siddharth.kmp:app-shell` | Platform-service seams with no single KMP library, location tracking, reverse geocoding, doc scanning, notifications, permissions, in-app update/review, push, analytics | Android · JVM · iOS | Doori (`feature:tracking`'s location/notification seams) |
-| [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the 20 `provider:*` leaves |
-| [**provider:\***](#provider--20-payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | 20 adapters implementing `payments-api`'s contract per gateway; mostly Android-only, `wallet` is KMP and `applepay` is iOS-only | mostly Android; `wallet` Android · iOS; `applepay` iOS only | reference integrations |
+| [**payments-api**](#payments-api) | `com.siddharth.kmp:payments-api` | `PaymentGateway`/`PaymentBackend` contract, `Money`, `PaymentResult`, redaction, `StubGateway` | Android · JVM · iOS | the `provider:*` leaves |
+| [**provider:\***](#provider--payment-gateway-leaves) | `com.siddharth.kmp:provider-<name>` | Adapters implementing `payments-api`'s contract per gateway; mostly Android-only, `wallet` is KMP and `applepay` is iOS-only | mostly Android; `wallet` Android · iOS; `applepay` iOS only | reference integrations |
 | [**offline-outbox**](#offline-outbox) | `com.siddharth.kmp:offline-outbox` | Room-backed submit-outbox, its own closed `@Database`, retry-on-reconnect | Android · JVM · iOS · watchOS | Doori (`core:data`) |
 | [**store**](#store) | `com.siddharth.kmp:store` | Clean-room offline-first screen-state pattern, `ScreenState`, `DecisionEngine`, `FetchPolicy`, no HTTP/store dependency | Android · JVM · iOS · Wasm | new, no dependents yet |
 | [**bots-policy**](#bots-policy) | `com.siddharth.kmp:bots-policy` | Generic ISMCTS search shell, `Policy`/`GameRules`/`Ismcts`/`SearchBudget`, zero deps | Android · JVM · iOS · Wasm | Gaddi (ai engine) |
@@ -179,10 +178,13 @@ Generated from `settings.gradle.kts` and each module's `project(":x")` declarati
 ```mermaid
 graph LR
   security["security"] --> common["common"]
+  secure_store["secure-store"] --> settings["settings"]
   auth["auth"] --> settings["settings"]
+  auth["auth"] --> common["common"]
   designsystem["designsystem"] --> result["result"]
   designsystem["designsystem"] --> ai["ai"]
   designsystem["designsystem"] --> llm_chat["llm-chat"]
+  designsystem["designsystem"] --> payments_api["payments-api"]
   ai["ai"] --> result["result"]
   ai["ai"] --> common["common"]
   ai["ai"] --> llm_chat["llm-chat"]
@@ -201,10 +203,10 @@ graph LR
   provider_upi_intent["provider:upi-intent"] --> common["common"]
   provider_cashfree["provider:cashfree"] --> payments_api["payments-api"]
   provider_cashfree["provider:cashfree"] --> common["common"]
-  provider_googlepay["provider:googlepay"] --> payments_api["payments-api"]
-  provider_googlepay["provider:googlepay"] --> common["common"]
   provider_applepay["provider:applepay"] --> payments_api["payments-api"]
   provider_applepay["provider:applepay"] --> common["common"]
+  provider_googlepay["provider:googlepay"] --> payments_api["payments-api"]
+  provider_googlepay["provider:googlepay"] --> common["common"]
   provider_omise["provider:omise"] --> payments_api["payments-api"]
   provider_omise["provider:omise"] --> common["common"]
   provider_razorpay["provider:razorpay"] --> payments_api["payments-api"]
@@ -237,7 +239,7 @@ graph LR
   provider_xendit["provider:xendit"] --> network["network"]
 ```
 
-_40 modules, 55 internal dependencies._
+_43 modules, 60 internal dependencies._
 <!-- module-graph:end -->
 
 ## Family architecture
@@ -260,7 +262,7 @@ graph TD
     LOCATION["location<br/>KalmanSmoother · PathSimplifier"]
     LLMCHAT["llm-chat<br/>AiProvider (Gemini/OpenAI/Anthropic)"]
     PAYMENTSAPI["payments-api<br/>PaymentGateway · Money · PaymentResult"]
-    PROVIDERS["provider:* (19 leaves)<br/>stripe · razorpay · cashfree · square · …"]
+    PROVIDERS["provider:* leaves<br/>stripe · razorpay · cashfree · square · …"]
     OUTBOX["offline-outbox<br/>Room SubmitOutbox"]
     BOTS["bots-policy<br/>Policy · Ismcts · SearchBudget"]
 
@@ -1759,7 +1761,7 @@ real integration code with catalog/docs only (business onboarding required to ac
 `PaymentResult.Failure`/`PaymentStep.Errored`), its only cross-family dependency. Targets: Android,
 JVM, iOS.
 
-## provider:* (20 payment-gateway leaves)
+## provider:* (payment-gateway leaves)
 
 Twenty leaf modules, one per gateway, each implementing `payments-api`'s `PaymentGateway` contract
 against a real SDK: `stripe`, `stripe-connect`, `razorpay`, `cashfree`, `square`, `omise`,
@@ -1943,7 +1945,7 @@ kmp-toolkit/
 ├── location/                # KalmanSmoother, PathSimplifier — Android · JVM · iOS · Wasm
 ├── app-shell/                # Location/geocoding/scanner/notifications/permissions seams — Android · JVM · iOS
 ├── payments-api/            # PaymentGateway contract, Money, PaymentResult — Android · JVM · iOS
-├── provider/                # 19 Android-only gateway leaves (stripe, razorpay, cashfree, square, …)
+├── provider/                # gateway adapter modules (stripe, razorpay, cashfree, square, …)
 ├── offline-outbox/          # Room SubmitOutbox — Android · JVM · iOS · watchOS
 ├── store/                    # ScreenState / DecisionEngine offline-first read+write helpers — Android · JVM · iOS · Wasm
 ├── bots-policy/             # Generic ISMCTS search shell — Android · JVM · iOS · Wasm
@@ -1982,7 +1984,7 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
 - [x] 9 original leaves extracted from Candidai / PaymentsLab-KMP / Doori / Gaddi (`result`,
       `common`, `mvi-core`, `network`, `security`, `designsystem`, `ai`, `feedback`, `location`)
 - [x] `llm-chat`, cloud LLM chat client (Gemini / OpenAI / Anthropic) (`bb33d0c`)
-- [x] `payments-api` + 20 `provider:*` gateway leaves, one contract, sandbox-honest `GatewayStatus`
+- [x] `payments-api` and `provider:*` gateway leaves, one contract, sandbox-honest `GatewayStatus`
 - [x] `offline-outbox`, first Room module in the monorepo, targeting watchOS alongside Android/JVM/iOS
 - [x] `bots-policy`, zero-dependency ISMCTS search shell extracted from Gaddi
 - [x] Seven more standalone/utility leaves, `device-integrity` (KMP root/jailbreak check),
