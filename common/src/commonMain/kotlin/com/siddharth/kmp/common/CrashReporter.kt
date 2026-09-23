@@ -2,14 +2,14 @@ package com.siddharth.kmp.common
 
 import kotlin.concurrent.Volatile
 
-// Reconciled from three divergent app-local seams (Backlog #21/#26 + Mileway follow-up):
-//  - HireSignal app/.../crash/CrashReporter.kt: `record(Throwable)` + `setCrumb(k,v)`, Android-only
+// Reconciled from three divergent app-local seams (Backlog #21/#26 + Doori follow-up):
+//  - Candidai app/.../crash/CrashReporter.kt: `record(Throwable)` + `setCrumb(k,v)`, Android-only
 //    (android.util.Log + Thread.setDefaultUncaughtExceptionHandler — not wasmJs-safe).
-//  - PaymentsLab core/common/CrashReporter.kt: `recordException`/`log`/`setCustomKey`/`setUserId` +
+//  - PaymentsLab-KMP core/common/CrashReporter.kt: `recordException`/`log`/`setCustomKey`/`setUserId` +
 //    `NapierCrashReporter`, already pure-KMP.
-//  - Mileway core/platform/CrossCuttingServices.kt: adds a `setEnabled` telemetry kill switch that
+//  - Doori core/platform/CrossCuttingServices.kt: adds a `setEnabled` telemetry kill switch that
 //    gates reporting for consent, mirroring Crashlytics' collection-enabled flag.
-// The union wins: PaymentsLab's method set + Mileway's kill switch. HireSignal's uncaught-handler
+// The union wins: PaymentsLab-KMP's method set + Doori's kill switch. Candidai's uncaught-handler
 // installer is Android-specific process wiring and stays app-side, not part of this seam. Default
 // impl routes through this module's own [AppLog] (already a :common dep).
 

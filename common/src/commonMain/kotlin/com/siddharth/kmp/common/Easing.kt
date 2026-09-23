@@ -1,8 +1,8 @@
 package com.siddharth.kmp.common
 
-// Ported from Kursi core/designsystem/.../moment/Primitives.kt (originals `internal`) and
-// re-confirmed as a duplicate in PaymentsLab core/designsystem/ShieldPulse.kt, whose own comment
-// says "ported from Kursi's Primitives.kt" (Backlog #25). Pure Float math, zero Compose dependency
+// Ported from Gaddi core/designsystem/.../moment/Primitives.kt (originals `internal`) and
+// re-confirmed as a duplicate in PaymentsLab-KMP core/designsystem/ShieldPulse.kt, whose own comment
+// says "ported from Gaddi's Primitives.kt" (Backlog #25). Pure Float math, zero Compose dependency
 // on purpose — kept in :common (not :designsystem) so non-UI callers (e.g. game/sim tick easing)
 // can use it without pulling in Compose.
 

@@ -1,6 +1,6 @@
 package com.siddharth.kmp.common
 
-// Ported from HireSignal core/engine (Backlog #18), collapsing its two separate hash files into one
+// Ported from Candidai core/engine (Backlog #18), collapsing its two separate hash files into one
 // :common seam:
 //  - SHA-1:   core/engine/.../fingerprint/Sha1.kt   (was `internal fun sha1`)
 //  - SHA-256: core/engine/.../interop/Sha256.kt      (was `internal fun sha256` + `sha256Hex`)

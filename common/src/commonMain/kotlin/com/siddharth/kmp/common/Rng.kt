@@ -1,6 +1,6 @@
 package com.siddharth.kmp.common
 
-// Ported from Kursi engine/src/commonMain/kotlin/com/kursi/engine/Rng.kt (Backlog #6) — pure,
+// Ported from Gaddi engine/src/commonMain/kotlin/com/kursi/engine/Rng.kt (Backlog #6) — pure,
 // domain-free counter-based PRNG. No changes to the algorithm, only the package move.
 
 /**

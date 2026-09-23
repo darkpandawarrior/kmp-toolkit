@@ -8,7 +8,7 @@ import kotlin.math.roundToInt
  * wants. No clock, no I/O, no domain types: a rating is an Int, a bout is 1-v-opponent, and [step]
  * returns the new rating. Deterministic and testable.
  *
- * Extracted from Kursi's local ranked ladder (Backlog #24). Domain-coupled bits (e.g. a
+ * Extracted from Gaddi's local ranked ladder (Backlog #24). Domain-coupled bits (e.g. a
  * difficulty→opponent-rating table) stay with the caller; only the generic math lives here.
  */
 object Elo {
