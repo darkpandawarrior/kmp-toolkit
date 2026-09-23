@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.emptyFlow
  * registered into [FoundationModelsBridge] at app startup — see `ai/ios-bridge/README.md`.
  * Kotlin/Native has no `platform.FoundationModels.*` cinterop binding (the framework's
  * Swift-macro-driven `@Generable`/`streamResponse` surface has no ObjC-compatible shape), so this
- * follows the same bridge mechanism Mileway already shipped for `FoundationModelsAnalyzer`/
+ * follows the same bridge mechanism Doori already shipped for `FoundationModelsAnalyzer`/
  * `FoundationModelsLlmGateway`: export a plain Kotlin interface to Swift as an ObjC protocol,
  * implement it in Swift, inject the implementation through a top-level singleton at startup.
  *
