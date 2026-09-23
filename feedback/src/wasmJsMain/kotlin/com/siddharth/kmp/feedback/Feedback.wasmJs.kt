@@ -31,8 +31,8 @@ private fun jsBeep(
             try {
                 var Ctx = window.AudioContext || window.webkitAudioContext;
                 if (!Ctx) return;
-                if (!window.__kursiAudioCtx) { window.__kursiAudioCtx = new Ctx(); }
-                var ctx = window.__kursiAudioCtx;
+                if (!window.__feedbackAudioCtx) { window.__feedbackAudioCtx = new Ctx(); }
+                var ctx = window.__feedbackAudioCtx;
                 if (ctx.state === 'suspended') { ctx.resume(); }
                 var osc = ctx.createOscillator();
                 var gain = ctx.createGain();

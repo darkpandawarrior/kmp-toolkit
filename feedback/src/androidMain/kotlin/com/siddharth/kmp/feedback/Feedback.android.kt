@@ -108,7 +108,7 @@ private class AndroidSoundPlayer : SoundPlayer {
     override fun playSound(key: SoundKey) {
         if (released) return
         val pcm = samples[key] ?: return
-        thread(isDaemon = true, name = "kursi-sfx-${key.name}") {
+        thread(isDaemon = true, name = "feedback-sfx-${key.name}") {
             runCatching {
                 val bytes = pcm.size * 2
                 val track =

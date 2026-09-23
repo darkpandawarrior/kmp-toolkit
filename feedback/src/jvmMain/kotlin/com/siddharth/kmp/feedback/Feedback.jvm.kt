@@ -81,7 +81,7 @@ private class JvmSoundPlayer : SoundPlayer {
         if (released) return
         val pcm = samples[key] ?: return
         // Stream on a daemon thread so we never block composition / the render thread.
-        thread(isDaemon = true, name = "kursi-sfx-${key.name}") {
+        thread(isDaemon = true, name = "feedback-sfx-${key.name}") {
             runCatching {
                 val line = AudioSystem.getSourceDataLine(format)
                 line.open(format)
