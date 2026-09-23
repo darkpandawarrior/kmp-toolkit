@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
  *
  * tvOS and watchOS are deliberately absent: Compose Multiplatform renders neither, so this module has
  * no such target. Apple's 10-foot and wrist UIs are SwiftUI, consuming the non-UI toolkit modules
- * (`offline-outbox` already targets `watchos*`, as does Mileway's `sharedWatch`). The [FormFactor.Tv]
+ * (`offline-outbox` already targets `watchos*`, as does Doori's `sharedWatch`). The [FormFactor.Tv]
  * and [FormFactor.Watch] sets still matter here — they drive Android TV and Wear OS, and a desktop
  * build can opt into either explicitly via `AdaptiveTheme(formFactor = ...)`.
  */

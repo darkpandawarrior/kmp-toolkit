@@ -19,9 +19,9 @@ plugins {
 // Static analysis. This monorepo publishes 37 modules that four apps compile against, and until now
 // nothing analysed any of them — a rule violation here reaches every consumer.
 //
-// `source` points at `src` rather than an enumerated list of source sets. Both Kursi and PaymentsLab
-// carried hand-written lists that had silently stopped matching reality: Kursi named five of fifteen
-// and left nativeMain, gms, noGms and main unscanned; PaymentsLab omitted wasmJsMain. Adding a target
+// `source` points at `src` rather than an enumerated list of source sets. Both Gaddi and PaymentsLab-KMP
+// carried hand-written lists that had silently stopped matching reality: Gaddi named five of fifteen
+// and left nativeMain, gms, noGms and main unscanned; PaymentsLab-KMP omitted wasmJsMain. Adding a target
 // adds a source set, and nothing fails when the list is not updated to match, so coverage shrinks
 // while the build stays green. `src` cannot drift that way. detekt only reads .kt, and the filter
 // below drops generated output.

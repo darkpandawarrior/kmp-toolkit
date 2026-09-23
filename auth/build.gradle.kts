@@ -48,7 +48,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
-            // MapSettings — the in-memory fake, same one Mileway's own auth tests already use.
+            // MapSettings — the in-memory fake, same one Doori's own auth tests already use.
             implementation(libs.multiplatform.settings.test)
         }
     }

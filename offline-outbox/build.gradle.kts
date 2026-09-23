@@ -16,7 +16,7 @@ kotlin {
     jvm()
     iosArm64()
     iosSimulatorArm64()
-    // watchOS targets: consumer Mileway's core:data re-exports SubmitOutbox through commonMain and
+    // watchOS targets: consumer Doori's core:data re-exports SubmitOutbox through commonMain and
     // targets watchos*, so this module must match. appleMain (below) shares the ios/watchos actuals.
     watchosArm64()
     watchosSimulatorArm64()
@@ -41,7 +41,7 @@ kotlin {
         }
         // appleMain is the applyDefaultHierarchyTemplate() intermediate set shared by ios* + watchos*
         // — the epochMillis()/buildOutboxDatabase() actuals live here so watchos resolves them too
-        // (mirrors Mileway core:data's appleMain Room+BundledSQLiteDriver setup).
+        // (mirrors Doori core:data's appleMain Room+BundledSQLiteDriver setup).
         appleMain.dependencies {
             implementation(libs.sqlite.bundled)
         }

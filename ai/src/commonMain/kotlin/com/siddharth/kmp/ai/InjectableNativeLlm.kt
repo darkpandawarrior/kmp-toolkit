@@ -3,7 +3,7 @@ package com.siddharth.kmp.ai
 /**
  * The seam a platform's native (non-Kotlin/Native-importable) LLM API implements and gets injected
  * through, so a Kotlin `actual` (here, [FoundationModelsOnDeviceLlm]) reaches it without a cinterop
- * binding. Hoisted from Mileway's hand-copied `InjectableDocumentAiAnalyzer`/`InjectableTextGenerator`
+ * binding. Hoisted from Doori's hand-copied `InjectableDocumentAiAnalyzer`/`InjectableTextGenerator`
  * shape (`core:ai`/`feature:agent` there) so the pattern exists once in the toolkit instead of being
  * re-copied into every consuming app.
  *
@@ -12,7 +12,7 @@ package com.siddharth.kmp.ai
  * method — so [NativeLlm] is kept to the simplest shape a Swift class can conform to (`Boolean`,
  * nullable `String`, a plain callback for streaming), and [FoundationModelsOnDeviceLlm] is the small
  * adapter that turns this into the richer typed [OnDeviceLlm] contract (`AiResult`, a cancellable
- * `Flow`) every other backend already exposes. Matches Mileway's own split between its Swift-facing
+ * `Flow`) every other backend already exposes. Matches Doori's own split between its Swift-facing
  * `TextGenerator` and the app-facing `LlmGateway` a small adapter turns it into.
  */
 interface NativeLlm {
@@ -57,7 +57,7 @@ fun interface NativeLlmCancelHandle {
 }
 
 /**
- * Generic delegate-or-degrade injection seam, same shape as Mileway's `InjectableDocumentAiAnalyzer`/
+ * Generic delegate-or-degrade injection seam, same shape as Doori's `InjectableDocumentAiAnalyzer`/
  * `InjectableTextGenerator` — kept in commonMain (not iosMain) so this logic is unit-testable; the
  * iosMain holder ([FoundationModelsBridge]) has nothing left to test once it just forwards here.
  */

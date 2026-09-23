@@ -1,6 +1,6 @@
 // EXPERIMENTAL — Apple Foundation Models. kmp-toolkit is a library repo (no `:shared`/iosApp of
 // its own), so this file can't be compiled here against a real KMP-exported framework — it ships
-// as SOURCE for a consuming app to drop into its own Xcode target, the same shape Mileway shipped
+// as SOURCE for a consuming app to drop into its own Xcode target, the same shape Doori shipped
 // its own `FoundationModelsTextGenerator.swift`/`FoundationModelsDocumentAnalyzer.swift`. Written-
 // correct, syntax-checked with (no framework import resolved, since none exists in this repo):
 //   xcrun swiftc -parse FoundationModelsBridge.swift
@@ -10,9 +10,9 @@
 //
 // Conforms to `NativeLlm` (Kotlin, `:ai`'s `com.siddharth.kmp.ai.NativeLlm` — exported as an ObjC
 // protocol from your app's `:shared`-equivalent framework once you `export(project(":...:ai"))`
-// there, same as Mileway's `shared/build.gradle.kts` already does for `core:ai`/`feature:agent`).
+// there, same as Doori's `shared/build.gradle.kts` already does for `core:ai`/`feature:agent`).
 // `generate` is a Kotlin `suspend fun`, which classic ObjC-based Kotlin/Native interop exports as a
-// completion-handler method — see Mileway's `FoundationModelsTextGenerator.swift` for the same
+// completion-handler method — see Doori's `FoundationModelsTextGenerator.swift` for the same
 // shape applied to a simpler (non-streaming) seam.
 //
 // Unlike that whole-response bridge, THIS one streams: `LanguageModelSession.streamResponse(to:)`
@@ -21,7 +21,7 @@
 // `NativeLlmStreamCallback.onPartial` as new suffixes arrive, so a UI can render tokens as Apple's
 // on-device model produces them instead of waiting for the whole reply.
 //
-// Replace `import YourApp` below with your own framework's baseName (Mileway's is `import Mileway`)
+// Replace `import YourApp` below with your own framework's baseName (Doori's is `import Mileway`)
 // — see README.md.
 
 import Foundation
@@ -42,7 +42,7 @@ final class FoundationModelsBridge: NSObject, NativeLlm {
         Task {
             do {
                 // ponytail: a fresh session per call — no cross-turn context/history threaded
-                // through this bridge yet, same simplification Mileway's own Foundation Models
+                // through this bridge yet, same simplification Doori's own Foundation Models
                 // bridges made. Upgrade to one retained LanguageModelSession (carrying call
                 // history) if multi-turn on-device context turns out to matter for your app.
                 let session = LanguageModelSession()

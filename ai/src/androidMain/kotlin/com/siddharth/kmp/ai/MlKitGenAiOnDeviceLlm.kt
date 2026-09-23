@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.map
 
 // ponytail: EXPERIMENTAL — com.google.mlkit:genai-prompt:1.0.0-beta2 (ML Kit GenAI Prompt API,
 // Gemini Nano). Compile-verified only, NOT device-verified: no Gemini-Nano-class hardware
-// (Pixel 8+/AICore-eligible) is available in this environment. Mirrors Mileway's MlKitGenAiAnalyzer.
+// (Pixel 8+/AICore-eligible) is available in this environment. Mirrors Doori's MlKitGenAiAnalyzer.
 //
 // [isAvailable] is a cheap device-tier floor (the API's own minSdk). The authoritative gate lives in
 // [generate]: it only runs inference when checkStatus() == AVAILABLE (model resident).
@@ -71,7 +71,7 @@ class MlKitGenAiOnDeviceLlm(
 
     // generateContentStream() is already Flow-native on this SDK (verified via javap on the
     // resolved genai-prompt-1.0.0-beta2 API jar) — no callbackFlow bridge or explicit cancel call
-    // needed; Flow's structured cancellation is sufficient. Mirrors Mileway's pre-refactor
+    // needed; Flow's structured cancellation is sufficient. Mirrors Doori's pre-refactor
     // MlKitLlmGateway.stream(), moved here so it lives behind the shared OnDeviceLlm seam.
     override fun generateStream(parts: List<LlmPart>): Flow<String> =
         flow {

@@ -33,7 +33,7 @@ object InMemoryThemeStore : ThemeStore {
 }
 
 /**
- * App-wide theme state holder (Mileway ThemeController idiom). Dark-first: defaults to true when the
+ * App-wide theme state holder (Doori ThemeController idiom). Dark-first: defaults to true when the
  * user hasn't chosen. Reads the persisted choice from [store] at construction and writes every change
  * back, so the Settings toggle survives process death once a persistent [ThemeStore] is bound.
  * Wasm-safe. Bound as a Koin singleton so the shell and the Settings screen share one instance.

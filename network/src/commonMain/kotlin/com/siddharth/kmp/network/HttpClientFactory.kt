@@ -77,7 +77,7 @@ val networkJson: Json =
  *
  * [expectSuccess]/[retry]/[requestTimeoutMillis] default to the original hardcoded behavior
  * (throw-on-non-2xx, bounded retry, 30s timeout) so existing callers are unaffected. A long-lived
- * WebSocket or manual-status-handling client (Kursi's RoomApi) should pass
+ * WebSocket or manual-status-handling client (Gaddi's RoomApi) should pass
  * `expectSuccess = false, retry = false, requestTimeoutMillis = null` — expectSuccess=true would
  * throw on every non-2xx instead of letting the caller inspect the status, retry doesn't make sense
  * for a socket upgrade, and a 30s requestTimeoutMillis would kill a long-lived connection.

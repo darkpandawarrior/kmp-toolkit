@@ -53,7 +53,7 @@ class NetworkSmokeTest {
     @Test
     fun createHttpClient_expectSuccessFalse_doesNotThrowOnNon2xx() =
         runTest {
-            // Kursi's WebSocket + manual-status RoomApi need this: default (expectSuccess=true) throws.
+            // Gaddi's WebSocket + manual-status RoomApi need this: default (expectSuccess=true) throws.
             val engine =
                 MockEngine {
                     respond(content = """{"error":"nope"}""", status = HttpStatusCode.NotFound)

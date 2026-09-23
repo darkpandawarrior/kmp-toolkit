@@ -4,7 +4,7 @@ import com.siddharth.kmp.location.KalmanSmoother
 import kotlin.math.max
 
 /**
- * Kalman-smoothed, speed-adaptive GPS cleaning — the algorithm Mileway's `LocationProcessor`
+ * Kalman-smoothed, speed-adaptive GPS cleaning — the algorithm Doori's `LocationProcessor`
  * actually runs today, extracted onto the [MileageAlgorithm] seam so its thresholds can be swept
  * and its output can be shadow-compared against other algorithms.
  *
@@ -634,7 +634,7 @@ public class TieredGpsAlgorithm(
         /**
          * Knob defaults reproduce `LocationProcessor` + `AbnormalDetectionConfig.DEFAULT` +
          * `LocationTrackingConstants` exactly — this profile with [DeviceEnvelope.Default] is
-         * numerically identical to the algorithm shipping in Mileway today.
+         * numerically identical to the algorithm shipping in Doori today.
          */
         public fun milewayV1Profile(): TuningProfile = TuningProfile(algorithmId = AlgorithmId.TieredGps, profileId = "mileway.v1")
 

@@ -274,7 +274,7 @@ fun EmptyState(
 }
 
 // ponytail: PageHeader/SectionLabel's mono "eyebrow" caption was a same-package dependency on
-// HireSignal's own Eyebrow()/EyebrowStyle (core/designsystem/Theme.kt + Components.kt), which stay
+// Candidai's own Eyebrow()/EyebrowStyle (core/designsystem/Theme.kt + Components.kt), which stay
 // app-side (Components.kt also holds contract-coupled ScoreBadge/StatusChip). Duplicated here as a
 // private implementation detail instead of exporting a 6th public symbol nobody asked to extract.
 private val EyebrowStyle: TextStyle =

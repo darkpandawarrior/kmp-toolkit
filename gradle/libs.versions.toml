@@ -126,7 +126,7 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 # Lives in :designsystem, NOT :app-shell — app-shell applies no Compose plugin and declares no
 # wasmJs target, so a Compose UI dependency cannot go there without changing what that module is.
 compose-adaptive-navigation-suite = { module = "org.jetbrains.compose.material3:material3-adaptive-navigation-suite", version.ref = "compose-multiplatform" }
-# Charts. Deliberately a separate :charts module rather than :designsystem, which Mileway's Wear
+# Charts. Deliberately a separate :charts module rather than :designsystem, which Doori's Wear
 # target consumes — a chart library has no business in a watch build.
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
 vico-compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
@@ -190,7 +190,7 @@ androidx-credentials = { module = "androidx.credentials:credentials", version.re
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "androidx-credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
-# — offline-outbox (Room KMP — first Room module in the monorepo, versions match Mileway's) —
+# — offline-outbox (Room KMP — first Room module in the monorepo, versions match Doori's) —
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite-bundled" }

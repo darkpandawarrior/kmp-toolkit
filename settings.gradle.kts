@@ -1,6 +1,6 @@
 pluginManagement {
     // Shared convention plugins (shared.kmp.library / shared.kmp.compose / shared.android.library /
-    // shared.test / …), the same repo the consumer apps (PaymentsLab/Mileway/HireSignal) vendor at
+    // shared.test / …), the same repo the consumer apps (PaymentsLab-KMP/Doori/Candidai) vendor at
     // external/kmp-build-logic. Sibling checkout on disk here — apps that vendor kmp-toolkit as
     // external/kmp-toolkit also vendor kmp-build-logic as its sibling external/kmp-build-logic, so
     // this relative path resolves the same way in both the standalone repo and the vendored copy.
@@ -119,7 +119,7 @@ include(":payments-api")
 include(":offline-outbox")
 include(":store")
 include(":bots-policy")
-// :charts is deliberately NOT part of :designsystem - that module is consumed by Mileway's Wear
+// :charts is deliberately NOT part of :designsystem - that module is consumed by Doori's Wear
 // target and a chart library has no business in a watch build. :charts depends on :designsystem
 // for tokens; never the reverse.
 include(":charts")

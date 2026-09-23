@@ -16,7 +16,7 @@ kotlin {
     // actual, so the Native compilation fails with "expect declaration has no actual".
     applyDefaultHierarchyTemplate()
 
-    // Added 2026-08-15. Two consumers need a JVM variant of this module: Kursi's `cmp-desktop`
+    // Added 2026-08-15. Two consumers need a JVM variant of this module: Gaddi's `cmp-desktop`
     // (a real Compose Desktop entry point) and Compose Hot Reload, which only runs on a JVM target.
     // Note this is a *Compose* jvm target, distinct from `withHostTest {}` below — that one runs
     // commonTest headlessly against a stubbed android.jar and cannot render.

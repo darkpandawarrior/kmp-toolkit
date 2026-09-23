@@ -20,7 +20,7 @@ import kotlinx.collections.immutable.ImmutableList
  * A card that renders a labelled key/value table. Keys are muted labels; values are rendered
  * in a monospace face so amounts, ids and hashes line up and read as machine data.
  *
- * Extracted from PaymentsLab's `core/designsystem/PayloadCard.kt` (backlog #31).
+ * Extracted from PaymentsLab-KMP's `core/designsystem/PayloadCard.kt` (backlog #31).
  */
 @Composable
 fun PayloadCard(

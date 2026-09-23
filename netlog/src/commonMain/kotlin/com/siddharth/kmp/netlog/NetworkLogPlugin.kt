@@ -31,7 +31,7 @@ private val RequestBodyKey = AttributeKey<String>("NetworkLogRequestBody")
  *
  * [readResponseBody] defaults to true, which calls `bodyAsText()` inside `onResponse`. Depending on
  * the Ktor version and engine, reading the body in a response hook can consume the content channel
- * so the actual caller receives an empty body. Mileway has shipped this shape without visible
+ * so the actual caller receives an empty body. Doori has shipped this shape without visible
  * trouble, so it is at worst latent there — but "it has not bitten yet" is not a proof, and this
  * module is meant for reuse. Pass `readResponseBody = false` if a consumer sees empty response
  * bodies after installing this; everything else still records. Resolving it properly means routing

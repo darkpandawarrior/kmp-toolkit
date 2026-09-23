@@ -44,7 +44,7 @@ data class SecurityReport(
      *
      * :device-integrity, the KMP sibling of this module, names precisely this defect in its own
      * KDoc as its reason for existing and already fails closed. This one was left behind, and
-     * :security is the module PaymentsLab substitutes — so the fix landed everywhere except the
+     * :security is the module PaymentsLab-KMP substitutes — so the fix landed everywhere except the
      * place it was actually being used.
      */
     val isCompromised: Boolean
