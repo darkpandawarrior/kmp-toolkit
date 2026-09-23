@@ -49,12 +49,12 @@ CATEGORY_MEMBERS = [
     # (framework, member, what declares it)
     ("Foundation", "writeToFile", "NSData (NSDataCreation) — kmp-toolkit feedback, 2026-07"),
     ("UIKit", "popoverPresentationController", "UIViewController (UIPopoverPresentationController)"),
-    ("AVFAudio", "setActive", "AVAudioSession (Activation) — Kursi SoundPlayer, 2026-09"),
-    ("GameKit", "setAuthenticateHandler", "GKLocalPlayer (UI) — Kursi GameCenterServices, 2026-09"),
+    ("AVFAudio", "setActive", "AVAudioSession (Activation) — Gaddi SoundPlayer, 2026-09"),
+    ("GameKit", "setAuthenticateHandler", "GKLocalPlayer (UI) — Gaddi GameCenterServices, 2026-09"),
     ("GameKit", "saveGameData", "GKLocalPlayer (GKSavedGame)"),
     ("GameKit", "fetchSavedGamesWithCompletionHandler", "GKLocalPlayer (GKSavedGame)"),
     # GKSavedGame.loadDataWithCompletionHandler is a class member, not a category extension.
-    ("CoreSpotlight", "title", "CSSearchableItemAttributeSet (General) — HireSignal, 2026-09"),
+    ("CoreSpotlight", "title", "CSSearchableItemAttributeSet (General) — Candidai, 2026-09"),
     ("CoreSpotlight", "contentDescription", "CSSearchableItemAttributeSet (General)"),
     ("CoreSpotlight", "keywords", "CSSearchableItemAttributeSet (General)"),
     ("CoreSpotlight", "contentURL", "CSSearchableItemAttributeSet (General)"),
