@@ -53,7 +53,7 @@ CATEGORY_MEMBERS = [
     ("GameKit", "setAuthenticateHandler", "GKLocalPlayer (UI) — Kursi GameCenterServices, 2026-09"),
     ("GameKit", "saveGameData", "GKLocalPlayer (GKSavedGame)"),
     ("GameKit", "fetchSavedGamesWithCompletionHandler", "GKLocalPlayer (GKSavedGame)"),
-    ("GameKit", "loadDataWithCompletionHandler", "GKSavedGame"),
+    # GKSavedGame.loadDataWithCompletionHandler is a class member, not a category extension.
     ("CoreSpotlight", "title", "CSSearchableItemAttributeSet (General) — HireSignal, 2026-09"),
     ("CoreSpotlight", "contentDescription", "CSSearchableItemAttributeSet (General)"),
     ("CoreSpotlight", "keywords", "CSSearchableItemAttributeSet (General)"),
