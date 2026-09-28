@@ -115,6 +115,10 @@ include(":llm-chat")
 include(":feedback")
 include(":location")
 include(":app-shell")
+// Opt-in fused-location impl (Google Play Services), split out of app-shell's own androidMain so
+// a consumer that never depends on this module carries zero play-services-location on its
+// classpath. See app-shell-location-gms/build.gradle.kts.
+include(":app-shell-location-gms")
 include(":payments-api")
 include(":offline-outbox")
 include(":store")
