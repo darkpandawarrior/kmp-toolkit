@@ -13,6 +13,7 @@ private const val NONCE_BYTES = 32
  * replayable game state and is the exact wrong tool here.
  */
 fun newRawNonce(bytes: Int = NONCE_BYTES): String {
+    require(bytes > 0) { "nonce length must be positive" }
     val buffer = ByteArray(bytes)
     SecureRandom().nextBytes(buffer)
     return buffer.toLowerHex()
