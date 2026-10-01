@@ -25,11 +25,11 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.core.ktx)
             implementation(libs.kotlinx.coroutines.android)
-            // AndroidLocationTracker: fused location + Task.await(). Same dependency the extracted
-            // Doori core:platform carried unconditionally on both its gms and noGms build flavors —
-            // relocated here as-is, not a new coupling.
-            implementation(libs.play.services.location)
-            implementation(libs.kotlinx.coroutines.play.services)
+            // AndroidLocationTracker: plain android.location.LocationManager, zero Play Services —
+            // this is what every consumer gets, including a noGms/F-Droid classpath. The fused
+            // provider is opt-in only, in the sibling `app-shell-location-gms` module, so
+            // play-services-location never lands here unconditionally (was the root cause of
+            // Doori's noGms dependencyGuard leak; see that module's kdoc).
             // AndroidFilePicker: KmpFile byte I/O only — calf-file-picker itself is @Composable-only
             // (rememberFilePickerLauncher/rememberFileSaverLauncher) and this module has no Compose
             // dependency, so the launcher is bridged in by the host's Compose layer; see AndroidFilePicker.
