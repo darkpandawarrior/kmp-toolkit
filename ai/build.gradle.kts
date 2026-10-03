@@ -19,11 +19,8 @@ kotlin {
         compileSdk = 37
         minSdk = 26
         withHostTest {}
-        // Device-verifies MlKitGenAiOnDeviceLlm/MediaPipeOnDeviceLlm against the real Android SDKs
-        // (real Context, real filesystem, real ML Kit/MediaPipe client) instead of only compiling
-        // against them. Source set is "androidDeviceTest" (this plugin's actual default name for
-        // what AGP's older `com.android.library` called `androidTest`) — its default sourceSetTree
-        // does NOT pull in commonTest, so kotlin-test is declared directly below instead.
+        // Device-verifies MediaPipe against the real SDK and filesystem. Gemini Nano's
+        // device test lives with its optional backend in :ai-mlkit.
         withDeviceTest {
             instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
@@ -53,7 +50,7 @@ kotlin {
             // SDKs inside this leaf's owned build file. Model files are downloaded on demand at
             // runtime — never shipped in the repo.
             // 1) ML Kit GenAI Prompt API (Gemini Nano on AICore devices) — experimental.
-            implementation("com.google.mlkit:genai-prompt:1.0.0-beta2")
+            // Gemini Nano is opt-in via :ai-mlkit and mlKitLlmModule().
             // 2) MediaPipe LLM Inference (Gemma) — broader device coverage.
             implementation("com.google.mediapipe:tasks-genai:0.10.35")
         }

@@ -90,7 +90,7 @@ kotlin {
         androidMain.dependencies {
             // Google's own button asset. Google Pay's brand guidelines mandate it; a hand-drawn
             // mark fails store review, so this is a hard dependency rather than a convenience.
-            implementation(libs.pay.button.compose)
+            implementation(libs.koin.core) // Optional Google Pay renderer binding.
         }
 
         commonTest.dependencies {
