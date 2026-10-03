@@ -1,33 +1,30 @@
 package com.siddharth.kmp.designsystem
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.google.pay.button.ButtonTheme
-import com.google.pay.button.ButtonType
-import com.google.pay.button.PayButton
+import org.koin.core.context.GlobalContext
 
-/**
- * Google's `PayButton` from `com.google.pay.button:compose-pay-button` — the officially supplied
- * asset, which also renders the accepted card networks inside the mark from the same JSON the
- * `isReadyToPay` probe uses.
- */
+/** Optional official Google Pay asset, supplied by :designsystem-wallet-gms. */
+interface GooglePayButtonRenderer {
+    @Composable
+    fun Render(
+        allowedPaymentMethodsJson: String,
+        onClick: () -> Unit,
+        modifier: Modifier,
+    )
+}
+
 @Composable
 internal actual fun PlatformWalletPayButton(
     allowedPaymentMethodsJson: String,
     onClick: () -> Unit,
     modifier: Modifier,
 ) {
-    PayButton(
-        onClick = onClick,
-        allowedPaymentMethods = allowedPaymentMethodsJson,
-        modifier = modifier.fillMaxWidth(),
-        type = ButtonType.Pay,
-        // Google's guidance is contrast, not brand-matching: the dark button goes on light
-        // surfaces. Inverted from what "dark theme -> dark button" would suggest.
-        theme = if (isSystemInDarkTheme()) ButtonTheme.Light else ButtonTheme.Dark,
-        radius = 8.dp,
-    )
+    val renderer = GlobalContext.getOrNull()?.getOrNull<GooglePayButtonRenderer>()
+    if (renderer != null) {
+        renderer.Render(allowedPaymentMethodsJson, onClick, modifier)
+    } else {
+        Text("Google Pay is not available in this build.", modifier = modifier)
+    }
 }

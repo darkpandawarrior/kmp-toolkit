@@ -8,6 +8,7 @@ import org.koin.dsl.module
  * Android on-device LLM tier, detection-ordered (ai-engineering.md §7):
  * ML Kit Gemini Nano (AICore devices) → MediaPipe Gemma (broad coverage, downloaded on demand) →
  * (falls through to the heuristic tier upstream). [ModelManager] is bound for the settings screen.
+ * Gemini Nano participates only when the consumer installs :ai-mlkit and mlKitLlmModule().
  */
 actual fun onDeviceLlmModule(): Module =
     module {
@@ -15,10 +16,10 @@ actual fun onDeviceLlmModule(): Module =
         single<ModelManager> { get<MediaPipeModelManager>() }
         single<OnDeviceLlm> {
             CompositeOnDeviceLlm(
-                listOf(
+                listOfNotNull(
                     // getOrNull(): the app opts into topK/temperature/maxTokens tuning by defining a
                     // single<GenerationConfig>; absent one, both backends keep their own defaults.
-                    MlKitGenAiOnDeviceLlm(androidContext(), getOrNull<GenerationConfig>()),
+                    getOrNull<MlKitLlmFactory>()?.create(getOrNull<GenerationConfig>()),
                     MediaPipeOnDeviceLlm(androidContext(), get(), getOrNull<GenerationConfig>()),
                 ),
             )
