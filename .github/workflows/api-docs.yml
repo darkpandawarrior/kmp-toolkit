@@ -35,10 +35,10 @@ jobs:
         with:
           repository: darkpandawarrior/kmp-build-logic
           path: kmp-build-logic
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
-          distribution: zulu
-          java-version: '21'
+          distribution: corretto
+          java-version: '25'
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
