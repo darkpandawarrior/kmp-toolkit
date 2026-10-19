@@ -32,6 +32,8 @@ play-services-wallet = "20.0.0"
 # rejection rather than a style choice. Same reason iOS uses PKPaymentButton.
 pay-button = "1.1.0"
 razorpay = "1.6.41"
+razorpay-core = "1.0.19"
+razorpay-standard-core = "1.7.19"
 cashfree = "2.6.0"
 robolectric = "4.17"
 dokka = "2.3.0-Beta"
@@ -172,6 +174,8 @@ pay-button-compose = { module = "com.google.pay.button:compose-pay-button", vers
 
 # — provider:razorpay / :cashfree / :googlepay (Android-only leaves, 5c) —
 razorpay-checkout = { module = "com.razorpay:checkout", version.ref = "razorpay" }
+razorpay-core = { module = "com.razorpay:core", version.ref = "razorpay-core" }
+razorpay-standard-core = { module = "com.razorpay:standard-core", version.ref = "razorpay-standard-core" }
 cashfree-pg-api = { module = "com.cashfree.pg:api", version.ref = "cashfree" }
 cashfree-pg-ui = { module = "com.cashfree.pg:ui", version.ref = "cashfree" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

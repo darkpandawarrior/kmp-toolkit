@@ -2,9 +2,6 @@ package com.siddharth.kmp.designsystem
 
 import androidx.compose.animation.core.SnapSpec
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.VectorizedAnimationSpec
-import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.Float.Companion
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
