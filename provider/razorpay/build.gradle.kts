@@ -23,6 +23,17 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     implementation(libs.razorpay.checkout)
+    constraints {
+        // checkout's POM declares core/standard-core as LATEST, which is not reproducible; pin them.
+        val core =
+            libs.versions.razorpay.core
+                .get()
+        val standardCore =
+            libs.versions.razorpay.standard.core
+                .get()
+        implementation(libs.razorpay.core) { version { strictly(core) } }
+        implementation(libs.razorpay.standard.core) { version { strictly(standardCore) } }
+    }
 
     testImplementation(libs.junit)
 }
