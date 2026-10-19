@@ -18,7 +18,7 @@ import kotlin.math.roundToInt
  *
  * Extracted from PaymentsLab-KMP's `core/designsystem/AnimatedCounter.kt` (backlog #31). The original
  * read a `LocalReducedMotion` CompositionLocal owned by that app; [reducedMotion] is now an
- * explicit parameter for the same reason documented on [RedactionReveal].
+ * explicit parameter that defaults from [LocalReducedMotion].
  */
 @Composable
 fun AnimatedCounter(
@@ -26,7 +26,7 @@ fun AnimatedCounter(
     modifier: Modifier = Modifier,
     suffix: String = "",
     style: TextStyle = MaterialTheme.typography.headlineSmall,
-    reducedMotion: Boolean = false,
+    reducedMotion: Boolean = LocalReducedMotion.current,
 ) {
     val animated = remember { Animatable(0f) }
     LaunchedEffect(target) {

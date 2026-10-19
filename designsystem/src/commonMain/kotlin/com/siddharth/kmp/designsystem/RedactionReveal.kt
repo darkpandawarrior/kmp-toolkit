@@ -25,13 +25,13 @@ private const val SCRAMBLE_STEP_MS = 45L
  * Extracted from PaymentsLab-KMP's `core/designsystem/RedactionReveal.kt` (backlog #31). The original
  * read a `LocalReducedMotion` CompositionLocal owned by that app; a shared component shouldn't bind
  * to one host's CompositionLocal instance, so [reducedMotion] is now an explicit parameter — the
- * caller passes its own `LocalReducedMotion.current`.
+ * parameter defaults from [LocalReducedMotion] (false unless a parent provides it).
  */
 @Composable
 fun RedactionReveal(
     value: String,
     modifier: Modifier = Modifier,
-    reducedMotion: Boolean = false,
+    reducedMotion: Boolean = LocalReducedMotion.current,
 ) {
     var display by remember(value) { mutableStateOf(value) }
 

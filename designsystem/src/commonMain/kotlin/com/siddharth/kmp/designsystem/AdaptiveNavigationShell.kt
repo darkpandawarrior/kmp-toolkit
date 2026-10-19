@@ -36,7 +36,7 @@ fun AdaptiveNavigationShell(
                 item(
                     selected = destination.selected,
                     onClick = destination.onSelect,
-                    icon = { Icon(destination.icon, contentDescription = destination.label) },
+                    icon = { Icon(destination.icon, contentDescription = null) },
                     label = { Text(destination.label) },
                 )
             }
