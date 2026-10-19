@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -64,6 +66,7 @@ data class TimelineStep(
 fun StepTimeline(
     steps: ImmutableList<TimelineStep>,
     modifier: Modifier = Modifier,
+    reducedMotion: Boolean = LocalReducedMotion.current,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         steps.forEachIndexed { index, step ->
@@ -71,6 +74,7 @@ fun StepTimeline(
                 step = step,
                 isFirst = index == 0,
                 isLast = index == steps.lastIndex,
+                reducedMotion = reducedMotion,
             )
         }
     }
@@ -81,11 +85,13 @@ private fun StepTimelineRow(
     step: TimelineStep,
     isFirst: Boolean,
     isLast: Boolean,
+    reducedMotion: Boolean,
 ) {
     val nodeColor = step.state.nodeColor()
     val railColor = MaterialTheme.colorScheme.outlineVariant
 
-    Row(modifier = Modifier.fillMaxWidth()) {
+    // Merged so a screen reader reads one item per step: "<state>, <title>, <subtitle>".
+    Row(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { }) {
         // Rail + node gutter.
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -98,7 +104,7 @@ private fun StepTimelineRow(
                         .height(DesignTokens.Spacing.s)
                         .background(if (isFirst) Color.Transparent else railColor),
             )
-            StepNode(state = step.state, color = nodeColor)
+            StepNode(state = step.state, color = nodeColor, reducedMotion = reducedMotion)
             Box(
                 modifier =
                     Modifier
@@ -150,11 +156,22 @@ private fun StepTimelineRow(
 private fun StepNode(
     state: StepState,
     color: Color,
+    reducedMotion: Boolean,
 ) {
     val animatedColor by animateColorAsState(color, label = "nodeColor")
 
     Box(contentAlignment = Alignment.Center) {
-        if (state == StepState.ACTIVE) {
+        if (state == StepState.ACTIVE && reducedMotion) {
+            // Static halo: the active state stays visible without the infinite pulse.
+            Box(
+                modifier =
+                    Modifier
+                        .size(NodeSize)
+                        .scale(STATIC_HALO_SCALE)
+                        .clip(CircleShape)
+                        .background(animatedColor.copy(alpha = 0.22f)),
+            )
+        } else if (state == StepState.ACTIVE) {
             // Pulsing halo behind the active node.
             val transition = rememberInfiniteTransition(label = "activePulse")
             val pulse by transition.animateFloat(
@@ -188,14 +205,14 @@ private fun StepNode(
                 StepState.DONE ->
                     Icon(
                         imageVector = Icons.Filled.Check,
-                        contentDescription = null,
+                        contentDescription = DONE_DESCRIPTION,
                         tint = Color.White,
                         modifier = Modifier.size(NodeIconSize),
                     )
                 StepState.ERROR ->
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = null,
+                        contentDescription = ERROR_DESCRIPTION,
                         tint = Color.White,
                         modifier = Modifier.size(NodeIconSize),
                     )
@@ -203,11 +220,12 @@ private fun StepNode(
                     Box(
                         modifier =
                             Modifier
+                                .semantics { contentDescription = ACTIVE_DESCRIPTION }
                                 .size(NodeInnerDotSize)
                                 .clip(CircleShape)
                                 .background(Color.White),
                     )
-                StepState.PENDING -> Unit
+                StepState.PENDING -> Box(Modifier.size(NodeInnerDotSize).semantics { contentDescription = PENDING_DESCRIPTION })
             }
         }
     }
@@ -260,13 +278,21 @@ private fun StepState.nodeColor(): Color =
         StepState.ERROR -> TimelineDangerColor
     }
 
+// Contrast: the original 0xFF1E9E6A was 3.41:1 against the white check (fails WCAG AA 4.5:1 for a
+// 14dp glyph). 0xFF178057 is 4.93:1; the danger red was already 4.87:1.
 // ponytail: PaymentsLab-KMP's StepTimeline read app-tuned `StatusColors.Success`/`.Danger` (same
 // package, internal to that module). StatusColors stays app-side (GatewayStatusBadge, which is
 // branded, still needs the full 5-tone set) — these two literal values are copied here so the
 // timeline node colours are unchanged. Promote to a shared semantic-color token if a 3rd
 // StepTimeline-shaped consumer needs the same tones.
-private val TimelineSuccessColor = Color(0xFF1E9E6A)
+private val TimelineSuccessColor = Color(0xFF178057)
 private val TimelineDangerColor = Color(0xFFCE3B3B)
+
+private const val STATIC_HALO_SCALE = 1.3f
+private const val DONE_DESCRIPTION = "Done"
+private const val ERROR_DESCRIPTION = "Failed"
+private const val ACTIVE_DESCRIPTION = "In progress"
+private const val PENDING_DESCRIPTION = "Pending"
 
 private val NodeGutterWidth = 24.dp
 private val NodeSize = 20.dp

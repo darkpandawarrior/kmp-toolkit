@@ -2,7 +2,6 @@ package com.siddharth.kmp.designsystem
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +23,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +59,12 @@ fun PageHeader(
                 Eyebrow(eyebrow)
                 Spacer(Modifier.height(DesignTokens.Spacing.xs))
             }
-            Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.semantics { heading() },
+            )
             if (subtitle != null) {
                 Spacer(Modifier.height(DesignTokens.Spacing.xs))
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -112,10 +126,13 @@ fun SectionCard(
                         }
                     }
                     Column {
-                        if (title !=
-                            null
-                        ) {
-                            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                        if (title != null) {
+                            Text(
+                                title,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.semantics { heading() },
+                            )
                         }
                         if (subtitle != null) {
                             Text(
@@ -154,7 +171,12 @@ fun SectionLabel(
                 modifier = Modifier.size(DesignTokens.Size.iconInline),
             )
         }
-        Text(text.uppercase(), style = EyebrowStyle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text.uppercase(),
+            style = EyebrowStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.semantics { heading() },
+        )
     }
 }
 
@@ -168,10 +190,19 @@ fun TagChip(
 ) {
     val bg = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant
     val fg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    var m = modifier.clip(DesignTokens.Shape.chip).background(bg)
-    if (onClick != null) m = m.clickable(onClick = onClick)
-    Box(m.padding(horizontal = 10.dp, vertical = 5.dp)) {
-        Text(text, style = MaterialTheme.typography.labelSmall, color = fg)
+    val pill = Modifier.clip(DesignTokens.Shape.chip).background(bg).padding(horizontal = 10.dp, vertical = 5.dp)
+    if (onClick == null) {
+        Box(modifier.then(pill)) { Text(text, style = MaterialTheme.typography.labelSmall, color = fg) }
+    } else {
+        // Clickable chips get a 48dp touch box (DESIGN.md minTouch) around the unchanged pill.
+        Box(
+            modifier
+                .accessibleClickable(Role.Button, onClick = onClick)
+                .semantics { this.selected = selected },
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(pill) { Text(text, style = MaterialTheme.typography.labelSmall, color = fg) }
+        }
     }
 }
 
@@ -179,9 +210,17 @@ fun TagChip(
 fun LoadingState(
     modifier: Modifier = Modifier,
     label: String? = null,
+    description: String = "Loading",
 ) {
     Column(
-        modifier = modifier.fillMaxSize().padding(DesignTokens.Spacing.huge),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(DesignTokens.Spacing.huge)
+                .clearAndSetSemantics {
+                    contentDescription = label ?: description
+                    liveRegion = LiveRegionMode.Polite
+                },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -217,6 +256,7 @@ fun ErrorState(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
             textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
         )
         if (onRetry != null) {
             Spacer(Modifier.height(DesignTokens.Spacing.l))
@@ -291,5 +331,11 @@ private fun Eyebrow(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
 ) {
-    Text("// $text", style = EyebrowStyle, color = color, modifier = modifier)
+    // The "// " is decoration; screen readers would voice it as slashes.
+    Text(
+        "// $text",
+        style = EyebrowStyle,
+        color = color,
+        modifier = modifier.clearAndSetSemantics { this.text = AnnotatedString(text) },
+    )
 }

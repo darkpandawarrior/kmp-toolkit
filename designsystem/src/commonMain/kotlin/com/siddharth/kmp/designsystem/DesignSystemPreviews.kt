@@ -161,6 +161,15 @@ private fun TagChipPreview() =
         )
     }
 
+/** Static (reduced-motion) skeletons: the shimmer would make the golden nondeterministic. */
+@Preview
+@Composable
+private fun SkeletonRowPreview() =
+    ScrollingPreviewShell {
+        SkeletonRow(reducedMotion = true)
+        SkeletonRow(reducedMotion = true, lines = 3)
+    }
+
 // ── Stateful components ───────────────────────────────────────────────────────
 
 /** All four [StepState] values in one render — the highest-branching component in the module. */

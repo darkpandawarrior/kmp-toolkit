@@ -111,7 +111,9 @@ Reuse these before writing a new card, header or empty state in an app.
 `DesignTokens.Motion`: INSTANT 90 ms, FAST 160 ms, MEDIUM 240 ms, SLOW 360 ms. Screen transitions
 `screenEnter` / `screenExit` are a fade plus a 0.95 scale over MEDIUM. `focusScale()` grows a
 focused element by `AdaptiveTokens.focusScale` (1.08 on Tv, 1.0 elsewhere) over FAST. Apps must
-honour reduced motion where the platform exposes it.
+honour reduced motion: wrap the root in `ProvideReducedMotion { }` (reads the OS setting) and the
+counter, redaction, timeline pulse and skeletons follow `LocalReducedMotion`. Clickable `TagChip` and
+`accessibleClickable` / `minTouchTarget()` enforce `minTouch`. Money display: `Long.formatMoney()`.
 
 ## Do's and Don'ts
 
@@ -136,6 +138,7 @@ honour reduced motion where the platform exposes it.
 
 | Date | Change | Why | Source |
 |---|---|---|---|
+| 2026-10-19 | Added `LocalReducedMotion`, `rememberHaptics`, `SkeletonBlock`, `minTouchTarget`, `formatMoney`; header semantics; StepTimeline success green 3.41:1 to 4.93:1 | UI/UX audit 2026-10-19 | audit-kmp-toolkit.md |
 | 2026-10-09 | Initial version, distilled from the code token files and existing design docs | Establish design direction for agents | DESIGN.md rollout |
 
 ## Open questions
