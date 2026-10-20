@@ -324,7 +324,7 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin> {
 }
 
 // iOS *test* binary linkage — a workaround for an UPSTREAM PACKAGING BUG, not for anything in this
-// repo. `org.jetbrains.compose.ui:ui-uikit-<target>:1.13.0-alpha01` publishes its cinterop klib with
+// repo. `org.jetbrains.compose.ui:ui-uikit-<target>:1.13.0-alpha02` publishes its cinterop klib with
 // JetBrains' own CI machine's Swift runtime path baked into `default/manifest`:
 //   linkerOpts=… -L/Applications/Xcode_26.4.app/…/usr/lib/swift/iphonesimulator … -lswiftCompatibility51 …
 // That directory exists on no other machine, so `ld` fails to find libswiftCompatibility51 and every

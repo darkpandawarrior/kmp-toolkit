@@ -19,7 +19,9 @@ kotlin {
 
     android {
         namespace = "com.siddharth.kmp.mvi"
-        compileSdk = 37
+        compileSdk {
+            version = release(37) { minorApiLevel = 1 }
+        }
         minSdk = 24
         withHostTest {}
     }

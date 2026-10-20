@@ -18,7 +18,9 @@ kotlin {
 
     android {
         namespace = "com.siddharth.kmp.auth"
-        compileSdk = 37
+        compileSdk {
+            version = release(37) { minorApiLevel = 1 }
+        }
         minSdk = 24
         withHostTest {}
     }
