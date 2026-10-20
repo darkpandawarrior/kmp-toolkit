@@ -16,7 +16,9 @@ kotlin {
 
     android {
         namespace = "com.siddharth.kmp.ai"
-        compileSdk = 37
+        compileSdk {
+            version = release(37) { minorApiLevel = 1 }
+        }
         minSdk = 26
         withHostTest {}
         // Device-verifies MediaPipe against the real SDK and filesystem. Gemini Nano's

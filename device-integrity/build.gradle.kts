@@ -17,7 +17,9 @@ kotlin {
 
     android {
         namespace = "com.siddharth.kmp.deviceintegrity"
-        compileSdk = 37
+        compileSdk {
+            version = release(37) { minorApiLevel = 1 }
+        }
         minSdk = 24
         withHostTest {}
     }

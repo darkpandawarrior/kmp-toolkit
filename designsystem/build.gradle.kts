@@ -35,7 +35,9 @@ kotlin {
 
     android {
         namespace = "com.siddharth.kmp.designsystem"
-        compileSdk = 37
+        compileSdk {
+            version = release(37) { minorApiLevel = 1 }
+        }
         minSdk = 24
         // Runs commonTest on the JVM host (no device) against a stubbed android.jar — the
         // `testDebugUnitTest` surface for pure logic (ThemeController). Kept after `jvm()` was added
