@@ -72,7 +72,7 @@ class PermissionOrchestrator(
         }
     }
 
-    // ponytail: atomic update{} (not value = value.let{}) — the same non-atomic read-modify-write
+    // atomic update{} (not value = value.let{}) — the same non-atomic read-modify-write
     // class of bug :mvi-core's BaseViewModel fix caught (backlog #1); fixed here on relocation since
     // requestCurrent()/skipAlreadyGranted() genuinely can interleave if the UI double-fires a button.
     private fun record(result: PermissionResult) {

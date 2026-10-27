@@ -11,7 +11,7 @@ import com.mohamedrejeb.calf.io.readByteArray
  * reporting no file, the same truthful-no-op fallback [IosDocumentScanner] uses.
  */
 class IosFilePicker : FilePicker {
-    // ponytail: no @Volatile — that's a JVM-only annotation (kotlin.jvm.Volatile), unavailable on
+    // no @Volatile — that's a JVM-only annotation (kotlin.jvm.Volatile), unavailable on
     // Kotlin/Native; iOS is single-threaded here (main-actor Compose UI wiring the bridge), so a
     // plain var is enough.
     var pickBridge: (suspend () -> KmpFile?)? = null

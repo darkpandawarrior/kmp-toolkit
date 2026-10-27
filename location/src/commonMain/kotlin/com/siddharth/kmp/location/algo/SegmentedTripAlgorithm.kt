@@ -33,7 +33,7 @@ import kotlin.math.min
  * to the delegate. That is not a courtesy — it is how the parity test is written, and it is what
  * makes "did my change help?" answerable instead of arguable.
  *
- * ponytail: a decorator, not a fork. Re-implementing the delegate's Kalman/band/gap/spike logic to
+ * a decorator, not a fork. Re-implementing the delegate's Kalman/band/gap/spike logic to
  * add three rules would double the surface that has to stay correct, and the two copies would drift.
  */
 private const val MILLIS_PER_SECOND = 1000.0

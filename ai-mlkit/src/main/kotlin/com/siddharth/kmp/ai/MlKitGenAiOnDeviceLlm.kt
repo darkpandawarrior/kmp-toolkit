@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
-// ponytail: EXPERIMENTAL — com.google.mlkit:genai-prompt:1.0.0-beta2 (ML Kit GenAI Prompt API,
+// EXPERIMENTAL — com.google.mlkit:genai-prompt:1.0.0-beta2 (ML Kit GenAI Prompt API,
 // Gemini Nano). Compile-verified only, NOT device-verified: no Gemini-Nano-class hardware
 // (Pixel 8+/AICore-eligible) is available in this environment. Mirrors Doori's MlKitGenAiAnalyzer.
 //

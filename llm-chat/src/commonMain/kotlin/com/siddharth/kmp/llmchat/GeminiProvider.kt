@@ -108,7 +108,7 @@ class GeminiProvider(
             }
             val (systemInstruction, contents) = buildGeminiPayload(messages)
 
-            // ponytail: no withTimeout here — see AnthropicProvider.completeStream for why.
+            // no withTimeout here — see AnthropicProvider.completeStream for why.
             try {
                 client
                     .preparePost(STREAM_URL) {

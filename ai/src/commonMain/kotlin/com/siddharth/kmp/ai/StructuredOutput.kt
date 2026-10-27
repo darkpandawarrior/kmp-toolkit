@@ -55,7 +55,7 @@ class StructuredOutput<T>(
         val firstParsed = parse(firstText)
         if (firstParsed is Result.Success) return firstParsed
 
-        // ponytail: exactly one repair retry — a model that can't produce valid JSON once isn't
+        // exactly one repair retry — a model that can't produce valid JSON once isn't
         // reliably going to on a second nudge either; bump this if that assumption proves wrong
         // for a real backend.
         val retryReply = generate(repairPrompt(hintedPrompt, firstText))
@@ -67,7 +67,7 @@ class StructuredOutput<T>(
         try {
             Result.Success(structuredOutputJson.decodeFromString(serializer, extractJson(reply)))
         } catch (_: SerializationException) {
-            // ponytail: collapsed to EmptyReply — the enum is frozen by design (both AI seams
+            // collapsed to EmptyReply — the enum is frozen by design (both AI seams
             // share it), and "the model's reply carried no usable text" already describes an
             // unparseable one. Add a dedicated case if a caller ever needs the parse error itself.
             Result.Failure(AiFailure.EmptyReply)

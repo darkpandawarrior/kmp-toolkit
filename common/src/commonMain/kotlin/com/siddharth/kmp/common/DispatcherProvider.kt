@@ -6,7 +6,7 @@ import kotlinx.coroutines.Dispatchers
 /**
  * Injectable dispatchers so ViewModels/repositories are testable (swap for a test dispatcher).
  *
- * ponytail: `io` maps to [Dispatchers.Default] in common — `Dispatchers.IO` is JVM/Android-only and
+ * `io` maps to [Dispatchers.Default] in common — `Dispatchers.IO` is JVM/Android-only and
  * absent from wasm/native commonMain. The Android data layer can override `io` with the real IO
  * dispatcher via an androidMain-provided instance if blocking IO ever needs it.
  */

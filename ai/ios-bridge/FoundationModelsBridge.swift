@@ -41,7 +41,7 @@ final class FoundationModelsBridge: NSObject, NativeLlm {
         }
         Task {
             do {
-                // ponytail: a fresh session per call — no cross-turn context/history threaded
+                // a fresh session per call — no cross-turn context/history threaded
                 // through this bridge yet, same simplification Doori's own Foundation Models
                 // bridges made. Upgrade to one retained LanguageModelSession (carrying call
                 // history) if multi-turn on-device context turns out to matter for your app.

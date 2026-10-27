@@ -35,7 +35,7 @@ fun AnimatedCounter(
         } else {
             animated.animateTo(
                 target.toFloat(),
-                // ponytail: canonical DesignTokens.Motion has no Easing token (Int ms only); the
+                // canonical DesignTokens.Motion has no Easing token (Int ms only); the
                 // source app's `standardEasing` alias was FastOutSlowInEasing directly.
                 tween(DesignTokens.Motion.MEDIUM_MS, easing = FastOutSlowInEasing),
             )

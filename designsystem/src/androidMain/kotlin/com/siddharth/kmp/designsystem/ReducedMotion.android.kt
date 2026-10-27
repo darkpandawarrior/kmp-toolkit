@@ -14,7 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * `ANIMATOR_DURATION_SCALE == 0` ("Remove animations"), observed live. ponytail: Android has no
+ * `ANIMATOR_DURATION_SCALE == 0` ("Remove animations"), observed live. Android has no
  * dedicated reduce-motion flag below the newest releases, and this scale is the switch TalkBack and
  * Settings > Accessibility > "Remove animations" both write, so it is the portable proxy.
  */

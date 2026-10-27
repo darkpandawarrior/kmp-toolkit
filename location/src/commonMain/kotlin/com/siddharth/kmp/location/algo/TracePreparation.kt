@@ -29,7 +29,7 @@ public object TracePreparation {
      * recorded trip actually started or ended would make every reconciliation against a client
      * figure meaningless before the matcher is even called.
      *
-     * ponytail: a simple time gate, not a Douglas-Peucker-style geometric simplifier. A geometric
+     * a simple time gate, not a Douglas-Peucker-style geometric simplifier. A geometric
      * simplifier optimizes for shape fidelity; what a map matcher needs is a sane number of points
      * per unit time. Revisit only if OSRM keeps fragmenting matches on a gated trace.
      */

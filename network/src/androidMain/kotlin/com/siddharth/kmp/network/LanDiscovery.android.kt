@@ -91,7 +91,7 @@ actual class LanDiscoverer actual constructor(
     private val serviceType: String,
 ) {
     /**
-     * ponytail: `@SuppressLint("MissingPermission")` is kept, but it is NOT a statement that no
+     * `@SuppressLint("MissingPermission")` is kept, but it is NOT a statement that no
      * permission is needed — NSD discovery has always wanted `INTERNET` plus (historically)
      * `CHANGE_WIFI_MULTICAST_STATE`, and Android 17 (API 37) introduces `ACCESS_LOCAL_NETWORK` as a
      * **runtime** permission gating mDNS/DNS-SD outright. The suppression exists because this is a

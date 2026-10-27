@@ -313,7 +313,7 @@ graph TD
 common` and every `provider:* → payments-api`/`provider:* → common` edge is the newer, equally
 deliberate gateway-abstraction spine; `ai → llm-chat` (for `CloudOnDeviceLlm`) is the third, added
 once `ai` needed a real cloud fallback rather than reinventing one; and `designsystem →
-ai`/`llm-chat` is the fourth, added for `AiSettingsSection` — the settings screen that reads/drives
+ai`/`llm-chat` is the fourth, added for `AiSettingsSection`, the settings screen that reads/drives
 both AI seams' `ModelManager`/`AiProvider`/`AiCapabilities` from one place. `result → ai`/`llm-chat`/
 `designsystem` is real too, not planned: all three already take `AiResult`/`AiFailure`/
 `AiCapabilities` from it, `result`'s only still-planned edge is into `network` (see
@@ -322,19 +322,19 @@ never drags in a sibling.
 
 `device-integrity`, `store`, `auth`, `netlog` and `charts` are omitted from the graph above, each has
 no consumer app yet (`auth` → `settings` and `charts` → `designsystem` are real internal edges all
-the same — see the generated [module dependency graph](#modules)). `settings` and `app-shell` are
+the same, see the generated [module dependency graph](#modules)). `settings` and `app-shell` are
 also omitted here despite Doori already consuming both (its `stub`/`feature:tracking` modules), and
-`ai-testing` (→ `ai`, `result`) is test-only tooling, not a family-architecture participant — none of
+`ai-testing` (→ `ai`, `result`) is test-only tooling, not a family-architecture participant, none of
 the three add a *cross-module* edge worth drawing on this diagram. All are real, tested, standalone
 leaves (see the [Modules](#modules) table for exactly who consumes what), not placeholders.
 
 **This diagram is illustrative, not exhaustive.** It draws the four deliberate in-repo spines above
 plus a representative slice of each app's dependencies; it is not redrawn every time an app adopts
 one more leaf. The [Modules](#modules) table's "Consumed by" column, verified against each app's
-actual imports, is the accurate, current picture — Doori, PaymentsLab-KMP, Gaddi and Candidai between
+actual imports, is the accurate, current picture, Doori, PaymentsLab-KMP, Gaddi and Candidai between
 them now pull far more of the family than the boxes above show.
 
-`kmp-app-template`, the fifth consumer, pulls only `ai` / `llm-chat` / `result` — a worked example of
+`kmp-app-template`, the fifth consumer, pulls only `ai` / `llm-chat` / `result`, a worked example of
 the AI stack rather than a full app, wired into its Home panel's `AiModule`.
 
 ## Tech stack
@@ -350,7 +350,7 @@ the AI stack rather than a full app, wired into its Home panel's `AiModule`.
 | Persistence | Room `2.8.5` (KMP, `offline-outbox`) |
 | Logging | Napier `2.7.1` |
 | Testing | JUnit `4.13.2`, MockK `1.14.11`, Turbine `1.2.1`, Mokkery `3.5.0`, Robolectric `4.17` |
-| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`). Not published to any Maven repository — the `com.siddharth.kmp:*` coordinates are substitution targets only |
+| Consumption | Vendored source composite build (`includeBuild` + `dependencySubstitution`). Not published to any Maven repository, the `com.siddharth.kmp:*` coordinates are substitution targets only |
 | CI | GitHub Actions, `ci.yml` (`build-test` on ubuntu for android/jvm/wasm + `ios-compile` on macOS), `no-ai-attribution.yml` |
 
 ## Getting started
@@ -409,7 +409,7 @@ artifact on GitHub Packages or Maven Central to pull. Declare a module with **no
 substitution resolve it:
 
 ```kotlin
-// build.gradle.kts — resolves to project(":mvi-core") via the includeBuild substitution above
+// build.gradle.kts, resolves to project(":mvi-core") via the includeBuild substitution above
 dependencies {
     implementation("com.siddharth.kmp:mvi-core")
     // ...one line per module actually needed
@@ -479,7 +479,7 @@ with its own arms (e.g. a `Validation` error) by implementing the interface dire
 it the foundation the rest of the family is meant to build on. `ai`, `llm-chat`, `designsystem` and
 `ai-testing` all already build on it in-repo (`AiResult`/`AiFailure`/`AiCapabilities` and
 `PromptGuard`), and kmp-app-template consumes it directly for the same vocabulary in its Home AI
-panel — the first out-of-repo adopter. `network` and `security` standardizing their own failure arms
+panel, the first out-of-repo adopter. `network` and `security` standardizing their own failure arms
 on `DataError` is the part still in a later phase, instead of each inventing its own `sealed class`
 per app.
 
@@ -584,7 +584,7 @@ is just the `Channel<E>` branch, taking a caller-supplied `CoroutineScope` inste
 `viewModelScope`.
 
 ```kotlin
-// module build.gradle.kts — resolves to project(":mvi-core") via the includeBuild substitution
+// module build.gradle.kts, resolves to project(":mvi-core") via the includeBuild substitution
 dependencies {
     implementation("com.siddharth.kmp:mvi-core")
 }
@@ -640,7 +640,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.call.body
 
-// One shared client per process — content negotiation, INFO logging, retry, 30s timeout, and a
+// One shared client per process, content negotiation, INFO logging, retry, 30s timeout, and a
 // 401 observer are all wired in.
 val client = createHttpClient(onUnauthorized = { session.clearToken() })
 
@@ -750,12 +750,12 @@ startKoin {
 }
 
 val appSecurityManager: AppSecurityManager by inject()
-appSecurityManager.install(this) // once — re-flags FLAG_SECURE on background/foreground
+appSecurityManager.install(this) // once, re-flags FLAG_SECURE on background/foreground
 
 // Activity.onCreate
 appSecurityManager.applySecurityToActivity(this) // FLAG_SECURE + tapjacking protection
 
-// Compose — screen-scoped FLAG_SECURE instead of the whole Activity
+// Compose, screen-scoped FLAG_SECURE instead of the whole Activity
 SecureScreen(enabled = true) {
     CardEntryScreen()
 }
@@ -765,7 +765,7 @@ val auditor: SecurityAuditor by inject()
 val audit = auditor.audit()
 val decision = SecurityPolicy.evaluate(audit, SecurityPosture.strict())
 if (decision.shouldBlock) {
-    // refuse to load card entry — decision.summary() e.g. "ROOT→BLOCK, EMULATOR→WARN"
+    // refuse to load card entry, decision.summary() e.g. "ROOT→BLOCK, EMULATOR→WARN"
 }
 
 // Keystore-backed secret storage
@@ -920,7 +920,7 @@ today by Doori's `stub` module (`SecureSettingsFactory`); no other app has adopt
 Two apps (Doori, PaymentsLab-KMP) each independently arrived at the same auth-token split: a
 short-lived access token that never needs to survive process death, and a longer-lived refresh or
 session token that does. `auth` extracts that one genuinely duplicated shape, `TokenStore`, and
-nothing else — no HTTP, no notion of "login", no opinion about what a token *means*, because the two
+nothing else, no HTTP, no notion of "login", no opinion about what a token *means*, because the two
 apps' actual auth mechanics (a rotating access/refresh pair through Ktor's own `Auth { bearer { } }`
 plugin vs. a non-rotating opaque session token reacting to `:network`'s `TokenProvider`/
 `UnauthorizedHandler` seam) are both correct for their own app and neither is a subset of the other.
@@ -946,7 +946,7 @@ tokens.clear() // logout, or a refresh the server rejected
 
 Depends on `multiplatform-settings` directly rather than on `:settings`, so a consumer that wants a
 `MapSettings()` fake for tests isn't forced to take the encrypted implementation. Targets: Android,
-JVM, iOS — deliberately **not** `wasmJs`: `multiplatform-settings` backs a browser target with
+JVM, iOS, deliberately **not** `wasmJs`: `multiplatform-settings` backs a browser target with
 `localStorage`, plaintext and script-readable, and a token store that silently degrades from
 Keystore/Keychain to that the moment a web target is added would be a security regression dressed as
 wider coverage. New addition, no dependents yet.
@@ -966,7 +966,7 @@ val logs = NetworkLogStore() // in-memory ring buffer, newest first, 200 entries
 val client = HttpClient { install(NetworkLogPlugin(logs)) }
 
 logs.entries.collect { entries ->
-    // render a debug-only log screen; entries.first().toCurl() — Authorization/Cookie/API-key
+    // render a debug-only log screen; entries.first().toCurl(), Authorization/Cookie/API-key
     // headers redacted by default
 }
 ```
@@ -981,7 +981,7 @@ logs.entries.collect { entries ->
 **Install on debug builds only.** This captures request/response bodies, which on a real app means
 auth payloads and personal data; gating it is the consumer's job, since "debug" is a build concept
 this common-code module can't see. **Known limitation, not yet resolved**: `readResponseBody`
-defaults to `true`, which calls `bodyAsText()` inside the response hook — depending on the Ktor
+defaults to `true`, which calls `bodyAsText()` inside the response hook, depending on the Ktor
 version/engine, that can consume the content channel before the real caller reads it. Pass
 `readResponseBody = false` if a consumer sees empty bodies after installing; everything else still
 records. `netlog` has no dependency on any other `kmp-toolkit` module, only Ktor's client-core.
@@ -1021,7 +1021,7 @@ val theme = ThemeController(store = myDataStoreThemeStore) // or default InMemor
 val isDark by theme.isDark.collectAsState()
 
 MaterialTheme(colorScheme = if (isDark) MyAppDarkColors else MyAppLightColors) {
-    // your app — designsystem never dictates the colors
+    // your app, designsystem never dictates the colors
 }
 
 // Settings toggle:
@@ -1233,7 +1233,7 @@ Targets: Android (`minSdk 24` / `compileSdk 37`), iOS (`iosArm64`, `iosSimulator
 Vico is a real, actively maintained Compose Multiplatform chart library, but it's also pre-1.0 and
 configurable to a fault. `charts` is one opinionated wrapper around it: a single `TimeSeriesChart`
 composable, and nothing else exposed, so an app never re-couples itself to `CartesianChartHost`
-directly — the exact coupling this module exists to absorb. Deliberately **not** part of
+directly, the exact coupling this module exists to absorb. Deliberately **not** part of
 `designsystem`: that module rides into Doori's Wear target, and a charting library has no business
 shipping to a watch build. `charts` depends on `designsystem` for tokens; never the reverse.
 
@@ -1243,7 +1243,7 @@ import com.siddharth.kmp.charts.Point
 import kotlinx.collections.immutable.toImmutableList
 
 TimeSeriesChart(data = spendByDay.map { Point(it.epochMs.toDouble(), it.amount) }.toImmutableList())
-// Empty data renders an empty chart rather than throwing — a series with no points yet on a first
+// Empty data renders an empty chart rather than throwing, a series with no points yet on a first
 // run is a normal state, not an error.
 ```
 
@@ -1253,7 +1253,7 @@ TimeSeriesChart(data = spendByDay.map { Point(it.epochMs.toDouble(), it.amount) 
 | `TimeSeriesChart` | `@Composable` | A single Vico line chart over an `ImmutableList<Point>` |
 
 `charts` depends on `designsystem` (for tokens) and Vico (`compose` + `compose-m3`), no other
-`kmp-toolkit` module. Targets: Android, JVM, iOS, `wasmJs` — Vico 3.3.0 publishes a real `wasmJs`
+`kmp-toolkit` module. Targets: Android, JVM, iOS, `wasmJs`, Vico 3.3.0 publishes a real `wasmJs`
 artifact (verified against its published Gradle module metadata, not just its changelog). New
 addition, no dependents yet.
 
@@ -1268,16 +1268,16 @@ of them can just fail. The domain code that *uses* the model shouldn't know or c
 
 `ai` collapses all of that behind one seam: `OnDeviceLlm`, `isAvailable()` + `suspend fun
 generate(prompt): AiResult<String>`. `generate` carries a typed [`AiFailure`](#llm-chat) on any
-miss — `ModelNotResident` (not downloaded yet) reads differently from `NotSupportedOnPlatform`
-(this device never can) — so your caller can say the right thing instead of guessing why an empty
+miss, `ModelNotResident` (not downloaded yet) reads differently from `NotSupportedOnPlatform`
+(this device never can), so your caller can say the right thing instead of guessing why an empty
 string came back. A `CompositeOnDeviceLlm` chains backends in preference order and returns the
 first success, or the last backend's failure reason if none produced one. Your feature-specific
 prompt-building and output-parsing stay in your app; this carries only the plumbing to *run* a
 prompt.
 
 Every prompt/part `CompositeOnDeviceLlm` sends to a backend is run through `PromptGuard` (in
-`:result`) first — delimited, escaped, with the output contract restated right after the payload
-— so a JD, receipt, or chat message that says "ignore previous instructions" reaches the model as
+`:result`) first, delimited, escaped, with the output contract restated right after the payload,
+so a JD, receipt, or chat message that says "ignore previous instructions" reaches the model as
 inert data. This is unconditional: there's no flag to opt out, and `JobSummarizer` below gets it
 for free even though it never separates its own instructions from the untrusted `jd` string.
 
@@ -1285,7 +1285,7 @@ for free even though it never separates its own instructions from the untrusted 
 it arrives and a Stop action actually cancels the model instead of leaving it computing in the
 background. ML Kit GenAI and MediaPipe stream for real (partial results as the model produces
 them, and cancelling the collector stops the in-flight generation); Foundation Models streams for
-real too once a consumer registers its Swift bridge (`ai/ios-bridge/README.md`) — every other
+real too once a consumer registers its Swift bridge (`ai/ios-bridge/README.md`), every other
 backend (and an unbridged Foundation Models) replays `generate`'s result as one emission.
 `CompositeOnDeviceLlm.generateStream` delegates straight to whichever backend it picked, so this
 always reaches the real thing where one exists.
@@ -1300,15 +1300,15 @@ startKoin { modules(onDeviceLlmModule(), myFeatureModule) }
 class JobSummarizer(private val llm: OnDeviceLlm) {
     suspend fun summarize(jd: String): String =
         llm.generate("Summarize this job description in one line:\n$jd").getOrNull()
-            ?: heuristicSummary(jd) // graceful fallback — never throws
+            ?: heuristicSummary(jd) // graceful fallback, never throws
 }
 ```
 
 Compose your own backend order (e.g. add a remote tier) with `CompositeOnDeviceLlm`. `CloudOnDeviceLlm`
-is the ready-made remote tier — it wraps an `:llm-chat` `AiProvider` chain as an `OnDeviceLlm`, so
+is the ready-made remote tier, it wraps an `:llm-chat` `AiProvider` chain as an `OnDeviceLlm`, so
 desktop, web, and any device with neither Gemini Nano nor Foundation Models still gets a real answer
 through the same seam. `buildProviderChain` already drops any provider with a blank key, so
-`CloudOnDeviceLlm(chain).isAvailable()` — and so the composite's own `isAvailable()` — is naturally
+`CloudOnDeviceLlm(chain).isAvailable()`, and so the composite's own `isAvailable()`, is naturally
 `false` when the caller configured no key at all:
 
 ```kotlin
@@ -1324,19 +1324,19 @@ val llm: OnDeviceLlm = CompositeOnDeviceLlm(listOf(mlKitTier, mediaPipeTier, clo
 | Member | Signature | What it does |
 |---|---|---|
 | `OnDeviceLlm` | `interface { fun isAvailable(): Boolean; suspend fun generate(prompt: String): AiResult<String>; fun generateStream(prompt: String): Flow<String> }` | The single seam, text in, typed result (or token stream) out |
-| `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices) — fails `NotSupportedOnPlatform` |
+| `UnavailableOnDeviceLlm` | `object : OnDeviceLlm` | The always-off floor (desktop / pre-AI devices), fails `NotSupportedOnPlatform` |
 | `CompositeOnDeviceLlm` | `class(backends: List<OnDeviceLlm>)` | Tries backends in order; first success wins, else the last failure reason. `generateStream` delegates to the chosen backend's own stream, not a single-emission replay |
-| `CloudOnDeviceLlm` | `class(providers: List<AiProvider>, config: AiConfig = AiConfig())` | `OnDeviceLlm` backed by an `:llm-chat` provider chain — cloud as the fallback tier. `isAvailable()` is `providers.isNotEmpty()`; `generate`/`generateStream` try each available provider in order, real SSE token streaming included |
+| `CloudOnDeviceLlm` | `class(providers: List<AiProvider>, config: AiConfig = AiConfig())` | `OnDeviceLlm` backed by an `:llm-chat` provider chain, cloud as the fallback tier. `isAvailable()` is `providers.isNotEmpty()`; `generate`/`generateStream` try each available provider in order, real SSE token streaming included |
 | `onDeviceLlmModule` | `expect fun(): Module` | Per-platform Koin bindings for the right backend(s) |
-| `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo>; suspend fun download(id, licenseAcknowledged = false); suspend fun delete(id) }` | On-demand model download/residency status. `download` itself declines (state `FAILED`) a gated model without `licenseAcknowledged = true`, or any model over a metered connection — on Android via `MediaPipeModelManager` |
+| `ModelManager` | `interface { fun models(): List<ModelInfo>; fun observe(id): Flow<ModelInfo>; suspend fun download(id, licenseAcknowledged = false); suspend fun delete(id) }` | On-demand model download/residency status. `download` itself declines (state `FAILED`) a gated model without `licenseAcknowledged = true`, or any model over a metered connection, on Android via `MediaPipeModelManager` |
 | `ModelInfo` / `ModelDownloadState` | data / enum | Model id, size, `ABSENT/DOWNLOADING/READY/FAILED`, progress |
-| `capabilities()` | `suspend fun OnDeviceLlm.(): AiCapabilities` | Honest machine-readable descriptor: real streaming/multimodal support, which `GenerationConfig` fields this backend actually reads, and — when unavailable — the real `AiFailure` reason instead of a bare `false` |
+| `capabilities()` | `suspend fun OnDeviceLlm.(): AiCapabilities` | Honest machine-readable descriptor: real streaming/multimodal support, which `GenerationConfig` fields this backend actually reads, and, when unavailable, the real `AiFailure` reason instead of a bare `false` |
 | `StructuredOutput<T>` | `class(serializer: KSerializer<T>) { suspend fun ask(prompt, generate): AiResult<T> }` | Typed field extraction instead of a regex scrape: embeds a schema hint, tolerantly parses the reply as JSON (strips a ```` ```json ```` fence if present), retries once with the model's own bad reply on a parse miss, else a typed `AiFailure` |
-| `KeywordClassifier<T>` | `class(categories: Map<T, List<String>>) { fun classify(text): T? }` | Buckets free text into one of a fixed set of categories by keyword hits — no model call, for the "bucket this" cases too simple to justify a round trip |
+| `KeywordClassifier<T>` | `class(categories: Map<T, List<String>>) { fun classify(text): T? }` | Buckets free text into one of a fixed set of categories by keyword hits, no model call, for the "bucket this" cases too simple to justify a round trip |
 
 Model files are **downloaded on demand at runtime**, never shipped in the repo.
 
-`ai` is standalone, depends only on coroutines + Koin + `:result` (for `AiResult`/`AiFailure` — a
+`ai` is standalone, depends only on coroutines + Koin + `:result` (for `AiResult`/`AiFailure`, a
 zero-dependency module, so this pulls in nothing else) and, on Android, the ML Kit GenAI +
 MediaPipe SDKs. Your domain "intelligence" layer (prompt templates, output parsing, heuristics)
 stays in your app and consumes this seam. All four apps use it today: Candidai's `core:ai` builds
@@ -1347,9 +1347,9 @@ directly as a worked example.
 | Target | Backend |
 |---|---|
 | Android | ML Kit GenAI (Gemini Nano) → MediaPipe (Gemma) → your own `CloudOnDeviceLlm`, composed with fallback. `isAvailable()` is a cheap API-level floor; `capabilities()` runs the real AICore `FeatureStatus`/model-residency check and reports why when it's off |
-| iOS (`iosArm64`, `iosSimulatorArm64`) | **Foundation Models is real, opt-in per consumer.** `FoundationModelsOnDeviceLlm` delegates to a Swift `LanguageModelSession` bridge (real per-token streaming) once your app registers one — see `ai/ios-bridge/README.md`; unregistered, it degrades to unavailable, same as before the bridge existed. `MediaPipeOnDeviceLlm` is still an unconditional stub (`@Unimplemented`, logged once) — no Swift bridge for it yet. `CloudOnDeviceLlm` works today (plain HTTP) regardless, as the fallback tier |
+| iOS (`iosArm64`, `iosSimulatorArm64`) | **Foundation Models is real, opt-in per consumer.** `FoundationModelsOnDeviceLlm` delegates to a Swift `LanguageModelSession` bridge (real per-token streaming) once your app registers one, see `ai/ios-bridge/README.md`; unregistered, it degrades to unavailable, same as before the bridge existed. `MediaPipeOnDeviceLlm` is still an unconditional stub (`@Unimplemented`, logged once), no Swift bridge for it yet. `CloudOnDeviceLlm` works today (plain HTTP) regardless, as the fallback tier |
 | JVM / Desktop | `UnavailableOnDeviceLlm` by default; append your own `CloudOnDeviceLlm` for a real answer |
-| `wasmJs` (web) | `UnavailableOnDeviceLlm` by default — same as JVM, no on-device model in a browser; append your own `CloudOnDeviceLlm` (its `AiProvider`s reach every cloud vendor's HTTP API fine from `wasmJs`) |
+| `wasmJs` (web) | `UnavailableOnDeviceLlm` by default, same as JVM, no on-device model in a browser; append your own `CloudOnDeviceLlm` (its `AiProvider`s reach every cloud vendor's HTTP API fine from `wasmJs`) |
 
 **Not device-verified from this repo, honestly.** CI here runs on Ubuntu with no Android device and
 no macOS runner, so two things are unit/host-tested against fakes but have never run against the
@@ -1398,12 +1398,12 @@ Doori's `feature:agent` (`LlmAssistantEngineTest`); no other app has adopted it 
 
 Every app that wants cloud LLM chat re-solves the same problem: three different HTTP APIs
 (Anthropic, OpenAI, Gemini), three different auth headers and request shapes, a fallback order
-when a key is missing, and — the part that used to be invisible — a dozen different ways for a
+when a key is missing, and, the part that used to be invisible, a dozen different ways for a
 call to fail that all looked like the same blank string. `llm-chat` collapses that behind one
 `AiProvider` seam: `complete(messages, config) -> AiResult<String>` plus `isAvailable()`.
 
-`AiResult<T>` is `com.siddharth.kmp.result.Result<T, AiFailure>` — the generic typed-result already
-in `:result` — with `AiFailure` naming why a call didn't produce text: `NoKey`, `Unauthorized`,
+`AiResult<T>` is `com.siddharth.kmp.result.Result<T, AiFailure>`, the generic typed-result already
+in `:result`, with `AiFailure` naming why a call didn't produce text: `NoKey`, `Unauthorized`,
 `RateLimited`, `Timeout`, `Network`, `EmptyReply` (plus `ModelNotResident`/`NotSupportedOnPlatform`,
 which only the on-device seam in [`ai`](#ai) returns). A 401 no longer looks like an empty reply.
 
@@ -1445,7 +1445,7 @@ job.cancel()
 | Member | Signature | What it does |
 |---|---|---|
 | `AiProvider` | `interface { complete(messages, config): AiResult<String>; completeStream(messages, config): Flow<AiChunk>; isAvailable(): Boolean; capabilities(): AiCapabilities }` | The single seam every backend implements |
-| `capabilities()` | `suspend fun AiProvider.(): AiCapabilities` | Which `AiConfig` fields this provider actually honors, whether it streams/accepts images, and the real reason it's unavailable — no need to read provider source to learn a field silently no-ops |
+| `capabilities()` | `suspend fun AiProvider.(): AiCapabilities` | Which `AiConfig` fields this provider actually honors, whether it streams/accepts images, and the real reason it's unavailable, no need to read provider source to learn a field silently no-ops |
 | `AiChunk` | `sealed interface { Token(text: String); Failed(reason: AiFailure, detail: String? = null, retryAfterSeconds: Int? = null) }` | One increment of a `completeStream` reply. `detail`/`retryAfterSeconds` are only ever non-null from `HttpChatProvider` today (the server's own error text, and a `Retry-After` header) |
 | `completeOrBlank` | `@Deprecated suspend AiProvider.(messages, config) -> String` | Migration bridge: collapses every `AiFailure` back to `""`, matching the old behavior |
 | `AnthropicProvider` / `OpenAiProvider` / `GeminiProvider` | `class(apiKey: String) : AiProvider` | Real HTTP clients against each vendor's chat-completion API, both plain and SSE-streaming |
@@ -1454,35 +1454,35 @@ job.cancel()
 | `firstAvailable` | `suspend (chain, fallback) -> AiProvider` | First provider whose `isAvailable()` is true |
 
 `AiConfig.timeoutMs` (default 5s, same ceiling as before but now caller-configurable) bounds
-`complete()`. `completeStream()` deliberately has no such ceiling — a legitimately long reply keeps
+`complete()`. `completeStream()` deliberately has no such ceiling, a legitimately long reply keeps
 producing tokens well past any single-call deadline; cancelling the collecting coroutine is what
 ends a stream (and the provider's billing for it) early, not a timer.
 
-All three providers honor `maxTokens`/`temperature`/`timeoutMs` identically — `capabilities()`
+All three providers honor `maxTokens`/`temperature`/`timeoutMs` identically, `capabilities()`
 reports `honoredConfigFields = {"maxTokens", "temperature", "timeoutMs"}` for each, so a caller
 never has to open `AnthropicProvider`/`OpenAiProvider`/`GeminiProvider` source to check.
 
-All three providers' streaming endpoints frame their reply the same way — SSE `data:` lines, a
-blank line between events, OpenAI closing with `data: [DONE]` — behind one shared `parseSseFrames`
+All three providers' streaming endpoints frame their reply the same way, SSE `data:` lines, a
+blank line between events, OpenAI closing with `data: [DONE]`, behind one shared `parseSseFrames`
 parser (`SseFraming.kt`); each provider still JSON-decodes its own event shape (Anthropic's
 `content_block_delta`, OpenAI's `choices[].delta.content`, Gemini's own `GeminiResponse` shape reused
 as-is since its `:streamGenerateContent?alt=sse` endpoint reuses its non-streaming reply's fields).
 
 `HttpChatProvider` is the fourth backend, for an app's *own* SSE chat endpoint rather than a named
-vendor — the thing `cv-siddharth-kmp` and Candidai were each hand-rolling their own `data:`/
+vendor, the thing `cv-siddharth-kmp` and Candidai were each hand-rolling their own `data:`/
 `[DONE]` parser for. It expects `{"text":"..."}` per frame, and takes an `HttpChatConfig(endpoint,
 mode?, route?, originHeader?, requireDoneSentinel = false)`: `mode` and `route` are each an
 app-defined string forwarded to the backend as-is (which persona/prompt-pack, and which
-screen/page — respectively), the SYSTEM message (if any) goes through as a dedicated `system` field
+screen/page, respectively), the SYSTEM message (if any) goes through as a dedicated `system` field
 rather than inside `messages`, and `originHeader` sets this request's `Origin` header for a backend
-that allow-lists origins on a public, keyless endpoint (a no-op on `wasmJs` — a real browser's
+that allow-lists origins on a public, keyless endpoint (a no-op on `wasmJs`, a real browser's
 `fetch` refuses to let a script override `Origin`, a forbidden header per the Fetch spec). A blank
 `endpoint` reports `AiFailure.NoKey`, the same bucket a missing vendor key uses, since `llm-chat`
 has no separate "not configured" reason.
 
 The request body is `{"messages":[...],"system"?,"mode"?,"route"?,"maxTokens","temperature"}`.
 `system`, `mode` and `route` are each **omitted** from the JSON when `null` rather than sent as
-`"mode": null` — the request `Json` sets `explicitNulls = false` — so a backend validating `mode`
+`"mode": null`, the request `Json` sets `explicitNulls = false`, so a backend validating `mode`
 against a closed allowlist (e.g. exactly `"compose"` / `"jd"`, with the key's absence meaning
 ordinary chat) can 400 an unrecognized `mode` without also 400ing every caller that never sets one.
 
@@ -1492,22 +1492,20 @@ val provider = HttpChatProvider(HttpChatConfig(endpoint = "https://api.example.c
 
 A non-2xx response's own body and headers reach the caller instead of being discarded: `AiChunk.
 Failed.detail` is the server's `{"error": "..."}` message (or the raw body, if it isn't that shape),
-and `retryAfterSeconds` is a numeric `Retry-After` header, when the backend sent one — so a UI can
+and `retryAfterSeconds` is a numeric `Retry-After` header, when the backend sent one, so a UI can
 show the server's own wording on a 403, or a real countdown on a 429, instead of a generic bucket
 label.
 
 By default a stream that emits some tokens and then simply closes (no `data: [DONE]`) still reads
-as success, because `[DONE]` is optional in this contract — some backends never send it and just
+as success, because `[DONE]` is optional in this contract, some backends never send it and just
 close cleanly. Set `requireDoneSentinel = true` for a backend whose contract *does* guarantee
-`[DONE]` as the terminal event (cv-siddharth's `/api/chat`, for one): a stream that closes early —
-tokens arrived, then the connection dropped before `[DONE]` — is then reported as `AiChunk.
+`[DONE]` as the terminal event (cv-siddharth's `/api/chat`, for one): a stream that closes early, tokens arrived, then the connection dropped before `[DONE]`, is then reported as `AiChunk.
 Failed(AiFailure.Network, detail = "Stream closed before the completion signal (N chars received)")`
 instead of silently reading as a complete reply.
 
 A key a user pastes in (BYOK) needs somewhere to live between app launches that isn't a plain
-string field or an app re-inventing `SharedPreferences`. `SecureKeyStore` is that place —
-`getKey(provider)`/`setKey(provider, apiKey)` over the same three cloud `ProviderId`s
-`AiProviderConfig` already knows — and `loadAiProviderConfig` turns whatever it holds straight into
+string field or an app re-inventing `SharedPreferences`. `SecureKeyStore` is that place, `getKey(provider)`/`setKey(provider, apiKey)` over the same three cloud `ProviderId`s
+`AiProviderConfig` already knows, and `loadAiProviderConfig` turns whatever it holds straight into
 the config `buildProviderChain` wants:
 
 ```kotlin
@@ -1529,10 +1527,10 @@ val chain = buildProviderChain(config, fallback = myHeuristicProvider)
 | `loadAiProviderConfig` | `(getKey: (ProviderId) -> String?, selectedProvider?, useOnDevice?) -> AiProviderConfig` | Reads the three cloud keys via `getKey` (pass `store::getKey`) into a ready `AiProviderConfig` |
 
 Android backs it with `:settings`'s `EncryptedSharedPreferences` (`MasterKey.AES256_GCM`); iOS with
-its `KeychainSettings`; JVM with its AES-256-GCM-encrypted properties file — `llm-chat` adds no
+its `KeychainSettings`; JVM with its AES-256-GCM-encrypted properties file, `llm-chat` adds no
 crypto of its own, only the provider-key vocabulary on top of `:settings`'s generic store.
 **`wasmJs` is the one platform this genuinely can't do securely**: there is no OS keystore inside a
-browser sandbox, so that actual persists to `window.sessionStorage` — plaintext, readable by any
+browser sandbox, so that actual persists to `window.sessionStorage`, plaintext, readable by any
 script on the page, gone when the tab closes. Fine for a demo pasting a key into the current tab;
 never the guarantee the other three platforms give, and not a substitute for a backend that holds
 the real key server-side.
@@ -1582,10 +1580,10 @@ no audio pipeline to wire and no `.wav` files to ship.
   `NotificationChannel`s the app needs before posting a notification on API 26+.
 
 ```kotlin
-// Android — install once so haptics can reach the system Vibrator (sound works without this)
+// Android, install once so haptics can reach the system Vibrator (sound works without this)
 FeedbackAndroid.install(applicationContext)
 
-// Any platform — the one player instance for the app's lifetime
+// Any platform, the one player instance for the app's lifetime
 val player: SoundPlayer = defaultSoundPlayer()
 
 // A claim gets stamped onto the felt
@@ -1602,14 +1600,14 @@ player.haptic(HapticPattern.DoubleBuzz)
 // Game over
 player.playSound(SoundKey.Win)
 player.haptic(HapticPattern.HeavyLong)
-player.release() // idempotent — safe to call more than once
+player.release() // idempotent, safe to call more than once
 
 // Or via the style/notification-shaped facade
 HapticManager.hapticImpact(HapticStyle.Medium)                  // -> HapticPattern.Thud
 HapticManager.hapticNotification(HapticNotificationType.Success) // -> HapticPattern.HeavyLong
 
 // Share a result (Android: real share sheet; other targets: documented no-op)
-shareGameResult("Won as Trader — 3 coups survived")
+shareGameResult("Won as Trader, 3 coups survived")
 
 // Observe the permission state a screen needs to react to
 NotificationPermissionState.permission.collect { permission -> /* … */ }
@@ -1736,9 +1734,9 @@ import com.siddharth.kmp.paymentsapi.PaymentResult
 suspend fun charge(gateway: PaymentGateway, order: CreatedOrder, host: PaymentHost): PaymentResult {
     val prepared = gateway.prepare(order)
     return when (val result = gateway.pay(host, prepared)) {
-        is PaymentResult.Success -> result // still just a client hint — verify server-side
+        is PaymentResult.Success -> result // still just a client hint, verify server-side
         is PaymentResult.Failure -> result
-        is PaymentResult.Pending -> result  // e.g. UPI SUBMITTED — poll the backend
+        is PaymentResult.Pending -> result  // e.g. UPI SUBMITTED, poll the backend
         is PaymentResult.Cancelled -> result
     }
 }
@@ -1770,7 +1768,7 @@ against a real SDK: `stripe`, `stripe-connect`, `razorpay`, `cashfree`, `square`
 hosted-checkout leaf via `compose-webview-multiplatform`, for gateways with no native SDK).
 
 ```kotlin
-// provider:stripe/build.gradle.kts — the shape every leaf follows
+// provider:stripe/build.gradle.kts, the shape every leaf follows
 dependencies {
     implementation(project(":payments-api")) // the PaymentGateway contract
     implementation(project(":common"))       // AppLog
@@ -1789,7 +1787,7 @@ Most are Android-only, `compileSdk 37` / `minSdk 24`, because they wrap a concre
 SDK/Activity-callback surface, same reasoning as `security`. Three are not, and each for a reason
 worth stating: `wallet` is an internal ledger over HTTP with no vendor SDK at all, so it is plain
 KMP; `googlepay` keeps its single Android target but holds its config and request JSON in
-`commonMain`, off `org.json`; and `applepay` declares **iOS targets only** — there is no Apple Pay
+`commonMain`, off `org.json`; and `applepay` declares **iOS targets only**, there is no Apple Pay
 on Android, and a stub `actual` that compiles everywhere and pays nobody is worse than a module the
 Android classpath simply does not contain.
 
@@ -1862,7 +1860,7 @@ Gaddi's ai↔engine inversion: the generic search primitives (`Policy`, `GameRul
 stays in the consuming app, this module never sees a card, a coin, or a Coup-specific rule.
 
 ```kotlin
-// module build.gradle.kts — kotlinx-coroutines-core in commonMain (search() is a cancellable
+// module build.gradle.kts, kotlinx-coroutines-core in commonMain (search() is a cancellable
 // suspend fun), plus kotlin("test") in commonTest
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -1901,7 +1899,7 @@ the rest of `kmp-toolkit` is by pattern, not by `implementation(...)`.
 .sops.yaml                          # which files get encrypted, to which age recipient(s)
 alias-manifest.yaml                 # logical name -> vault key -> where it lands on disk
 vault/
-  example.secrets.yaml              # plaintext fixture (fictional values) — the pre-encryption source
+  example.secrets.yaml              # plaintext fixture (fictional values), the pre-encryption source
   example.secrets.enc.yaml.sample   # illustrative-only: what the encrypted file's shape looks like
 test.sh                             # round-trip check (live if sops+age installed, else documents steps)
 ```
@@ -1927,28 +1925,28 @@ decrypted/materialized secret, or real values in `vault/example.secrets.yaml`.
 
 ```
 kmp-toolkit/
-├── result/                  # Result<D,E> + DataError — Android · JVM · iOS · Wasm
-├── common/                  # AppLog + DispatcherProvider — Android · JVM · iOS · Wasm
-├── mvi-core/                # BaseViewModel / StateViewModel / EffectEmitter — Android · JVM · iOS · Wasm
-├── network/                 # createHttpClient + connectivity — Android · JVM · iOS
-├── security/                # Keystore, VAPT posture, FLAG_SECURE — Android only
-├── device-integrity/        # KMP root/jailbreak posture check — Android · JVM · iOS · Wasm
-├── settings/                # SecureSettingsFactory (encrypted key/value) — Android · JVM · iOS
-├── auth/                    # TokenStore (ephemeral + persisted) — Android · JVM · iOS
-├── netlog/                  # NetworkLogPlugin, Ktor request/response logger — Android · JVM · iOS · Wasm
-├── designsystem/            # DesignTokens, ThemeController, MarkdownText, AiSettingsSection — Android · iOS · Wasm
-├── charts/                  # TimeSeriesChart (Vico wrapper) — Android · JVM · iOS · Wasm
-├── ai/                      # OnDeviceLlm seam — Android · JVM · iOS
-├── ai-testing/              # FakeOnDeviceLlm/RecordingLlm test doubles — Android · JVM · iOS · Wasm
-├── llm-chat/                # Cloud-LLM chat client (Gemini/OpenAI/Anthropic) — Android · JVM · iOS · Wasm
-├── feedback/                # SoundPlayer, HapticManager — Android · JVM · iOS · Wasm
-├── location/                # KalmanSmoother, PathSimplifier — Android · JVM · iOS · Wasm
-├── app-shell/                # Location/geocoding/scanner/notifications/permissions seams — Android · JVM · iOS
-├── payments-api/            # PaymentGateway contract, Money, PaymentResult — Android · JVM · iOS
+├── result/                  # Result<D,E> + DataError, Android · JVM · iOS · Wasm
+├── common/                  # AppLog + DispatcherProvider, Android · JVM · iOS · Wasm
+├── mvi-core/                # BaseViewModel / StateViewModel / EffectEmitter, Android · JVM · iOS · Wasm
+├── network/                 # createHttpClient + connectivity, Android · JVM · iOS
+├── security/                # Keystore, VAPT posture, FLAG_SECURE, Android only
+├── device-integrity/        # KMP root/jailbreak posture check, Android · JVM · iOS · Wasm
+├── settings/                # SecureSettingsFactory (encrypted key/value), Android · JVM · iOS
+├── auth/                    # TokenStore (ephemeral + persisted), Android · JVM · iOS
+├── netlog/                  # NetworkLogPlugin, Ktor request/response logger, Android · JVM · iOS · Wasm
+├── designsystem/            # DesignTokens, ThemeController, MarkdownText, AiSettingsSection, Android · iOS · Wasm
+├── charts/                  # TimeSeriesChart (Vico wrapper), Android · JVM · iOS · Wasm
+├── ai/                      # OnDeviceLlm seam, Android · JVM · iOS
+├── ai-testing/              # FakeOnDeviceLlm/RecordingLlm test doubles, Android · JVM · iOS · Wasm
+├── llm-chat/                # Cloud-LLM chat client (Gemini/OpenAI/Anthropic), Android · JVM · iOS · Wasm
+├── feedback/                # SoundPlayer, HapticManager, Android · JVM · iOS · Wasm
+├── location/                # KalmanSmoother, PathSimplifier, Android · JVM · iOS · Wasm
+├── app-shell/                # Location/geocoding/scanner/notifications/permissions seams, Android · JVM · iOS
+├── payments-api/            # PaymentGateway contract, Money, PaymentResult, Android · JVM · iOS
 ├── provider/                # gateway adapter modules (stripe, razorpay, cashfree, square, …)
-├── offline-outbox/          # Room SubmitOutbox — Android · JVM · iOS · watchOS
-├── store/                    # ScreenState / DecisionEngine offline-first read+write helpers — Android · JVM · iOS · Wasm
-├── bots-policy/             # Generic ISMCTS search shell — Android · JVM · iOS · Wasm
+├── offline-outbox/          # Room SubmitOutbox, Android · JVM · iOS · watchOS
+├── store/                    # ScreenState / DecisionEngine offline-first read+write helpers, Android · JVM · iOS · Wasm
+├── bots-policy/             # Generic ISMCTS search shell, Android · JVM · iOS · Wasm
 ├── secrets/                 # SOPS+age vault + alias manifest (docs only, not a Gradle module)
 ├── docs/
 │   └── assets/               # main + per-module animated banner SVGs
@@ -1967,9 +1965,9 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
   modules (`result`, `bots-policy`, `location`, `store`) test on the JVM target with `kotlin.test`;
   Android-facing modules (`security`, the `provider:*` leaves) add MockK, Turbine and Robolectric
   where a host-side Android API needs exercising.
-- **CI matrix.** `.github/workflows/ci.yml` runs `./gradlew assemble check --stacktrace` — `check`
+- **CI matrix.** `.github/workflows/ci.yml` runs `./gradlew assemble check --stacktrace`, `check`
   aggregates `jvmTest`/`testAndroidHostTest`/`testDebugUnitTest`/`wasmJsBrowserTest`/lint per module,
-  so it stays a superset as modules and targets are added — across every module on every push and PR.
+  so it stays a superset as modules and targets are added, across every module on every push and PR.
 - **No-AI-attribution gate.** `.github/workflows/no-ai-attribution.yml` fails a push or PR if any
   commit message carries AI/assistant attribution, mirroring a local `.githooks/commit-msg` guard so
   nothing slips through `--no-verify` or an unconfigured clone.
@@ -1992,7 +1990,7 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
       (location/geocoding/scanner/notifications/permissions/update/review/push/analytics seams,
       Doori's first consumer), `store` (offline-first `ScreenState` + `DecisionEngine` read/write
       helpers), `auth` (`TokenStore`), `netlog` (Ktor request/response logger), `charts`
-      (`TimeSeriesChart`) — `device-integrity`, `store`, `auth`, `netlog` and `charts` have no
+      (`TimeSeriesChart`), `device-integrity`, `store`, `auth`, `netlog` and `charts` have no
       dependents yet
 - [x] CI matrix (`assemble check`, aggregating `jvmTest`/`testAndroidHostTest`/`testDebugUnitTest`/
       `wasmJsBrowserTest`/lint) + no-AI-attribution check, with an un-shallowed-base fetch so the PR
@@ -2009,11 +2007,11 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
       real Swift `LanguageModelSession` bridge for `FoundationModelsOnDeviceLlm` on iOS
 - [x] `result` picked up its first real consumers: `ai`/`llm-chat`/`designsystem` in-repo
       (`AiResult`/`AiFailure`/`AiCapabilities`), kmp-app-template out-of-repo (direct)
-- [x] 2.0.0 — the AI stack lands as a breaking public surface (see [Install](#install))
+- [x] 2.0.0, the AI stack lands as a breaking public surface (see [Install](#install))
 
 **Exploring**
 - [ ] Route `network`'s `HttpRequestRetry`/`ResponseException` failures onto `result`'s
-      `DataError.Network` arms, and adopt `DataError` in `security` too — `result`'s remaining two
+      `DataError.Network` arms, and adopt `DataError` in `security` too, `result`'s remaining two
       planned consumers, now that `ai`/`llm-chat`/`designsystem` and kmp-app-template already use it
 - [ ] `payments-api` → `result`'s typed `Result<D, DataError>` instead of its own `PaymentResult` shape
 - [ ] Move some `provider:*` leaves off `SANDBOX_READY`/`MOCK_MODE` as partner KYC access opens up
@@ -2023,7 +2021,7 @@ above live in a separate repo, [kmp-build-logic](https://github.com/darkpandawar
       Doori, see the [Modules](#modules) table)
 - [ ] A Swift bridge for `MediaPipeOnDeviceLlm` on iOS (still an unconditional stub); Gemini Nano
       hardware and the Foundation Models bridge are both unit-tested here but neither has run on real
-      Apple Intelligence/AICore hardware from this repo — see [ai](#ai)
+      Apple Intelligence/AICore hardware from this repo, see [ai](#ai)
 
 ## License
 

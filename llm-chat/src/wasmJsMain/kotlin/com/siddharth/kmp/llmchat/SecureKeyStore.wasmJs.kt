@@ -14,7 +14,7 @@ package com.siddharth.kmp.llmchat
  * pasted key rather than re-prompting on every reload of the same tab; it is not the Keystore/
  * Keychain guarantee the other three platforms give.
  *
- * // ponytail: no encryption-at-rest is possible in a browser without a server-side proxy holding
+ * // no encryption-at-rest is possible in a browser without a server-side proxy holding
  * // the real key — that's a different architecture, not a smaller version of this one. A real web
  * // deployment should route cloud-provider calls through a backend that holds the key server-side
  * // instead of shipping it to the client at all; upgrade path is "don't store a key in the browser",

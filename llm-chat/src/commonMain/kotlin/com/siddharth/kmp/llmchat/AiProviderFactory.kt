@@ -48,7 +48,7 @@ fun buildProviderChain(
  * [isAvailable]/[capabilities] pass straight through so wrapping a provider never changes what a
  * caller sees about it (e.g. [buildProviderChain]'s ordering, which reads [id]).
  *
- * // ponytail: an [onDevice] provider that itself routes to `CompositeOnDeviceLlm` gets guarded
+ * // an [onDevice] provider that itself routes to `CompositeOnDeviceLlm` gets guarded
  * // twice (once here, once at the on-device seam) — nested delimiters are harmless, just a few
  * // extra bytes; not worth threading an "already guarded" flag through two modules to avoid it.
  */

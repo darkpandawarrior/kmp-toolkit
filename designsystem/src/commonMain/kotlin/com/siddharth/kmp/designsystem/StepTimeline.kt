@@ -280,7 +280,7 @@ private fun StepState.nodeColor(): Color =
 
 // Contrast: the original 0xFF1E9E6A was 3.41:1 against the white check (fails WCAG AA 4.5:1 for a
 // 14dp glyph). 0xFF178057 is 4.93:1; the danger red was already 4.87:1.
-// ponytail: PaymentsLab-KMP's StepTimeline read app-tuned `StatusColors.Success`/`.Danger` (same
+// PaymentsLab-KMP's StepTimeline read app-tuned `StatusColors.Success`/`.Danger` (same
 // package, internal to that module). StatusColors stays app-side (GatewayStatusBadge, which is
 // branded, still needs the full 5-tone set) — these two literal values are copied here so the
 // timeline node colours are unchanged. Promote to a shared semantic-color token if a 3rd

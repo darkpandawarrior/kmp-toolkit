@@ -37,7 +37,7 @@ public val DEFAULT_REDACTED_HEADERS: Set<String> =
  * [NetworkLogEntry.requestHeaders], so a local debug screen can show them without this function
  * being the thing that leaks them.
  *
- * ponytail: no shell-escaping of embedded quotes. A body containing `'` produces a command you have
+ * no shell-escaping of embedded quotes. A body containing `'` produces a command you have
  * to fix by hand. Proper escaping is a real parser and this is a debug convenience — the ceiling is
  * deliberate, not overlooked.
  */
@@ -65,7 +65,7 @@ public fun NetworkLogEntry.toCurl(redactHeaders: Set<String> = DEFAULT_REDACTED_
  * response bodies sitting on disk, which is a liability rather than a feature. It is also why this
  * needs no database and works identically on every target.
  *
- * ponytail: `record` rebuilds the list each call. At the default 200 entries that is nothing; if a
+ * `record` rebuilds the list each call. At the default 200 entries that is nothing; if a
  * consumer ever logs at a rate where it matters, an ArrayDeque behind the StateFlow is the upgrade.
  */
 public class NetworkLogStore(

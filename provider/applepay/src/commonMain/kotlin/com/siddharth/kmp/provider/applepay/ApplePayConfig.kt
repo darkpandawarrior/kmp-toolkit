@@ -22,7 +22,7 @@ const val APPLE_MERCHANT_ID_SENTINEL: String = "__PROVISION_APPLE_MERCHANT_ID__"
  */
 data class ApplePayConfig(
     val merchantId: String = APPLE_MERCHANT_ID_SENTINEL,
-    // ponytail: generic display name — no reference-app branding in the public toolkit.
+    // generic display name — no reference-app branding in the public toolkit.
     val merchantName: String = "kmp-toolkit Demo",
     val countryCode: String = "IN",
     val currencyCode: String = "INR",

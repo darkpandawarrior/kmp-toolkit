@@ -350,7 +350,7 @@ public class TieredGpsAlgorithm(
     public companion object {
         public const val FLAG_ENABLE_KALMAN: String = "enableKalman"
 
-        // ponytail: lat/lng range (-90..90 / -180..180) stays a plain constant, not a KnobSpec —
+        // lat/lng range (-90..90 / -180..180) stays a plain constant, not a KnobSpec —
         // it's the mathematical definition of a coordinate, not a product tuning value. Every
         // *tunable* threshold below is a knob.
         private const val COORD_LAT_MIN = -90.0

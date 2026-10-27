@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * DataStore-backed implementation in Koin (same interface → no shell/settings changes), which is
  * how the dark-mode choice survives process death.
  *
- * ponytail: synchronous read/write. The stored value is a single boolean read once at construction
+ * synchronous read/write. The stored value is a single boolean read once at construction
  * and written on toggle — a DataStore actual can `runBlocking` a first-value read at startup without
  * a perceptible cost. Move to a suspend/Flow seam only if theme grows into a multi-field profile.
  */

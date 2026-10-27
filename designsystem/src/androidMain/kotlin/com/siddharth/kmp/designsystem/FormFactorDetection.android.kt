@@ -10,7 +10,7 @@ import androidx.compose.ui.platform.LocalConfiguration
  * and reading them through [LocalConfiguration] means a fold, a display switch or a move to an
  * external monitor recomposes with the right tokens.
  *
- * ponytail: `UI_MODE_TYPE_DESK` and `_CAR` fall through to Handheld. Desk mode is a docked phone at
+ * `UI_MODE_TYPE_DESK` and `_CAR` fall through to Handheld. Desk mode is a docked phone at
  * arm's length (Handheld metrics are right), and nothing in this family ships to Auto — which needs
  * driver-distraction rules, not a token scale. Add them when a consumer actually targets them.
  */

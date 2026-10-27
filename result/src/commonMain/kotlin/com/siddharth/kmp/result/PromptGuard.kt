@@ -20,7 +20,7 @@ object PromptGuard {
     private const val CLOSE = "[[/UNTRUSTED_DATA]]"
     private const val ESCAPED_MARKER = "[delimiter]"
 
-    // ponytail: a fixed list of known override phrasings, not a classifier — wrapping is the real
+    // a fixed list of known override phrasings, not a classifier — wrapping is the real
     // defense (a model can't be pattern-matched out of reading embedded text as instructions),
     // this list only decides whether to flag. Add a phrase here when a real attempt slips past it.
     private val OVERRIDE_PATTERNS =

@@ -33,7 +33,7 @@ import android.net.Uri
  * `android:autoVerify="true"` and a matching `assetlinks.json` on the domain. Without verification
  * Android shows a disambiguation dialog, and any other installed app may claim the same URL.
  *
- * ponytail: opens the user's browser with `ACTION_VIEW` rather than a Custom Tab. A Custom Tab looks
+ * opens the user's browser with `ACTION_VIEW` rather than a Custom Tab. A Custom Tab looks
  * better and shares the browser's Apple session, but costs an `androidx.browser` dependency this
  * module does not otherwise need. Swap it in the host app if the polish is worth the artifact — and
  * never swap in a `WebView`: an embedded WebView can read the user's Apple password.

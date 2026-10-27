@@ -135,7 +135,7 @@ private fun OnDeviceModelRowContent(
     onPauseDownload: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    // ponytail: plain `remember`, not `rememberSaveable` — this module doesn't otherwise depend on
+    // plain `remember`, not `rememberSaveable` — this module doesn't otherwise depend on
     // the runtime-saveable artifact. Losing this tick on a config change just means re-ticking the
     // box; upgrade to rememberSaveable if that proves annoying enough to matter.
     var licenseAccepted by remember(row.info.id) { mutableStateOf(false) }

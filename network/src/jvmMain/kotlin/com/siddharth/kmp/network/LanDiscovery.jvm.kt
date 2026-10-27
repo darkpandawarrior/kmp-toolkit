@@ -26,7 +26,7 @@ import kotlin.concurrent.thread
 // The advertiser blasts the beacon on a fixed cadence; the discoverer listens AND fires a one-shot
 // "probe" (`<serviceType>?`) so live hosts answer immediately instead of only on their next tick.
 //
-// ponytail: one shared UDP port for all service types; distinct types coexist because every packet is
+// one shared UDP port for all service types; distinct types coexist because every packet is
 // tagged with (and filtered by) its serviceType. Derive a per-type port only if cross-service beacon
 // volume on one subnet ever becomes a real problem.
 // ─────────────────────────────────────────────────────────────────────────────

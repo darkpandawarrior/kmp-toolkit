@@ -149,7 +149,7 @@ object OtpFieldDefaults {
  * OtpField(code, { code = it }, onComplete = { viewModel.verify(it) }, isError = state.rejected)
  * ```
  *
- * ponytail: no `enabled = false` styling beyond what the text field already does, and no built-in
+ * no `enabled = false` styling beyond what the text field already does, and no built-in
  * resend timer — a timer is screen state, not field state, and belongs in the caller's ViewModel.
  */
 @Composable

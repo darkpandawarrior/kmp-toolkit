@@ -26,7 +26,7 @@ import kotlin.jvm.JvmInline
  * target including `wasmJs`. Keep it that way — the moment this file needs a dependency to
  * compile, the harness that replays traces in a browser preview stops working.
  *
- * ponytail: three implementations, not four. Two of the four known algorithms differ only in
+ * three implementations, not four. Two of the four known algorithms differ only in
  * threshold constants, so they are two [TuningProfile]s of one class, not two classes. Sibling
  * classes that differ only in numbers are the mistake this abstraction exists to avoid.
  */
