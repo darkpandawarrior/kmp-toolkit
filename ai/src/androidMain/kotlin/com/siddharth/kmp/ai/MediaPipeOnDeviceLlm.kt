@@ -17,7 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-// ponytail: EXPERIMENTAL — com.google.mediapipe:tasks-genai (LLM Inference, Gemma 3 1B/Gemma-3n).
+// EXPERIMENTAL — com.google.mediapipe:tasks-genai (LLM Inference, Gemma 3 1B/Gemma-3n).
 // Compile-verified only, NOT device-verified: inference needs the model file present (user-downloaded
 // via MediaPipeModelManager), which isn't shipped in the repo. This is the SECOND on-device backend
 // behind the OnDeviceLlm seam (after ML Kit Gemini Nano) — it covers the far larger set of devices
@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
 // `lock` (a Mutex, not `synchronized`) serializes every actual inference: tasks-genai supports exactly
 // one in-flight generation per LlmInference, so a second caller must queue behind the first rather
 // than race the native session — and Mutex.withLock/lock/unlock are suspend-safe, unlike a monitor.
-// ponytail: the cached LlmInference is never proactively evicted while idle (no LRU/idle-timeout), so
+// the cached LlmInference is never proactively evicted while idle (no LRU/idle-timeout), so
 // the ~500MB-class model stays resident in memory for the rest of the process once first used — the
 // same trade the composite already makes by keeping this whole class alive as a Koin single. Add an
 // idle-close timer only if that footprint measurably matters on low-RAM devices.

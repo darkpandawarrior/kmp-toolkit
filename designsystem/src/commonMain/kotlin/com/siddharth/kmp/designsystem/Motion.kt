@@ -30,7 +30,7 @@ import androidx.compose.ui.graphics.graphicsLayer
  * AnimatedVisibility(visible, enter = screenEnter, exit = screenExit) { ... }
  * ```
  *
- * ponytail: no separate `popEnter`/`popExit`. The source idiom declared four values where the pop
+ * no separate `popEnter`/`popExit`. The source idiom declared four values where the pop
  * pair was a character-for-character copy of the push pair — a back navigation that animates
  * identically to a forward one is just the same two values used twice. Add a distinct pop pair when
  * a screen actually wants directional motion.
@@ -59,7 +59,7 @@ val screenExit: ExitTransition =
  * Card(Modifier.focusScale().focusable().clickable { open(movie) })
  * ```
  *
- * ponytail: `graphicsLayer` takes the lambda overload so the scale is applied at draw time — the
+ * `graphicsLayer` takes the lambda overload so the scale is applied at draw time — the
  * animation never invalidates composition or layout, only the layer. That matters on a TV row where
  * a dozen cards animate as focus sweeps across them.
  */

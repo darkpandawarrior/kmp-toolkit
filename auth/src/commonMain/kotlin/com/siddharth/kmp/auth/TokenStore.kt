@@ -45,7 +45,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * tokens.setPersisted(response.refreshToken)
  * ```
  *
- * ponytail: not thread-safe beyond what [MutableStateFlow] and [Settings] already give. Both
+ * not thread-safe beyond what [MutableStateFlow] and [Settings] already give. Both
  * consumers drive this from a single auth path; add locking only if a second writer ever appears.
  */
 class TokenStore(

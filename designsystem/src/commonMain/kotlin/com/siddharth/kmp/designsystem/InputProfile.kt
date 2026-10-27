@@ -65,7 +65,7 @@ data class InputProfile(
  * `UIViewController`, `main()`, the wasm `onWasmReady` — or from a shared `initDesignSystem()` if the
  * consumer already has one.
  *
- * ponytail: a plain function rather than an `expect`/`actual` pair. The flag is common API and the
+ * a plain function rather than an `expect`/`actual` pair. The flag is common API and the
  * assignment is identical on every target; the only platform-specific part is *where* it gets called,
  * which is the consumer's business and not something an `actual` can encode.
  */
@@ -140,7 +140,7 @@ fun rememberInputProfile(): InputProfile {
  * device. That constant is still correct — this is the separate question of what happens when the
  * input is not a finger: a TV remote driving a focus ring needs a bigger target than a mouse does.
  *
- * ponytail: three cases, no token set. If a second component ever needs pointer-scaled metrics, move
+ * three cases, no token set. If a second component ever needs pointer-scaled metrics, move
  * this to a `PointerDefaults` object following the Material `FooDefaults` convention that
  * [AdaptiveTokens] already points at — do not grow [AdaptiveTokens] for it.
  */

@@ -33,7 +33,7 @@ interface ConnectivityChecker {
 }
 
 /**
- * Default used on jvm/ios. ponytail: assumes online and lets the HTTP call fail-and-retry rather
+ * Default used on jvm/ios. assumes online and lets the HTTP call fail-and-retry rather
  * than probing reachability — upgrade to NWPathMonitor (ios) / a real jvm probe if false-positives
  * ever cost a bad UX.
  */

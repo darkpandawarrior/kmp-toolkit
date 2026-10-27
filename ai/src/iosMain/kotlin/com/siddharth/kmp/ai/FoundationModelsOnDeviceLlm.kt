@@ -80,7 +80,7 @@ class FoundationModelsOnDeviceLlm(
             awaitClose { handle.cancel() }
         }
 
-    // ponytail: text-only backend (supportsImage stays the interface's `false` default), so a
+    // text-only backend (supportsImage stays the interface's `false` default), so a
     // multi-part/image call is a hard decline — same shape generate(parts)'s inherited default
     // already gives every other text-only backend. Upgrade only if a caller drives multimodal
     // streaming through Foundation Models specifically once Apple exposes that.

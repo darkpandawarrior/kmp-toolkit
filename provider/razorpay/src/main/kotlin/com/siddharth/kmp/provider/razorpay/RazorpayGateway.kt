@@ -164,7 +164,7 @@ class RazorpayGateway(
             put("order_id", orderId)
             put("amount", prepared.amount.amountMinor) // paise
             put("currency", prepared.amount.currency)
-            // ponytail: generic display name — R17, no reference-app branding in the public toolkit.
+            // generic display name — R17, no reference-app branding in the public toolkit.
             put("name", "kmp-toolkit Demo")
             put("description", "Order ${prepared.orderId}")
         }

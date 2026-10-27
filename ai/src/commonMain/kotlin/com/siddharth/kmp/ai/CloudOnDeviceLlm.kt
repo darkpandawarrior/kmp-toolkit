@@ -57,7 +57,7 @@ class CloudOnDeviceLlm(
      * Streams the first available provider's real SSE token stream (all three HTTP cloud providers
      * genuinely stream — see `:llm-chat`'s `httpCloudCapabilities`).
      *
-     * // ponytail: no cross-provider fallback once a stream is chosen, same tradeoff
+     * // no cross-provider fallback once a stream is chosen, same tradeoff
      * // [CompositeOnDeviceLlm.generateStream] documents — a stream that already showed the user a
      * // few tokens can't un-show them. Add buffered fallback if an empty/failed stream turns out to
      * // be common enough in practice to matter.

@@ -15,7 +15,7 @@ package com.siddharth.kmp.location.algo
  * a bad drive. If richer structure is ever needed, serialize at the app edge where dependencies
  * are allowed.
  *
- * ponytail: positional columns with a header line, no quoting or escaping support. Fields are
+ * positional columns with a header line, no quoting or escaping support. Fields are
  * numbers, a boolean and a short provider token — none of which contain commas. If a provider
  * name ever does, quote it at the source; do not grow a CSV dialect in here.
  */

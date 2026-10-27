@@ -49,7 +49,7 @@ enum class NavigationLayout {
  * }
  * ```
  *
- * ponytail: returns an enum rather than wrapping a scaffold. Deciding the layout needs no
+ * returns an enum rather than wrapping a scaffold. Deciding the layout needs no
  * dependency; *rendering* it would pull in `material3-adaptive-navigation-suite`, and new
  * dependencies are ask-first here. The decision is the part that carries the knowledge — the
  * rendering is three lines of first-party Material at the call site.

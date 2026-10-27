@@ -11,7 +11,7 @@ import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.URL
 
-// ponytail: HttpURLConnection (JDK, zero extra deps) — a single-file resumable GET is exactly what it
+// HttpURLConnection (JDK, zero extra deps) — a single-file resumable GET is exactly what it
 // does well. No OkHttp/Ktor pulled into :ai just for this.
 //
 // Resumable-download technique (reimplemented from documented behaviour — no vendored worker):

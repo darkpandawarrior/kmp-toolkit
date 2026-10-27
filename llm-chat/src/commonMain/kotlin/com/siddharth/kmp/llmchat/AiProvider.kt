@@ -108,7 +108,7 @@ sealed interface AiChunk {
  * Bridge for callers not yet migrated off the pre-[AiResult] `complete()`: collapses every
  * [AiFailure] back to `""`, matching the old `runCatching { }.getOrElse { "" }` behavior.
  *
- * // ponytail: kept for one release so an existing caller's source keeps compiling; drop once
+ * // kept for one release so an existing caller's source keeps compiling; drop once
  * // callers read AiResult directly (no consumer in this repo yet — README.md, "no dependents").
  */
 @Deprecated(

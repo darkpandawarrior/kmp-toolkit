@@ -32,7 +32,7 @@ data class GooglePayConfig(
     /** The payment processor this token will be handed to — "example" is Google's TEST-mode placeholder. */
     val gateway: String = "example",
     val gatewayMerchantId: String = "exampleGatewayMerchantId",
-    // ponytail: generic display name — R17, no reference-app branding in the public toolkit.
+    // generic display name — R17, no reference-app branding in the public toolkit.
     val merchantName: String = "kmp-toolkit Demo",
     val countryCode: String = "IN",
     val currencyCode: String = "INR",

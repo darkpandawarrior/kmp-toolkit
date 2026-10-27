@@ -345,7 +345,7 @@ fun <T> byFormFactor(
 ): T = byFormFactor(LocalFormFactor.current, default, watch, handheld, desktop, tv)
 
 /**
- * ponytail: defaults to Compact handheld rather than `error("no AdaptiveTheme")`. A hard error is
+ * defaults to Compact handheld rather than `error("no AdaptiveTheme")`. A hard error is
  * louder, but it also breaks every `@Preview` and Compose UI test that renders a leaf composable
  * without the app shell around it. Compact is the safe wrong answer — phone metrics on a television
  * look cramped, not broken. Switch to `error()` if a real screen ever ships un-wrapped by accident.
@@ -391,7 +391,7 @@ fun AdaptiveTheme(
  * LazyColumn(Modifier.screenPadding(vertical = false))   // let the list scroll under the status bar
  * ```
  *
- * ponytail: the TV case rides on `screenPadding` alone, which is already overscan-safe (48dp+), not
+ * the TV case rides on `screenPadding` alone, which is already overscan-safe (48dp+), not
  * on [AdaptiveTokens.overscanPadding]. Adding both would double-inset. `overscanPadding` is for
  * full-bleed surfaces that opt out of this modifier entirely — a hero image that must reach the edge
  * but keep its caption out of the clipped band.
@@ -446,7 +446,7 @@ fun Modifier.readableWidth(): Modifier {
 fun Modifier.contentWidth(max: Dp = DesignTokens.Spacing.contentMaxWidth): Modifier = centredCap(max)
 
 /**
- * ponytail: `fillMaxWidth().wrapContentWidth().widthIn(max)` is the documented centre-and-cap chain —
+ * `fillMaxWidth().wrapContentWidth().widthIn(max)` is the documented centre-and-cap chain —
  * fill claims the row, wrapContentWidth lets the child be narrower and centres it, widthIn does the
  * capping. `widthIn` alone would cap without centring and leave the column pinned to the start edge.
  */

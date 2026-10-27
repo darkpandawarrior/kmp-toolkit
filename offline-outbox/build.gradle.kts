@@ -58,7 +58,7 @@ kotlin {
 }
 
 dependencies {
-    // ponytail: no kspCommonMainMetadata entry — that task makes Room's KSP processor generate a
+    // no kspCommonMainMetadata entry — that task makes Room's KSP processor generate a
     // concrete `actual object OutboxDatabaseConstructor` straight into commonMain's own metadata
     // compilation, colliding with the hand-written `expect` above ("expect and actual declared in
     // the same module"). Per-platform targets only, matching Room's official KMP setup guide

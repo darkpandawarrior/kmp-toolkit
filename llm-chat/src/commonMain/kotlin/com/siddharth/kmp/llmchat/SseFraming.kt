@@ -21,7 +21,7 @@ internal val sseJson = Json { ignoreUnknownKeys = true }
  * as event separators, and (OpenAI only) a `data: [DONE]` sentinel closing the stream — so this
  * yields just the payload strings; each provider still JSON-decodes its own shape.
  *
- * // ponytail: `data:` lines only — no `event:`/`id:`/multi-line data continuation, since none of
+ * // `data:` lines only — no `event:`/`id:`/multi-line data continuation, since none of
  * // the three vendors' chat-completion SSE uses them. Widen if a fourth provider's stream does.
  */
 internal fun parseSseFrames(lines: Flow<String>): Flow<String> =

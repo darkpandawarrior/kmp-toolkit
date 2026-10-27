@@ -5,7 +5,7 @@ import com.siddharth.kmp.result.AiFailure
 import com.siddharth.kmp.result.AiResult
 import com.siddharth.kmp.result.Result
 
-// ponytail: EXPERIMENTAL stub — the SECOND iOS on-device backend behind the OnDeviceLlm seam:
+// EXPERIMENTAL stub — the SECOND iOS on-device backend behind the OnDeviceLlm seam:
 // Apple Foundation Models → **MediaPipe Gemma** → the caller's heuristic tier. MediaPipe LLM
 // Inference ships as an iOS CocoaPod (MediaPipeTasksGenAI, Swift/ObjC) with no C surface Kotlin/Native
 // can import, so the real availability check + inference must be bridged from the iosApp Swift layer

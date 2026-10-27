@@ -103,7 +103,7 @@ class AnthropicProvider(
             }
             val (system, userMessages) = buildAnthropicPayload(messages)
 
-            // ponytail: no withTimeout wrapping the whole stream — a legitimately long reply keeps
+            // no withTimeout wrapping the whole stream — a legitimately long reply keeps
             // producing tokens well past a single-call deadline. Stop cancelling the collecting
             // coroutine is what ends the request (and the provider's billing for it) early; add a
             // stall-timeout on individual reads if a hung-but-still-open connection needs detecting.

@@ -45,7 +45,7 @@ class CompositeOnDeviceLlm(
      * through the one [OnDeviceLlm] every app gets from `onDeviceLlmModule()`, and cancelling the
      * collecting coroutine reaches that backend while it's mid-generation.
      *
-     * // ponytail: no cross-backend fallback once a stream is chosen — unlike [generate], which can
+     * // no cross-backend fallback once a stream is chosen — unlike [generate], which can
      * // retry the next backend after a clean failure, a stream that has already shown the user a
      * // few tokens can't un-show them, so escalating mid-stream would look like a glitch, not a
      * // fallback. Only the pre-flight choice of WHICH backend to stream from escalates. Add

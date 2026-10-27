@@ -34,7 +34,7 @@ import kotlin.math.max
  * PageIndicator(pager.currentPage, banners.size)
  * ```
  *
- * ponytail: takes `currentPage: Int` rather than a `PagerState`. `PagerState` lives in
+ * takes `currentPage: Int` rather than a `PagerState`. `PagerState` lives in
  * `compose.foundation.pager`, and binding to it would stop this working for anything that isn't a
  * pager — an image carousel driven by a LazyRow, a step counter, a stack of onboarding cards. An Int
  * is the whole contract.

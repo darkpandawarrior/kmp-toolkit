@@ -19,7 +19,7 @@ import javax.crypto.spec.SecretKeySpec
  * Desktop/JVM secure settings: the whole properties store is AES-256-GCM encrypted at rest.
  *
  * The key is generated once and persisted base64 in a sibling `<store>.key` file (0600 where the FS
- * supports POSIX perms). ponytail: the key sits next to the ciphertext — a determined local attacker
+ * supports POSIX perms). the key sits next to the ciphertext — a determined local attacker
  * with FS access can read both. Upgrade path when that threat matters: move the key to the OS
  * credential store (macOS Keychain / Windows DPAPI / Linux libsecret), same as the reference
  * template's deferred "Phase 4".

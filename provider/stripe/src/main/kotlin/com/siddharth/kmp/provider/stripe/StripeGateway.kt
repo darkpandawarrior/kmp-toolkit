@@ -226,7 +226,7 @@ class StripeGateway(
     private companion object {
         const val TAG = "StripeGateway"
 
-        // ponytail: generic display name — R17, no reference-app branding in the public toolkit.
+        // generic display name — R17, no reference-app branding in the public toolkit.
         const val MERCHANT_DISPLAY_NAME = "kmp-toolkit Demo"
         const val KEY_CLIENT_SECRET = "client_secret"
         const val KEY_PUBLISHABLE_KEY = "publishable_key"

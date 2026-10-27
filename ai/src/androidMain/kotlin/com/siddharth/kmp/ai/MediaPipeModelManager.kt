@@ -95,7 +95,7 @@ class MediaPipeModelManager(
         flow.update { snapshot() }
     }
 
-    // ponytail: a live capability check (not a sticky "user said wifi-only" pref) — cheap, no
+    // a live capability check (not a sticky "user said wifi-only" pref) — cheap, no
     // ACCESS_NETWORK_STATE runtime prompt needed (it's a normal, install-time-granted permission),
     // and correct across the common case of a caller not bothering with WorkManager constraints at
     // all. Doesn't cover a metered-wifi hotspot the OS itself can't tell apart from a real one.

@@ -97,7 +97,7 @@ class OpenAiProvider(
             }
             val openAiMessages = buildOpenAiMessages(messages)
 
-            // ponytail: no withTimeout here — see AnthropicProvider.completeStream for why.
+            // no withTimeout here — see AnthropicProvider.completeStream for why.
             try {
                 client
                     .preparePost(BASE_URL) {
