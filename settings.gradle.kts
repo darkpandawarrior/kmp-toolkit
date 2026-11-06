@@ -26,7 +26,7 @@ plugins {
     // usernames, absolute paths, env vars, machine name. On a GitHub runner that is a throwaway
     // container; from a laptop it is somebody's home directory, published to a URL anyone holding
     // the link can read. Local `--scan` still works on demand for whoever wants it.
-    id("com.gradle.develocity") version "4.5.0"
+    id("com.gradle.develocity") version "4.6.1"
 }
 
 develocity {

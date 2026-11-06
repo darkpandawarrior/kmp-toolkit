@@ -117,12 +117,10 @@ fun rememberInputProfile(): InputProfile {
                     UiMediaScope.KeyboardKind.None -> InputProfile.Keyboard.None
                     else -> InputProfile.Keyboard.Virtual
                 },
+            // ponytail: CMP 1.13.0-beta02 replaced the Posture enum with WindowPosture
+            // (isFlat/isTabletop, no Book), so Book is no longer derivable from this scope.
             posture =
-                when (windowPosture) {
-                    UiMediaScope.Posture.Book -> InputProfile.Posture.Book
-                    UiMediaScope.Posture.Tabletop -> InputProfile.Posture.Tabletop
-                    else -> InputProfile.Posture.Flat
-                },
+                if (windowPosture.isTabletop) InputProfile.Posture.Tabletop else InputProfile.Posture.Flat,
             distance =
                 when (viewingDistance) {
                     UiMediaScope.ViewingDistance.Near -> InputProfile.Distance.Near

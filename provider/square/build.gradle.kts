@@ -23,8 +23,8 @@ dependencies {
     // In-App Payments Card Entry SDK (sdk.squareup.com/public/android — not on Maven Central).
     // card-entry's own published pom omits nonce-api as a transitive dependency even though
     // CardEntry's API surface (Callback/Card/nonce) requires it at compile time — added explicitly.
-    implementation("com.squareup.sdk.in-app-payments:card-entry:1.6.8")
-    implementation("com.squareup.sdk.in-app-payments:nonce-api:1.6.8")
+    implementation("com.squareup.sdk.in-app-payments:card-entry:1.7.0")
+    implementation("com.squareup.sdk.in-app-payments:nonce-api:1.7.0")
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
