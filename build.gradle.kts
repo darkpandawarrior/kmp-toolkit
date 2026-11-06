@@ -317,10 +317,10 @@ subprojects {
 //
 // The generated build/wasm/package.json is what carries `resolutions` — if it is stale it keeps an
 // empty map and the resolution looks broken when it is not. Verify the fix at the artefact, not the
-// exit code: `resolutions` in build/wasm/package.json, `version "8.21.0"` in the lock, and the
+// exit code: `resolutions` in build/wasm/package.json, `version "8.22.1"` in the lock, and the
 // version in build/wasm/node_modules/ws/package.json.
 plugins.withType<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin> {
-    the<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension>().resolution("ws", "8.21.0")
+    the<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension>().resolution("ws", "8.22.1")
 }
 
 // iOS *test* binary linkage — a workaround for an UPSTREAM PACKAGING BUG, not for anything in this
